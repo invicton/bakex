@@ -23,6 +23,8 @@ Use CloudFormation:
 - `stratum-scanner-role.yaml`
 - `stratum-builder-role.yaml`
 
+When using the public GitHub templates, download the YAML and upload it in CloudFormation. The AWS console quick-create `templateURL` field does not accept GitHub raw URLs as a supported template source.
+
 Outputs:
 
 - `StratumRoleArn`

@@ -116,7 +116,7 @@ For AWS, prefer role-based onboarding over long-lived access keys. Stratum inclu
 - [`deploy/aws/stratum-scanner-role.yaml`](deploy/aws/stratum-scanner-role.yaml) for scanning existing AMIs or instances
 - [`deploy/aws/stratum-builder-role.yaml`](deploy/aws/stratum-builder-role.yaml) for building hardened golden AMIs
 
-Launch the stack in your AWS account, then paste the stack outputs into **Integrations -> AWS**:
+Download the template, create the stack in your AWS account with **Upload a template file**, then paste the stack outputs into **Integrations -> AWS**:
 
 | CloudFormation output | Stratum field |
 |---|---|

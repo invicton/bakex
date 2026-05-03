@@ -1,6 +1,6 @@
 # AWS Onboarding
 
-Stratum can use an AWS IAM role instead of long-lived access keys. Launch one of these CloudFormation templates in the AWS account where Stratum should scan or build images, then paste the stack outputs into **Integrations -> AWS**.
+Stratum can use an AWS IAM role instead of long-lived access keys. Download one of these CloudFormation templates, create a stack in the AWS account where Stratum should scan or build images, then paste the stack outputs into **Integrations -> AWS**.
 
 The stack must be launched by an AWS principal that can create IAM roles, policies, instance profiles, and PassRole permissions. Customers can review the full permission set in the template and create equivalent resources manually if their security process requires it.
 
@@ -12,6 +12,18 @@ The stack must be launched by an AWS principal that can create IAM roles, polici
 | `stratum-builder-role.yaml` | Build hardened golden AMIs | Stratum builder role, EC2 SSM instance role, instance profile |
 
 Use the scanner template first for demos. Use the builder template only when you are ready for Stratum to launch EC2 instances and create AMIs/snapshots.
+
+## Launch From The AWS Console
+
+CloudFormation quick-create `templateURL` expects a supported template URL source such as S3. GitHub raw URLs are not accepted by the AWS console for that field.
+
+For the public GitHub templates:
+
+1. Open the template link from Stratum.
+2. Save the YAML file locally.
+3. In CloudFormation, choose **Create stack -> With new resources**.
+4. Select **Upload a template file**.
+5. Upload the saved YAML file and continue through stack creation.
 
 ## Required Parameters
 
