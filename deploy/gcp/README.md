@@ -1,40 +1,39 @@
 # GCP Onboarding
 
-Stratum uses Terraform modules for GCP onboarding. Google Cloud Deployment Manager is deprecated, so Terraform is the safest public launch format and can be run locally or through Google Cloud Infrastructure Manager.
+Stratum uses native `gcloud` onboarding scripts and explicit custom-role YAML files for GCP. There is no third-party IaC dependency.
 
-The Terraform must be applied by a GCP principal that can enable services, create custom IAM roles, assign IAM roles, create service accounts, and create firewall rules. Customers can review the full permission set in the module and create equivalent IAM bindings manually if their security process requires it.
+The script must be run by a GCP principal that can enable services, create custom IAM roles, assign IAM roles, create service accounts, and create firewall rules. Customers can review the full permission set in the YAML files and create equivalent IAM bindings manually if their security process requires it.
 
-## Modules
+## Scripts
 
-| Module | Use case | Creates resources |
+| Script | Use case | Creates resources |
 |---|---|---|
-| `scanner/` | Scan existing images or private VM targets | Custom IAM role, optional service account, IAP SSH firewall rule |
-| `builder/` | Build hardened GCP Custom Images | Custom IAM role, optional service account, IAP SSH firewall rule |
+| `scanner/onboard.sh` | Scan existing images or private VM targets | Custom IAM role, optional service account, IAP SSH firewall rule |
+| `builder/onboard.sh` | Build hardened GCP Custom Images | Custom IAM role, optional service account, IAP SSH firewall rule |
 
 ## Quick Start
 
 ```bash
 cd deploy/gcp/builder
-terraform init
-terraform apply \
-  -var="project_id=my-gcp-project" \
-  -var="zone=us-central1-a" \
-  -var="network=default"
+PROJECT_ID=my-gcp-project \
+ZONE=us-central1-a \
+NETWORK=default \
+./onboard.sh
 ```
 
-If you already have a service account or user principal, pass it explicitly:
+If you already have a service account, user, or group principal, pass it explicitly:
 
 ```bash
-terraform apply \
-  -var="project_id=my-gcp-project" \
-  -var="principal=serviceAccount:stratum@example.iam.gserviceaccount.com"
+PROJECT_ID=my-gcp-project \
+PRINCIPAL=serviceAccount:stratum@example.iam.gserviceaccount.com \
+./onboard.sh
 ```
 
 ## Stratum Fields
 
-After apply, copy these outputs into **Integrations -> GCP**:
+After the script completes, copy these outputs into **Integrations -> GCP**:
 
-| Terraform output | Stratum field |
+| Script output | Stratum field |
 |---|---|
 | `project_id` | GCP Project ID |
 | `zone` | Zone |
@@ -46,7 +45,7 @@ For authentication, prefer Application Default Credentials or service account im
 
 ## Security Notes
 
-- The modules do not create service account keys by default.
+- The scripts do not create service account keys.
 - The builder role can create and delete temporary instances, disks, and custom images, which can incur costs.
 - The IAP firewall rule allows TCP 22 only from `35.235.240.0/20` to instances tagged `stratum-build` or `stratum-scan`.
-- Customers can inspect `main.tf` to review every granted permission before applying.
+- Customers can inspect `stratum-scanner-role.yaml` and `stratum-builder-role.yaml` to review every granted permission before applying.

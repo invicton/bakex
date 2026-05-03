@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "stratum"
 version = "0.3.0"
-description = "Open-core multi-cloud DevSecOps platform — the Terraform of OS Hardening"
+description = "Open-core multi-cloud DevSecOps platform for declarative OS hardening"
 readme = "README.md"
 license = { text = "Apache-2.0" }
 requires-python = ">=3.11"

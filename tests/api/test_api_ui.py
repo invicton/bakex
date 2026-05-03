@@ -47,7 +47,7 @@ def test_integrations_provider_form_azure_has_onboarding(client):
 def test_integrations_provider_form_gcp_has_onboarding(client):
     resp = client.get("/integrations/gcp/form")
     assert resp.status_code == 200
-    assert "Onboard GCP with Terraform" in resp.text
+    assert "Onboard GCP with gcloud" in resp.text
     assert "Review Permissions" in resp.text
 
 

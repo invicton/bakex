@@ -1,6 +1,6 @@
 # Stratum
 
-**The Terraform of OS Hardening — open-core, multi-cloud, declarative.**
+**Declarative OS hardening — open-core, multi-cloud, and automation-ready.**
 
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue)](https://www.python.org/)
@@ -134,7 +134,7 @@ Azure and GCP follow the same model: a cloud administrator reviews and applies t
 | Provider | Onboarding path | Admin creates |
 |---|---|---|
 | Azure | [`deploy/azure`](deploy/azure) ARM templates | Custom RBAC role + role assignment for an existing Entra service principal |
-| GCP | [`deploy/gcp`](deploy/gcp) Terraform modules | Custom IAM role + optional Stratum service account + IAP SSH firewall rule |
+| GCP | [`deploy/gcp`](deploy/gcp) native `gcloud` scripts | Custom IAM role + optional Stratum service account + IAP SSH firewall rule |
 
 The templates are intentionally readable so customers can evaluate every permission and apply the same role manually if they prefer.
 

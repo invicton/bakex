@@ -18,7 +18,7 @@ Go to **Integrations**, select a provider, and use the provider onboarding card.
 |---|---|---|
 | AWS | Launch CloudFormation stack or manually create equivalent IAM role | Role ARN, External ID, Instance Profile Name, Region |
 | Azure | Deploy ARM template or manually create equivalent custom RBAC role | Tenant ID, Client ID, Client Secret, Subscription ID, Resource Group, Region |
-| GCP | Apply Terraform module or manually create equivalent IAM bindings | Project ID, Zone, Network, Subnetwork, optional Service Account Email |
+| GCP | Run native `gcloud` onboarding script or manually create equivalent IAM bindings | Project ID, Zone, Network, Subnetwork, optional Service Account Email |
 
 The user running the onboarding template must have admin-level permission to create and assign the required cloud permissions. Stratum shows the full permission set so security teams can review or reproduce it manually.
 

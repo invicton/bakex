@@ -28,7 +28,7 @@
     <text x="620" y="468" fill="#e2e8f0" font-size="13" font-weight="700">Review</text>
     <rect x="798" y="190" width="318" height="346" rx="14" fill="#111827" stroke="#334155"/>
     <text x="830" y="240" fill="#86efac" font-size="26" font-weight="800">GCP</text>
-    <text x="830" y="278" fill="#cbd5e1" font-size="15">Terraform modules</text>
+    <text x="830" y="278" fill="#cbd5e1" font-size="15">gcloud scripts</text>
     <text x="830" y="328" fill="#94a3b8" font-size="14">Custom IAM role</text>
     <text x="830" y="358" fill="#94a3b8" font-size="14">Optional service account</text>
     <text x="830" y="388" fill="#94a3b8" font-size="14">IAP SSH firewall rule</text>

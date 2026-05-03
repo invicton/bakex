@@ -53,12 +53,12 @@ Outputs:
 
 Path: [`deploy/gcp`](../deploy/gcp)
 
-Use Terraform modules:
+Use native `gcloud` scripts and custom-role YAML files:
 
-- `scanner/`
-- `builder/`
+- `scanner/onboard.sh`
+- `builder/onboard.sh`
 
-The modules create a custom IAM role, optionally create a Stratum service account, assign IAP tunnel access, and create the IAP SSH firewall rule.
+The scripts create or update a custom IAM role, optionally create a Stratum service account, assign IAP tunnel access, and create the IAP SSH firewall rule.
 
 Outputs:
 
@@ -71,7 +71,7 @@ Outputs:
 
 ## Manual Review Workflow
 
-1. Open the provider template/module under `deploy/`.
+1. Open the provider template, script, or role file under `deploy/`.
 2. Review the exact permission actions.
 3. Apply through your normal cloud change process.
 4. Paste the outputs into Stratum.

@@ -7,6 +7,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import yaml
+
 ROOT = Path(__file__).parent.parent
 
 
@@ -24,17 +26,32 @@ def test_azure_onboarding_templates_have_required_shape():
         assert {"SubscriptionId", "ResourceGroupName", "Location"} <= set(data["outputs"])
 
 
-def test_gcp_onboarding_modules_expose_required_outputs():
+def test_gcp_onboarding_scripts_and_roles_have_required_shape():
+    expected_permissions = {
+        "builder": {
+            "compute.instances.create",
+            "compute.instances.stop",
+            "compute.images.create",
+            "compute.globalOperations.get",
+            "compute.subnetworks.use",
+        },
+        "scanner": {
+            "compute.instances.create",
+            "compute.instances.delete",
+            "compute.images.getFromFamily",
+            "compute.zoneOperations.get",
+            "compute.subnetworks.use",
+        },
+    }
+
     for module in ("scanner", "builder"):
         module_dir = ROOT / "deploy" / "gcp" / module
-        main_tf = (module_dir / "main.tf").read_text()
-        outputs_tf = (module_dir / "outputs.tf").read_text()
-        variables_tf = (module_dir / "variables.tf").read_text()
+        script = (module_dir / "onboard.sh").read_text()
+        role = yaml.safe_load((module_dir / f"stratum-{module}-role.yaml").read_text())
 
-        assert 'source  = "hashicorp/google"' in main_tf
-        assert "google_project_iam_custom_role" in main_tf
-        assert "google_project_iam_member" in main_tf
-        assert "stratum-allow-iap-ssh" in main_tf
-        assert 'variable "project_id"' in variables_tf
-        for output_name in ("project_id", "zone", "network", "subnetwork", "service_account_email"):
-            assert f'output "{output_name}"' in outputs_tf
+        assert "gcloud services enable compute.googleapis.com iap.googleapis.com" in script
+        assert "gcloud iam roles create" in script
+        assert "gcloud projects add-iam-policy-binding" in script
+        assert "stratum-allow-iap-ssh" in script
+        assert {"title", "description", "includedPermissions"} <= set(role)
+        assert expected_permissions[module] <= set(role["includedPermissions"])
