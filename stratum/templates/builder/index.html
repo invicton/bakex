@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}Image Builder — {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto space-y-8">
+  <div>
+    <h1 class="text-2xl font-bold text-white">Image Builder</h1>
+    <p class="text-gray-400 mt-1">Select a compliance profile and launch a hardened image build.</p>
+  </div>
+
+  <form
+    hx-post="/api/builder/start"
+    hx-target="#result"
+    hx-swap="innerHTML"
+    class="bg-gray-900 border border-gray-800 rounded-xl p-6 space-y-6"
+  >
+    <!-- Profile selector -->
+    <div>
+      <label class="block text-sm font-semibold text-gray-300 mb-2">Compliance Profile</label>
+      <select name="profile_name" required
+              hx-get="/api/builder/profile-fields"
+              hx-target="#profile-fields"
+              hx-trigger="change"
+              class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-brand-500">
+        <option value="">-- select profile --</option>
+        {% for p in profiles %}
+        <option value="{{ p.metadata.name }}">{{ p.metadata.name }} ({{ p.target.os }} / {{ p.compliance.profile.split('_')[-1] }})</option>
+        {% else %}
+        <option disabled>No profiles found in profiles/</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- Dynamic profile fields (sizing) -->
+    <div id="profile-fields"></div>
+
+    <!-- Provider selector — loads provider-specific fields via HTMX -->
+    <div>
+      <label class="block text-sm font-semibold text-gray-300 mb-2">Provider Override</label>
+      <select name="provider_override"
+              hx-get="/api/builder/provider-fields"
+              hx-target="#provider-fields"
+              hx-trigger="change"
+              class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-brand-500">
+        <option value="">-- use profile default --</option>
+        {% for p in providers %}
+        <option value="{{ p }}">{{ p }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- Dynamic provider fields -->
+    <div id="provider-fields"></div>
+
+    <button type="submit"
+            class="w-full bg-brand-600 hover:bg-brand-700 text-white font-semibold py-2.5 rounded-lg transition text-sm">
+      Launch Build
+    </button>
+  </form>
+
+  <div id="result"></div>
+</div>
+{% endblock %}

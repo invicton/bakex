@@ -1,0 +1,46 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.so
+.venv/
+venv/
+env/
+.env
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# uv
+.uv/
+uv.lock
+
+# Stratum runtime data (never commit credentials or build artifacts)
+data/credentials.enc
+data/.stratum_key
+data/audits/
+data/builds/
+data/audit_jobs.json
+data/api_keys.json
+data/webhooks.json
+profiles/community/
+
+# Test / coverage artifacts
+.coverage
+coverage.xml
+htmlcov/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo

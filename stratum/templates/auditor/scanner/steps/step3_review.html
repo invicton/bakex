@@ -1,0 +1,136 @@
+<!-- Scanner Step 3: Review & Launch -->
+<div class="space-y-6" id="scan-step3-content">
+
+  <!-- Summary cards -->
+  <div class="grid grid-cols-3 gap-4" id="scan-summary-grid">
+    <!-- Populated by JS below -->
+  </div>
+
+  <!-- Estimated time banner -->
+  <div id="scan-time-banner" class="flex items-start gap-3 p-4 rounded-xl bg-cyan-950/10 border border-cyan-900/30 text-xs text-cyan-300">
+    <svg class="w-4 h-4 flex-shrink-0 mt-0.5 text-cyan-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+    </svg>
+    <div>
+      <span class="font-semibold">Estimated time: </span>
+      <span id="scan-est-time">Calculating…</span>
+      <span class="block text-cyan-700 mt-0.5" id="scan-cost-note"></span>
+    </div>
+  </div>
+
+  <!-- Error -->
+  <div id="step3-scan-error" class="hidden text-xs text-rose-400 bg-rose-950/20 border border-rose-800/30 rounded-lg px-3 py-2"></div>
+
+  <!-- Nav -->
+  <div class="flex justify-between">
+    <button type="button" onclick="goBackToScanStep2()"
+            class="flex items-center gap-2 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-sm rounded-xl transition-all border border-slate-700">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+      </svg>
+      Back
+    </button>
+    <button type="button" id="launch-scan-btn" onclick="launchScan()"
+            class="flex items-center gap-2 px-6 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-sm rounded-xl transition-all shadow-[0_0_15px_rgba(6,182,212,0.35)]">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+      </svg>
+      Launch Scan
+    </button>
+  </div>
+
+</div>
+
+<script>
+(function init() {
+  setScanActiveStep(3);
+  const s1 = ScanWizardState.get(1);
+  const s2 = ScanWizardState.get(2);
+
+  const summaryData = [
+    { label: 'Scan Target', value: s1.targetId || '—', mono: true },
+    { label: 'Provider / Region', value: `${(s1.providerDisplay || s1.provider || '—').toUpperCase()} · ${s1.region || 'us-east-1'}` },
+    { label: 'Scan Mode', value: s1.scanMode === 'vm' ? 'Running VM' : 'Cloud Image' },
+    { label: 'OS', value: s1.osDisplay || s1.os || '—' },
+    { label: 'Profile', value: s2.profileName || '—', mono: true },
+    { label: 'Pass Threshold', value: `${s2.passThreshold ?? 75}% · ${(s2.severityThreshold || 'high')} severity` },
+  ];
+
+  const grid = document.getElementById('scan-summary-grid');
+  grid.innerHTML = summaryData.map(d => `
+    <div class="bg-slate-900/50 border border-slate-800 rounded-xl px-4 py-3">
+      <div class="text-[10px] font-bold uppercase text-slate-500 tracking-wider">${d.label}</div>
+      <div class="text-sm ${d.mono ? 'font-mono' : 'font-medium'} text-slate-200 mt-1 truncate" title="${d.value}">${d.value}</div>
+    </div>
+  `).join('');
+
+  // Estimated time
+  const isImage = s1.scanMode !== 'vm';
+  const estTime = isImage ? '3–8 minutes' : '~2 minutes';
+  document.getElementById('scan-est-time').textContent = estTime;
+  if (isImage) {
+    document.getElementById('scan-cost-note').textContent =
+      `A temporary ${s1.instanceType || 't3.medium'} instance will be launched, scanned, then terminated immediately.`;
+  }
+})();
+
+function goBackToScanStep2() {
+  const s1 = ScanWizardState.get(1);
+  fetch(`/auditor/scanner/step2?os=${encodeURIComponent(s1.os || '')}&provider=${encodeURIComponent(s1.provider || '')}`)
+    .then(r => r.text()).then(html => {
+      loadScanStep(html);
+      setScanActiveStep(2);
+    });
+}
+
+function launchScan() {
+  const s1 = ScanWizardState.get(1);
+  const s2 = ScanWizardState.get(2);
+  const btn = document.getElementById('launch-scan-btn');
+  const errEl = document.getElementById('step3-scan-error');
+  errEl.classList.add('hidden');
+  btn.disabled = true;
+  btn.innerHTML = '<svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg> Launching…';
+
+  const isVM = s1.scanMode === 'vm';
+  const url = isVM ? '/api/auditor/start' : '/api/auditor/scan-image';
+  const body = isVM
+    ? {
+        profile_name: s2.profileName,
+        target_host: s1.targetId,
+        ssh_user: 'ec2-user',
+        provider_override: s1.provider,
+      }
+    : {
+        provider: s1.provider,
+        region: s1.region || 'us-east-1',
+        image_id: s1.targetId,
+        os: s1.os || '',
+        compliance_profile: s2.profileName,
+        instance_type: s1.instanceType || 't3.medium',
+      };
+
+  fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  }).then(r => {
+    const redirect = r.headers.get('HX-Redirect');
+    if (redirect) { window.location.href = redirect; return; }
+    return r.json().then(data => {
+      const jobId = data.job_id;
+      if (jobId) {
+        ScanWizardState.clear();
+        window.location.href = isVM ? `/auditor/results/${jobId}` : `/auditor/scan-image/${jobId}`;
+      } else {
+        throw new Error(data.detail || 'Unknown error');
+      }
+    });
+  }).catch(err => {
+    errEl.textContent = `Launch failed: ${err}`;
+    errEl.classList.remove('hidden');
+    btn.disabled = false;
+    btn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg> Launch Scan';
+  });
+}
+</script>

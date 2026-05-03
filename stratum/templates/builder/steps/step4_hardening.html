@@ -1,0 +1,237 @@
+<!-- Step 4: Hardening Rules -->
+<div class="space-y-6" id="step4-content">
+
+  <div class="grid grid-cols-3 gap-4">
+
+    <!-- Standard picker -->
+    <div class="bg-slate-900/50 border border-slate-800 rounded-xl p-5 space-y-3">
+      <h2 class="text-sm font-semibold text-white">Hardening Standard</h2>
+      <div class="space-y-2" id="standard-picker">
+        <label class="flex cursor-pointer">
+          <input type="radio" name="hardening_standard" value="cis" checked
+                 class="sr-only peer" onchange="onStandardChange()">
+          <div class="w-full p-3 rounded-lg border border-slate-700 bg-slate-900 text-slate-300 text-sm font-semibold
+                      text-center cursor-pointer transition-all
+                      peer-checked:border-cyan-500 peer-checked:bg-cyan-950/20 peer-checked:text-cyan-300">
+            <div class="text-base mb-0.5">🛡️</div>
+            CIS Benchmark
+            <div class="text-[10px] text-slate-500 font-normal mt-0.5">Center for Internet Security</div>
+          </div>
+        </label>
+        <label class="flex cursor-pointer">
+          <input type="radio" name="hardening_standard" value="nist"
+                 class="sr-only peer" onchange="onStandardChange()">
+          <div class="w-full p-3 rounded-lg border border-slate-700 bg-slate-900 text-slate-300 text-sm font-semibold
+                      text-center cursor-pointer transition-all
+                      peer-checked:border-cyan-500 peer-checked:bg-cyan-950/20 peer-checked:text-cyan-300">
+            <div class="text-base mb-0.5">🏛️</div>
+            NIST 800-53
+            <div class="text-[10px] text-slate-500 font-normal mt-0.5">National Institute of Standards</div>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <!-- Tier picker -->
+    <div class="bg-slate-900/50 border border-slate-800 rounded-xl p-5 space-y-3">
+      <h2 class="text-sm font-semibold text-white">Profile Tier</h2>
+      <div class="space-y-2" id="tier-picker">
+        {% set tier_defs = [
+          ('l1', 'Level 1', 'Practical, base security — suitable for most servers'),
+          ('l2', 'Level 2', 'Stricter controls — may impact performance/functionality'),
+          ('stig', 'STIG', 'DoD Security Technical Implementation Guide'),
+        ] %}
+        {% for tier_val, tier_label, tier_desc in tier_defs %}
+        <label class="flex cursor-pointer {% if tier_val == 'stig' and 'stig' not in supported_tiers %}opacity-40 pointer-events-none{% endif %}">
+          <input type="radio" name="hardening_tier" value="{{ tier_val }}"
+                 {% if tier_val == 'l1' %}checked{% endif %}
+                 {% if tier_val == 'stig' and 'stig' not in supported_tiers %}disabled{% endif %}
+                 class="sr-only peer" onchange="onTierChange()">
+          <div class="w-full p-3 rounded-lg border border-slate-700 bg-slate-900 text-slate-300 text-sm font-semibold
+                      cursor-pointer transition-all
+                      peer-checked:border-cyan-500 peer-checked:bg-cyan-950/20 peer-checked:text-cyan-300">
+            {{ tier_label }}
+            <div class="text-[10px] text-slate-500 font-normal mt-0.5">{{ tier_desc }}</div>
+            {% if tier_val == 'stig' and 'stig' not in supported_tiers %}
+            <div class="text-[10px] text-amber-600 font-normal mt-0.5">Not available for selected OS</div>
+            {% endif %}
+          </div>
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Security extras -->
+    <div class="bg-slate-900/50 border border-slate-800 rounded-xl p-5 space-y-4">
+      <h2 class="text-sm font-semibold text-white">Security Extras</h2>
+
+      <label class="flex items-start gap-3 cursor-pointer">
+        <div class="relative mt-0.5">
+          <input type="checkbox" name="aide_enabled" id="aide-toggle" class="sr-only peer">
+          <div class="w-10 h-5 bg-slate-700 rounded-full peer peer-checked:bg-cyan-600 transition-colors"></div>
+          <div class="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform peer-checked:translate-x-5"></div>
+        </div>
+        <div>
+          <span class="text-sm text-slate-200 font-medium">AIDE File Integrity</span>
+          <span class="block text-[10px] text-slate-500 mt-0.5">
+            Advanced Intrusion Detection Environment — monitors filesystem changes.
+          </span>
+        </div>
+      </label>
+
+      <label class="flex items-start gap-3 cursor-pointer">
+        <div class="relative mt-0.5">
+          <input type="checkbox" name="fips_enabled" id="fips-toggle" class="sr-only peer">
+          <div class="w-10 h-5 bg-slate-700 rounded-full peer peer-checked:bg-cyan-600 transition-colors"></div>
+          <div class="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform peer-checked:translate-x-5"></div>
+        </div>
+        <div>
+          <span class="text-sm text-slate-200 font-medium">FIPS 140-2 Mode</span>
+          <span class="block text-[10px] text-slate-500 mt-0.5">
+            Enforces FIPS-compliant cryptography. Kernel parameter + crypto-policies.
+          </span>
+          <span class="block text-[10px] text-amber-600 mt-0.5">Note: May restrict some software.</span>
+        </div>
+      </label>
+
+      <div class="mt-4 p-3 rounded-lg bg-slate-950/40 border border-slate-800 text-xs text-slate-500">
+        <div class="font-semibold text-slate-400 mb-1">Hardening Engine</div>
+        <div>Uses <span class="text-cyan-400 font-mono">Ansible-Lockdown</span> roles applied via Ansible on the build instance before snapshotting.</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Controls table -->
+  <div class="bg-slate-900/50 border border-slate-800 rounded-xl p-5 space-y-3">
+    <div class="flex items-center justify-between">
+      <h2 class="text-sm font-semibold text-white">Control Selection</h2>
+      <p class="text-xs text-slate-500">Toggle individual controls or disable with a justification.</p>
+    </div>
+    <div id="controls-container"
+         hx-get="/api/builder/controls"
+         hx-vals='{"os": "{{ os }}", "standard": "cis", "tier": "l1"}'
+         hx-trigger="load"
+         hx-target="#controls-container"
+         hx-swap="innerHTML">
+      <div class="text-xs text-slate-500 text-center py-8 animate-pulse">Loading controls...</div>
+    </div>
+  </div>
+
+  <!-- Nav buttons -->
+  <div class="flex justify-between">
+    <button type="button"
+            onclick="goBackToStep3()"
+            class="flex items-center gap-2 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-sm rounded-xl transition-all border border-slate-700">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+      </svg>
+      Back
+    </button>
+    <button type="button"
+            onclick="goToStep5()"
+            class="flex items-center gap-2 px-5 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-sm rounded-xl transition-all shadow-[0_0_15px_rgba(6,182,212,0.25)]">
+      Next: Review &amp; Launch
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+      </svg>
+    </button>
+  </div>
+
+</div>
+
+<script>
+var _currentOS = '{{ os }}';
+
+(function init() {
+  setActiveStep(4);
+  const s4 = WizardState.get(4);
+  if (s4.aide)  document.getElementById('aide-toggle').checked = true;
+  if (s4.fips)  document.getElementById('fips-toggle').checked = true;
+  if (s4.standard) {
+    const r = document.querySelector(`[name="hardening_standard"][value="${s4.standard}"]`);
+    if (r) { r.checked = true; }
+  }
+  if (s4.tier) {
+    const r = document.querySelector(`[name="hardening_tier"][value="${s4.tier}"]`);
+    if (r) { r.checked = true; }
+  }
+})();
+
+function getStandard() { return document.querySelector('[name="hardening_standard"]:checked')?.value || 'cis'; }
+function getTier()     { return document.querySelector('[name="hardening_tier"]:checked')?.value || 'l1'; }
+
+function reloadControls() {
+  const std  = getStandard();
+  const tier = getTier();
+  const url  = `/api/builder/controls?os=${encodeURIComponent(_currentOS)}&standard=${std}&tier=${tier}`;
+  const container = document.getElementById('controls-container');
+  container.innerHTML = '<div class="text-xs text-slate-500 text-center py-8 animate-pulse">Loading controls...</div>';
+  fetch(url).then(r => r.text()).then(html => {
+    loadHTML(container, html);
+    updateControlsCount();
+  });
+}
+
+function onStandardChange() { reloadControls(); }
+function onTierChange()     { reloadControls(); }
+
+function filterControls(q) {
+  const lower = q.toLowerCase();
+  const sev = document.getElementById('severity-filter')?.value || '';
+  document.querySelectorAll('.control-row').forEach(row => {
+    const id    = (row.dataset.ruleId    || '').toLowerCase();
+    const title = (row.dataset.ruleTitle || '').toLowerCase();
+    const matchQ   = !q || id.includes(lower) || title.includes(lower);
+    const matchSev = !sev || row.dataset.severity === sev;
+    row.style.display = (matchQ && matchSev) ? '' : 'none';
+  });
+}
+
+function toggleAllControls(master) {
+  document.querySelectorAll('.control-toggle').forEach(cb => {
+    cb.checked = master.checked;
+    onControlToggle(cb, cb.name.replace('control_', ''));
+  });
+  updateControlsCount();
+}
+
+function onControlToggle(cb, ruleId) {
+  const shortId = ruleId.split('content_rule_').pop();
+  const justRow = document.getElementById(`just-${shortId}`);
+  if (justRow) justRow.classList.toggle('hidden', cb.checked);
+  updateControlsCount();
+}
+
+function updateControlsCount() {
+  const all     = document.querySelectorAll('.control-toggle');
+  const enabled = [...all].filter(c => c.checked).length;
+  const el = document.getElementById('controls-enabled-count');
+  if (el) el.textContent = enabled;
+}
+
+function saveStep4() {
+  WizardState.save(4, {
+    standard: getStandard(),
+    tier:     getTier(),
+    aide:     document.getElementById('aide-toggle')?.checked || false,
+    fips:     document.getElementById('fips-toggle')?.checked || false,
+  });
+}
+
+function goBackToStep3() {
+  saveStep4();
+  fetch('/builder/wizard/step3').then(r => r.text()).then(html => {
+    loadStep(html);
+    setActiveStep(3);
+  });
+}
+
+function goToStep5() {
+  saveStep4();
+  fetch('/builder/wizard/step5').then(r => r.text()).then(html => {
+    loadStep(html);
+    setActiveStep(5);
+  });
+}
+</script>

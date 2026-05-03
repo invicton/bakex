@@ -1,0 +1,92 @@
+{
+  "providers": [
+    {
+      "id": "digitalocean",
+      "name": "DigitalOcean",
+      "description": "Build hardened Snapshots on DigitalOcean. Provisions a Droplet, applies hardening via Ansible over SSH, runs OpenSCAP, then creates a Droplet Snapshot. Use VPC private networking if the Stratum host is also a Droplet in the same region.",
+      "icon": "🌊",
+      "script": "digitalocean.py",
+      "version": "1.0.0",
+      "optional_dep": "requests>=2.31.0",
+      "connectivity": "SSH (public IP by default; set use_private_ip: true for VPC private networking)",
+      "credential_fields": [
+        {"key": "api_token", "label": "DigitalOcean Personal Access Token", "type": "password", "required": true},
+        {"key": "region", "label": "Region", "type": "text", "default": "nyc3"},
+        {"key": "size", "label": "Droplet Size", "type": "text", "default": "s-2vcpu-4gb"},
+        {"key": "use_private_ip", "label": "Use VPC Private IP (requires Stratum host in same region)", "type": "checkbox", "default": false}
+      ]
+    },
+    {
+      "id": "gcp",
+      "name": "Google Cloud Platform",
+      "description": "Build hardened machine images on GCP using Compute Engine. Provisions a VM from a base image, applies hardening via Ansible over SSH, runs OpenSCAP, then creates a GCP Custom Image.",
+      "icon": "☁️",
+      "script": "gcp.py",
+      "version": "1.0.0",
+      "optional_dep": "google-cloud-compute>=1.14.0 google-auth>=2.29.0",
+      "credential_fields": [
+        {"key": "project_id", "label": "GCP Project ID", "type": "text", "required": true},
+        {"key": "zone", "label": "Zone", "type": "text", "default": "us-central1-a", "required": true},
+        {"key": "machine_type", "label": "Machine Type", "type": "text", "default": "n2-standard-2"},
+        {"key": "network", "label": "VPC Network", "type": "text", "default": "default"},
+        {"key": "subnetwork", "label": "Subnetwork (optional)", "type": "text"},
+        {"key": "service_account_json", "label": "Service Account JSON Key (leave blank for ADC)", "type": "textarea"}
+      ]
+    },
+    {
+      "id": "azure",
+      "name": "Microsoft Azure",
+      "description": "Build hardened images as Azure Managed Images. Provisions a VM from a Marketplace or custom image, applies hardening via Ansible over SSH, then captures a Managed Image.",
+      "icon": "🟦",
+      "script": "azure.py",
+      "version": "1.0.0",
+      "optional_dep": "azure-mgmt-compute>=30.0.0 azure-mgmt-network>=25.0.0 azure-identity>=1.17.0",
+      "credential_fields": [
+        {"key": "subscription_id", "label": "Subscription ID", "type": "text", "required": true},
+        {"key": "tenant_id", "label": "Tenant ID", "type": "text", "required": true},
+        {"key": "client_id", "label": "App (Client) ID", "type": "text", "required": true},
+        {"key": "client_secret", "label": "Client Secret", "type": "password", "required": true},
+        {"key": "resource_group", "label": "Resource Group", "type": "text", "required": true},
+        {"key": "location", "label": "Azure Region", "type": "text", "default": "eastus"},
+        {"key": "vm_size", "label": "VM Size", "type": "text", "default": "Standard_D2s_v3"},
+        {"key": "vnet_name", "label": "VNet Name (optional)", "type": "text"},
+        {"key": "subnet_name", "label": "Subnet Name (optional)", "type": "text"}
+      ]
+    },
+    {
+      "id": "linode",
+      "name": "Linode / Akamai Cloud",
+      "description": "Build hardened Private Images on Linode. Provisions a Linode instance from a base image, applies hardening via Ansible over SSH, then creates a Linode Private Image (disk snapshot). Use private networking if the Stratum host is also a Linode in the same datacenter.",
+      "icon": "🟢",
+      "script": "linode.py",
+      "version": "1.0.0",
+      "optional_dep": "linode-api4>=5.0.0",
+      "connectivity": "SSH (public IP by default; set use_private_ip: true for Linode private networking within the same datacenter)",
+      "credential_fields": [
+        {"key": "api_token", "label": "Linode Personal Access Token", "type": "password", "required": true},
+        {"key": "region", "label": "Region", "type": "text", "default": "us-east"},
+        {"key": "instance_type", "label": "Instance Type", "type": "text", "default": "g6-standard-2"},
+        {"key": "use_private_ip", "label": "Use Linode Private IP (requires Stratum host in same datacenter)", "type": "checkbox", "default": false}
+      ]
+    },
+    {
+      "id": "proxmox",
+      "name": "Proxmox VE",
+      "description": "Build hardened VM templates on Proxmox VE. Clones a base template, applies hardening via Ansible over SSH, then converts the result to a reusable Proxmox template.",
+      "icon": "🖥️",
+      "script": "proxmox.py",
+      "version": "1.0.0",
+      "optional_dep": "proxmoxer>=2.0.0 requests>=2.31.0",
+      "credential_fields": [
+        {"key": "host", "label": "Proxmox Host (IP or FQDN)", "type": "text", "required": true},
+        {"key": "user", "label": "API User (e.g. root@pam)", "type": "text", "required": true},
+        {"key": "token_name", "label": "API Token Name", "type": "text", "required": true},
+        {"key": "token_value", "label": "API Token Value", "type": "password", "required": true},
+        {"key": "node", "label": "Proxmox Node", "type": "text", "default": "pve"},
+        {"key": "storage", "label": "Storage Pool", "type": "text", "default": "local-lvm"},
+        {"key": "ssh_host", "label": "SSH Host for Ansible (IP or DNS of VM)", "type": "text"},
+        {"key": "ssh_user", "label": "SSH User in VM", "type": "text", "default": "root"}
+      ]
+    }
+  ]
+}

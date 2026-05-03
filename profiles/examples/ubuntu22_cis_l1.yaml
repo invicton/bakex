@@ -1,0 +1,64 @@
+# Stratum ComplianceProfile — Ubuntu 22.04 CIS Level 1 Server
+#
+# This file is the primary unit of configuration in Stratum.
+# Pass it to `stratum build` or select it in the UI.
+#
+# Schema: ComplianceProfile (stratum.core.blueprint)
+
+stratum_version: "0.3.0"
+kind: ComplianceProfile
+
+metadata:
+  name: ubuntu22-cis-l1
+  version: "1.0.0"
+  description: >
+    CIS Ubuntu Linux 22.04 LTS Benchmark — Level 1 Server profile.
+    Suitable for most production workloads; minimal performance impact.
+  author: "Vamshi Krishna Santhapuri"
+  tags:
+    - ubuntu
+    - cis
+    - level1
+    - server
+
+# Describes what to build / what to scan
+target:
+  os: ubuntu22.04
+  arch: x86_64
+  provider: local             # Change to "aws", "proxmox", etc.
+  base_image: ubuntu/jammy64  # Vagrant box, AMI ID, Proxmox template name, etc.
+
+# Which OpenSCAP benchmark + datastream to apply
+compliance:
+  # Benchmark ID from the SCAP datastream
+  benchmark: xccdf_org.ssgproject.content_benchmark_UBUNTU2204
+
+  # Profile ID — run `oscap info <datastream>` to list available profiles
+  profile: xccdf_org.ssgproject.content_profile_cis_level1_server
+
+  # Path to the SCAP Security Guide datastream on the target system
+  # Install: apt install ssg-debderived  (or download from https://github.com/ComplianceAsCode/content)
+  datastream: /usr/share/xml/scap/ssg/content/ssg-ubuntu2204-ds.xml
+
+  # Abort the build if any rules fail (set to false to produce the image anyway)
+  fail_on_findings: true
+
+  # Only fail the build for rules at or above this severity
+  severity_threshold: medium  # low | medium | high | critical
+
+# Per-rule overrides — use sparingly with a justification
+# You can toggle rules on/off or provide justification for deviations
+controls:
+  # Disable a rule that conflicts with your container runtime
+  xccdf_org.ssgproject.content_rule_grub2_enable_selinux:
+    enabled: false
+    justification: >
+      This system uses AppArmor (Ubuntu default). SELinux rules are not applicable.
+
+  # Simple boolean toggle — false disables the rule
+  xccdf_org.ssgproject.content_rule_package_telnet_removed: true
+
+  # Example: explicitly enable a rule that may be disabled by the profile
+  xccdf_org.ssgproject.content_rule_sshd_disable_root_login:
+    enabled: true
+    justification: Root SSH login is prohibited by our security policy.

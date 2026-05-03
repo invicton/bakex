@@ -1,0 +1,172 @@
+<!-- Scanner Step 2: Benchmark Selection -->
+<div class="space-y-6" id="scan-step2-content">
+
+  <div class="grid grid-cols-2 gap-6">
+
+    <!-- Profile picker -->
+    <div class="space-y-3">
+      <h2 class="text-base font-semibold text-white">Compliance Profile</h2>
+      <p class="text-xs text-slate-500">Select the benchmark to evaluate against.</p>
+
+      {% if profiles %}
+      <div class="space-y-2" id="scan-profile-cards">
+        {% for profile in profiles %}
+        <button type="button" data-profile-name="{{ profile.metadata.name }}"
+                data-profile-benchmark="{{ profile.compliance.benchmark }}"
+                data-profile-datastream="{{ profile.compliance.datastream }}"
+                data-profile-scap-profile="{{ profile.compliance.profile }}"
+                class="scan-profile-card w-full text-left p-3.5 rounded-xl border border-slate-700/60 bg-slate-900/40
+                       hover:border-cyan-500/50 hover:bg-slate-800/50 transition-all cursor-pointer"
+                onclick="selectScanProfile('{{ profile.metadata.name }}', this)">
+          <div class="flex items-start justify-between gap-2">
+            <div class="flex-1 min-w-0">
+              <div class="text-sm font-semibold text-white">{{ profile.metadata.name }}</div>
+              <div class="text-[10px] text-slate-500 mt-0.5 truncate">{{ profile.metadata.description or profile.compliance.benchmark }}</div>
+              <div class="text-[10px] font-mono text-cyan-700 mt-1">{{ profile.compliance.profile.split('_')[-1] if profile.compliance.profile else '' }}</div>
+            </div>
+            <div class="flex flex-col gap-1 flex-shrink-0">
+              <span class="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-400">
+                {{ profile.target.os }}
+              </span>
+              {% if profile.target.provider %}
+              <span class="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-400">
+                {{ profile.target.provider }}
+              </span>
+              {% endif %}
+            </div>
+          </div>
+        </button>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="p-4 rounded-xl border border-slate-700/40 bg-slate-900/30 text-sm text-slate-500">
+        No profiles found in <code class="text-cyan-700">profiles/</code>. Add a YAML blueprint to use the scanner.
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Advanced options -->
+    <div class="space-y-5">
+      <div>
+        <h2 class="text-base font-semibold text-white">Scan Options</h2>
+        <p class="text-xs text-slate-500 mt-0.5">Set pass/fail thresholds for pipeline use.</p>
+      </div>
+
+      <!-- Severity threshold -->
+      <div>
+        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">Minimum Severity to Fail</label>
+        <select id="severity-threshold-select"
+                class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-300 focus:outline-none focus:border-cyan-500">
+          <option value="critical">Critical only</option>
+          <option value="high" selected>High and above</option>
+          <option value="medium">Medium and above</option>
+          <option value="low">Any severity</option>
+        </select>
+        <p class="text-[10px] text-slate-600 mt-1">Build fails if any finding at or above this severity is found.</p>
+      </div>
+
+      <!-- Pass threshold -->
+      <div>
+        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">Minimum Pass Score (%)</label>
+        <div class="flex items-center gap-3">
+          <input type="range" id="pass-threshold-range" min="0" max="100" value="75" step="5"
+                 oninput="document.getElementById('pass-threshold-display').textContent = this.value"
+                 class="flex-1 accent-cyan-500">
+          <span id="pass-threshold-display" class="text-sm font-mono font-bold text-cyan-300 w-10 text-right">75</span>
+          <span class="text-xs text-slate-500">%</span>
+        </div>
+        <p class="text-[10px] text-slate-600 mt-1">Score below this threshold will be reported as a pipeline failure.</p>
+      </div>
+
+      <!-- Info card -->
+      <div class="p-4 rounded-xl bg-slate-950/60 border border-slate-800 text-xs text-slate-500 space-y-2">
+        <div class="font-semibold text-slate-400">Pipeline Integration</div>
+        <div>After scanning, use the <span class="text-cyan-500 font-mono">POST /api/pipeline/scan</span> endpoint with an API key for automated CI/CD gating.</div>
+        <a href="/settings/api-keys" class="text-cyan-600 hover:text-cyan-400 transition-colors">Manage API Keys →</a>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Error -->
+  <div id="step2-scan-error" class="hidden text-xs text-rose-400 bg-rose-950/20 border border-rose-800/30 rounded-lg px-3 py-2">
+    Please select a compliance profile to continue.
+  </div>
+
+  <!-- Nav -->
+  <div class="flex justify-between">
+    <button type="button" onclick="goBackToScanStep1()"
+            class="flex items-center gap-2 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-sm rounded-xl transition-all border border-slate-700">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+      </svg>
+      Back
+    </button>
+    <button type="button" onclick="goToScanStep3()"
+            class="flex items-center gap-2 px-5 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-sm rounded-xl transition-all shadow-[0_0_15px_rgba(6,182,212,0.25)]">
+      Review & Launch
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+      </svg>
+    </button>
+  </div>
+
+</div>
+
+<script>
+(function init() {
+  setScanActiveStep(2);
+  const s2 = ScanWizardState.get(2);
+  if (s2.profileName) selectScanProfile(s2.profileName, document.querySelector(`[data-profile-name="${s2.profileName}"]`));
+  if (s2.severityThreshold) document.getElementById('severity-threshold-select').value = s2.severityThreshold;
+  if (s2.passThreshold != null) {
+    document.getElementById('pass-threshold-range').value = s2.passThreshold;
+    document.getElementById('pass-threshold-display').textContent = s2.passThreshold;
+  }
+})();
+
+function selectScanProfile(name, card) {
+  if (!card) return;
+  document.querySelectorAll('.scan-profile-card').forEach(c => {
+    c.classList.remove('border-cyan-500', 'bg-cyan-950/20');
+    c.classList.add('border-slate-700/60', 'bg-slate-900/40');
+  });
+  card.classList.remove('border-slate-700/60', 'bg-slate-900/40');
+  card.classList.add('border-cyan-500', 'bg-cyan-950/20');
+  ScanWizardState.save(2, {
+    profileName: name,
+    benchmark: card.dataset.profileBenchmark,
+    datastream: card.dataset.profileDatastream,
+    scapProfile: card.dataset.profileScapProfile,
+  });
+}
+
+function saveStep2Opts() {
+  ScanWizardState.save(2, {
+    severityThreshold: document.getElementById('severity-threshold-select')?.value || 'high',
+    passThreshold: parseInt(document.getElementById('pass-threshold-range')?.value || 75),
+  });
+}
+
+function goBackToScanStep1() {
+  saveStep2Opts();
+  fetch('/auditor/scanner/step1').then(r => r.text()).then(html => {
+    loadScanStep(html);
+    setScanActiveStep(1);
+  });
+}
+
+function goToScanStep3() {
+  saveStep2Opts();
+  const s2 = ScanWizardState.get(2);
+  if (!s2.profileName) {
+    document.getElementById('step2-scan-error').classList.remove('hidden');
+    return;
+  }
+  document.getElementById('step2-scan-error').classList.add('hidden');
+  fetch('/auditor/scanner/step3').then(r => r.text()).then(html => {
+    loadScanStep(html);
+    setScanActiveStep(3);
+  });
+}
+</script>

@@ -1,0 +1,224 @@
+<!-- Step 3: User Accounts -->
+<div class="space-y-6" id="step3-content">
+
+  <div class="grid grid-cols-2 gap-6">
+
+    <!-- Root Account -->
+    <div class="bg-slate-900/50 border border-slate-800 rounded-xl p-5 space-y-4">
+      <h2 class="text-sm font-semibold text-white">Root Account</h2>
+
+      <label class="flex items-start gap-3 cursor-pointer group">
+        <div class="relative mt-0.5">
+          <input type="checkbox" name="root_lock" id="root-lock-toggle" checked
+                 class="sr-only peer" onchange="toggleRootLock(this)">
+          <div class="w-10 h-5 bg-slate-700 rounded-full peer peer-checked:bg-cyan-600 transition-colors"></div>
+          <div class="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform peer-checked:translate-x-5"></div>
+        </div>
+        <div>
+          <span class="text-sm text-slate-200 font-medium">Lock root account</span>
+          <span class="block text-[10px] text-slate-500 mt-0.5">
+            CIS 5.4.2 — Recommended. Disables direct root login; use sudo via an admin user.
+          </span>
+        </div>
+      </label>
+
+      <!-- Password section (shown when root is NOT locked) -->
+      <div id="root-password-section" class="hidden space-y-2 p-3 rounded-lg border border-slate-800 bg-slate-950/40">
+        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wide">Root Password Hash (SHA-512)</label>
+        <input type="text" name="root_password_hash"
+               placeholder="$6$rounds=..."
+               class="w-full font-mono text-xs bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-slate-300 focus:outline-none focus:border-cyan-500">
+        <p class="text-[10px] text-slate-500">
+          Generate with:<br>
+          <code class="text-cyan-500 select-all">python3 -c "import crypt; print(crypt.crypt('pass', crypt.mksalt(crypt.METHOD_SHA512)))"</code>
+        </p>
+      </div>
+
+      <div class="p-3 rounded-lg bg-emerald-950/10 border border-emerald-900/30">
+        <p class="text-xs text-emerald-400">
+          <svg class="w-3.5 h-3.5 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+          </svg>
+          Direct root SSH will be disabled regardless of this setting (CIS 5.2.10).
+        </p>
+      </div>
+    </div>
+
+    <!-- Admin User Creation -->
+    <div class="bg-slate-900/50 border border-slate-800 rounded-xl p-5 space-y-4">
+      <div class="flex items-center justify-between">
+        <h2 class="text-sm font-semibold text-white">Admin User Accounts</h2>
+        <button type="button" onclick="addUserRow()"
+                class="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-200 transition-all font-semibold">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+          </svg>
+          Add User
+        </button>
+      </div>
+
+      <div id="users-container" class="space-y-3">
+        <!-- User rows injected by JS -->
+      </div>
+      <p id="no-users-msg" class="text-xs text-slate-500 italic">
+        No admin users configured. Add at least one user with sudo access if root is locked.
+      </p>
+    </div>
+
+  </div>
+
+  <!-- Nav buttons -->
+  <div class="flex justify-between">
+    <button type="button"
+            onclick="goBackToStep2()"
+            class="flex items-center gap-2 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-sm rounded-xl transition-all border border-slate-700">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+      </svg>
+      Back
+    </button>
+    <button type="button"
+            onclick="goToStep4()"
+            class="flex items-center gap-2 px-5 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-sm rounded-xl transition-all shadow-[0_0_15px_rgba(6,182,212,0.25)]">
+      Next: Hardening Rules
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+      </svg>
+    </button>
+  </div>
+
+</div>
+
+<script>
+var userCount = 0;
+
+(function init() {
+  setActiveStep(3);
+  /* Restore prior state */
+  const s3 = WizardState.get(3);
+  if (s3.rootLock === false) {
+    document.getElementById('root-lock-toggle').checked = false;
+    toggleRootLock({ checked: false });
+  }
+  if (s3.users && s3.users.length) {
+    s3.users.forEach(u => addUserRow(u));
+  }
+})();
+
+function toggleRootLock(cb) {
+  document.getElementById('root-password-section').classList.toggle('hidden', cb.checked);
+}
+
+function addUserRow(data = null) {
+  const idx = userCount++;
+  const container = document.getElementById('users-container');
+  const name   = data?.name   || '';
+  const groups = data?.groups || [];
+  const shell  = data?.shell  || '/bin/bash';
+  const sshKey = data?.sshKey || '';
+
+  const groupDefs = ['sudo', 'wheel', 'adm', 'docker'];
+  const groupChecks = groupDefs.map(g => `
+    <label class="flex items-center gap-1.5 cursor-pointer text-xs text-slate-400 hover:text-slate-200">
+      <input type="checkbox" name="user_${idx}_group_${g}" ${groups.includes(g)?'checked':''}
+             class="w-3.5 h-3.5 rounded border-slate-700 bg-slate-900 text-cyan-500 focus:ring-0"> ${g}
+    </label>`).join('');
+
+  const html = `
+  <div class="border border-slate-700/60 rounded-lg p-3.5 space-y-3 bg-slate-900/30 hover:border-slate-600 transition-all" data-user-row>
+    <div class="flex items-center gap-2">
+      <div class="flex-1 grid grid-cols-2 gap-2">
+        <div>
+          <label class="block text-[10px] uppercase font-bold text-slate-500 mb-1 tracking-wider">Username</label>
+          <input type="text" name="user_${idx}_name" value="${name}" placeholder="admin"
+                 class="w-full text-xs font-mono bg-slate-950 border border-slate-800 rounded px-2.5 py-1.5 text-slate-300 focus:border-cyan-500 focus:outline-none">
+        </div>
+        <div>
+          <label class="block text-[10px] uppercase font-bold text-slate-500 mb-1 tracking-wider">Shell</label>
+          <select name="user_${idx}_shell" class="w-full text-xs font-mono bg-slate-950 border border-slate-800 rounded px-2 py-1.5 text-slate-300 focus:border-cyan-500 focus:outline-none">
+            <option value="/bin/bash" ${shell==='/bin/bash'?'selected':''} >/bin/bash</option>
+            <option value="/bin/sh" ${shell==='/bin/sh'?'selected':''} >/bin/sh</option>
+            <option value="/usr/sbin/nologin" ${shell==='/usr/sbin/nologin'?'selected':''} >/usr/sbin/nologin</option>
+            <option value="/bin/zsh" ${shell==='/bin/zsh'?'selected':''} >/bin/zsh</option>
+          </select>
+        </div>
+      </div>
+      <button type="button" onclick="this.closest('[data-user-row]').remove(); updateUsersMsg();"
+              class="mt-4 flex-shrink-0 text-slate-500 hover:text-rose-400 p-1.5 rounded bg-slate-950 border border-slate-800 hover:border-rose-900/50 hover:bg-rose-950/30 transition-colors">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+        </svg>
+      </button>
+    </div>
+
+    <div>
+      <label class="block text-[10px] uppercase font-bold text-slate-500 mb-1 tracking-wider">Groups</label>
+      <div class="flex gap-4 flex-wrap">${groupChecks}</div>
+      <!-- flattened group list submitted as hidden field rebuilt on save -->
+    </div>
+
+    <div>
+      <label class="block text-[10px] uppercase font-bold text-slate-500 mb-1 tracking-wider">SSH Public Key <span class="text-slate-600 normal-case font-normal">(optional)</span></label>
+      <textarea name="user_${idx}_ssh_key" rows="2" placeholder="ssh-rsa AAAA..."
+                class="w-full text-xs font-mono bg-slate-950 border border-slate-800 rounded px-2.5 py-1.5 text-slate-300 focus:border-cyan-500 focus:outline-none resize-none">${sshKey}</textarea>
+    </div>
+  </div>`;
+
+  container.insertAdjacentHTML('beforeend', html);
+  updateUsersMsg();
+}
+
+function updateUsersMsg() {
+  const has = document.querySelector('[data-user-row]') !== null;
+  document.getElementById('no-users-msg').classList.toggle('hidden', has);
+}
+
+function saveStep3() {
+  const rootLock = document.getElementById('root-lock-toggle')?.checked !== false;
+  const users = [];
+  document.querySelectorAll('[data-user-row]').forEach((row, i) => {
+    const idx = /* we stored idx in name attr */ row.querySelector('[name^="user_"]')?.name?.split('_')[1];
+    if (!idx) return;
+    const name = row.querySelector(`[name="user_${idx}_name"]`)?.value?.trim();
+    if (!name) return;
+    const shell = row.querySelector(`[name="user_${idx}_shell"]`)?.value || '/bin/bash';
+    const sshKey = row.querySelector(`[name="user_${idx}_ssh_key"]`)?.value?.trim() || '';
+    const groups = ['sudo','wheel','adm','docker'].filter(g =>
+      row.querySelector(`[name="user_${idx}_group_${g}"]`)?.checked);
+    /* Write flattened groups hidden input */
+    let ghidden = row.querySelector(`[name="user_${idx}_groups"]`);
+    if (!ghidden) {
+      ghidden = document.createElement('input');
+      ghidden.type = 'hidden';
+      ghidden.name = `user_${idx}_groups`;
+      row.appendChild(ghidden);
+    }
+    ghidden.value = groups.join(',');
+    users.push({ name, shell, sshKey, groups });
+  });
+  WizardState.save(3, { rootLock, users });
+}
+
+function goBackToStep2() {
+  saveStep3();
+  const s1 = WizardState.get(1);
+  const s2 = WizardState.get(2);
+  const params = new URLSearchParams({ os: s1.os || '', provider: s1.provider || '', min_root_gb: s2.rootGb || 20 });
+  fetch(`/builder/wizard/step2?${params}`).then(r => r.text()).then(html => {
+    loadStep(html);
+    setActiveStep(2);
+  });
+}
+
+function goToStep4() {
+  saveStep3();
+  const s1 = WizardState.get(1);
+  const tiers = (s1.supportedTiers || ['cis-l1']).join(',');
+  fetch(`/builder/wizard/step4?os=${encodeURIComponent(s1.os || '')}&supported_tiers=${encodeURIComponent(tiers)}`)
+    .then(r => r.text())
+    .then(html => {
+      loadStep(html);
+      setActiveStep(4);
+    });
+}
+</script>

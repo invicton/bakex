@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block title %}Image Scanner — {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto space-y-8">
+
+  <div>
+    <h1 class="text-2xl font-bold text-white">Image Scanner</h1>
+    <p class="text-slate-400 mt-1 text-sm">
+      Provision a temporary VM from an existing cloud image, run an OpenSCAP compliance scan,
+      and receive a graded report — without modifying your image.
+    </p>
+  </div>
+
+  <!-- Info banner -->
+  <div class="bg-brand-950/40 border border-brand-800/40 rounded-lg px-4 py-3 text-sm text-brand-300">
+    <span class="font-semibold text-brand-200">How it works:</span>
+    A temporary instance is launched from your image, scanned against the selected compliance
+    profile, then immediately terminated. Your original image is never modified.
+  </div>
+
+  <form
+    hx-post="/api/auditor/scan-image"
+    hx-target="#scan-result"
+    hx-swap="innerHTML"
+    hx-indicator="#scan-spinner"
+    class="bg-slate-900 border border-slate-800 rounded-xl p-6 space-y-6"
+  >
+    <!-- Row 1: Provider + Region -->
+    <div class="grid grid-cols-2 gap-4">
+      <div>
+        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1.5">
+          Cloud Provider
+        </label>
+        <select name="provider" required
+                class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500">
+          <option value="">-- select provider --</option>
+          {% for p in providers %}
+          <option value="{{ p }}">{{ p | title }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1.5">
+          Region
+        </label>
+        <input type="text" name="region" placeholder="us-east-1" required
+               class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-brand-500" />
+      </div>
+    </div>
+
+    <!-- Row 2: Image ID + Instance Type -->
+    <div class="grid grid-cols-2 gap-4">
+      <div>
+        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1.5">
+          Image ID
+        </label>
+        <input type="text" name="image_id" placeholder="ami-0abcdef1234567890" required
+               class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-brand-500" />
+        <p class="mt-1 text-xs text-slate-500">AMI ID, GCP image name, snapshot ID, VMID, etc.</p>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1.5">
+          Instance Type
+        </label>
+        <input type="text" name="instance_type" value="t3.medium"
+               class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-brand-500" />
+      </div>
+    </div>
+
+    <!-- Row 3: OS + Profile -->
+    <div class="grid grid-cols-2 gap-4">
+      <div>
+        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1.5">
+          OS
+        </label>
+        <input type="text" name="os" placeholder="ubuntu22" required
+               class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-brand-500" />
+        <p class="mt-1 text-xs text-slate-500">e.g. ubuntu22, rocky9, debian12, rhel9</p>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1.5">
+          Compliance Profile
+        </label>
+        <select name="compliance_profile" required
+                class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500">
+          <option value="">-- select profile --</option>
+          {% for p in profiles %}
+          <option value="{{ p.metadata.name }}">{{ p.metadata.name }}</option>
+          {% else %}
+          <option disabled>No profiles found</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <button type="submit"
+              class="flex-1 bg-brand-600 hover:bg-brand-700 text-white font-semibold py-2.5 rounded-lg transition text-sm">
+        Start Image Scan
+      </button>
+      <span id="scan-spinner" class="htmx-indicator text-slate-400 text-sm">Launching scan…</span>
+    </div>
+  </form>
+
+  <div id="scan-result"></div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+
+{% block title %}Image Builder — {{ app_name }}{% endblock %}
+
+{% block breadcrumbs %}
+<div class="flex items-center gap-2 text-sm">
+  <span class="text-slate-300 font-semibold">Image Builder</span>
+  <span class="text-slate-600">/</span>
+  <span id="breadcrumb-step" class="text-slate-500">OS &amp; Cloud Provider</span>
+</div>
+{% endblock %}
+
+{% block head %}
+<script>
+  /* ── Wizard state (persisted to localStorage) ── */
+  const WizardState = {
+    _key: 'stratum_wizard_state',
+    save(step, data) {
+      const s = JSON.parse(localStorage.getItem(this._key) || '{}');
+      s[`step${step}`] = data;
+      s.currentStep = step;
+      localStorage.setItem(this._key, JSON.stringify(s));
+    },
+    get(step) {
+      const s = JSON.parse(localStorage.getItem(this._key) || '{}');
+      return s[`step${step}`] || {};
+    },
+    getAll() { return JSON.parse(localStorage.getItem(this._key) || '{}'); },
+    clear() { localStorage.removeItem(this._key); }
+  };
+
+  /* ── Catalog data injected by server ── */
+  window.OS_CATALOG    = {{ os_catalog | tojson }};
+  window.INSTANCE_TYPES = {{ instance_types | tojson }};
+  window.PROVIDER_CATALOG = {{ provider_catalog | tojson }};
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-6">
+
+  <!-- Page header -->
+  <div>
+    <h1 class="text-2xl font-bold text-white">Build a Hardened Image</h1>
+    <p class="text-slate-400 mt-1 text-sm">Follow the steps below to configure and launch your hardened golden image.</p>
+  </div>
+
+  <!-- ── Progress bar ── -->
+  <div id="wizard-progress" class="flex items-center">
+    {% set steps = [
+      (1, 'OS & Cloud'),
+      (2, 'Storage'),
+      (3, 'Users'),
+      (4, 'Hardening'),
+      (5, 'Review')
+    ] %}
+    {% for num, label in steps %}
+    <div class="flex items-center {% if not loop.last %}flex-1{% endif %}">
+      <div class="flex flex-col items-center gap-1">
+        <div id="step-circle-{{ num }}"
+             class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-all
+                    {% if num == 1 %}border-cyan-500 bg-cyan-600 text-white{% else %}border-slate-700 bg-slate-900 text-slate-500{% endif %}">
+          <span id="step-num-{{ num }}">{{ num }}</span>
+        </div>
+        <span id="step-label-{{ num }}"
+              class="text-[10px] font-medium whitespace-nowrap
+                     {% if num == 1 %}text-cyan-400{% else %}text-slate-600{% endif %}">
+          {{ label }}
+        </span>
+      </div>
+      {% if not loop.last %}
+      <div id="step-line-{{ num }}" class="flex-1 h-0.5 mx-2 mt-[-14px] bg-slate-800 transition-all"></div>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- ── Step content ── -->
+  <div id="wizard-step-container">
+    {% include "builder/steps/step1_os.html" %}
+  </div>
+
+</div>
+
+<script>
+/* ── Progress bar update ── */
+function setActiveStep(n) {
+  for (let i = 1; i <= 5; i++) {
+    const circle = document.getElementById(`step-circle-${i}`);
+    const label  = document.getElementById(`step-label-${i}`);
+    const line   = document.getElementById(`step-line-${i}`);
+    if (!circle) continue;
+    if (i < n) {
+      circle.className = 'w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-all border-cyan-600 bg-cyan-700 text-white';
+      circle.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>';
+      label.className  = 'text-[10px] font-medium whitespace-nowrap text-cyan-600';
+    } else if (i === n) {
+      circle.className = 'w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-all border-cyan-500 bg-cyan-600 text-white';
+      circle.innerHTML = String(i);
+      label.className  = 'text-[10px] font-medium whitespace-nowrap text-cyan-400';
+    } else {
+      circle.className = 'w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-all border-slate-700 bg-slate-900 text-slate-500';
+      circle.innerHTML = String(i);
+      label.className  = 'text-[10px] font-medium whitespace-nowrap text-slate-600';
+    }
+    if (line) {
+      line.className = `flex-1 h-0.5 mx-2 mt-[-14px] transition-all ${i < n ? 'bg-cyan-700' : 'bg-slate-800'}`;
+    }
+  }
+  const stepNames = ['OS & Cloud Provider', 'Instance & Storage', 'User Accounts', 'Hardening Rules', 'Review & Launch'];
+  const bc = document.getElementById('breadcrumb-step');
+  if (bc) bc.textContent = stepNames[n - 1] || '';
+}
+
+/* ── loadHTML: set innerHTML AND re-execute embedded <script> tags ──
+     Plain innerHTML assignment silently drops script execution.        */
+function loadHTML(container, html) {
+  container.innerHTML = html;
+  container.querySelectorAll('script').forEach(old => {
+    const fresh = document.createElement('script');
+    [...old.attributes].forEach(a => fresh.setAttribute(a.name, a.value));
+    fresh.textContent = old.textContent;
+    old.parentNode.replaceChild(fresh, old);
+  });
+}
+
+/* ── Convenience wrapper targeting the wizard container ── */
+function loadStep(html) {
+  loadHTML(document.getElementById('wizard-step-container'), html);
+}
+
+/* ── On page load: restore last step from localStorage ── */
+document.addEventListener('DOMContentLoaded', () => {
+  const all = WizardState.getAll();
+  const last = all.currentStep || 1;
+  if (last > 1) {
+    /* Re-show the correct step via fetch */
+    const stepUrls = { 2: '/builder/step/2', 3: '/builder/step/3', 4: '/builder/step/4', 5: '/builder/step/5' };
+    /* For simplicity, start at step 1 on page reload — wizard state is pre-filled by JS */
+    /* A full restore would need server-side rendering with state; keep it simple here */
+  }
+  setActiveStep(1);
+});
+</script>
+{% endblock %}

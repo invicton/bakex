@@ -1,0 +1,85 @@
+# Stratum HardeningBlueprint — Generic Template
+#
+# Use this generic template as a starting point to create custom hardening profiles.
+# Replace the placeholder values with your target OS, architecture, and cloud provider details.
+#
+# Usage:
+#   stratum build <your-blueprint-name>
+
+stratum_version: "0.3.0"
+kind: HardeningBlueprint
+
+metadata:
+  name: generic-custom-blueprint
+  version: "1.0.0"
+  description: >
+    A generic starter template for creating custom hardening profiles.
+    Modify the target, system, and compliance sections to fit your needs.
+  author: "Your Name / Organization"
+  tags:
+    - custom
+    - template
+
+# --------------------------------------------------------------------------
+# Target — which cloud + which base image to harden
+# --------------------------------------------------------------------------
+target:
+  os: generic-linux            # e.g., ubuntu22.04, rocky9, debian12
+  arch: x86_64
+  provider: local              # e.g., aws, gcp, azure, digitalocean, proxmox
+  base_image: ami-placeholder  # Use your provider's specific image ID/slug
+
+# --------------------------------------------------------------------------
+# System — OS-level settings applied before hardening
+# --------------------------------------------------------------------------
+system:
+  hostname: hardened-node
+  timezone: UTC
+  locale: en_US.UTF-8
+  selinux_mode: enforcing      # Or 'null' if using AppArmor (e.g., Ubuntu)
+
+# --------------------------------------------------------------------------
+# Filesystem — Define mandatory separate mounts and mount options
+# --------------------------------------------------------------------------
+filesystem:
+  - device: tmpfs
+    mountpoint: /tmp
+    fstype: tmpfs
+    options: [rw, nosuid, nodev, noexec, relatime]
+    size: 2G
+
+# --------------------------------------------------------------------------
+# Users — root account and service accounts for the golden image
+# --------------------------------------------------------------------------
+users:
+  root:
+    lock: true                    # Recommended: Lock the root account
+
+  accounts:
+    - name: stratum-admin
+      comment: "Stratum-managed admin account"
+      groups:
+        - sudo                    # Or 'wheel' for RHEL-based systems
+      shell: /bin/bash
+      ssh_authorized_keys:
+        - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAA... your_key_here"
+
+# --------------------------------------------------------------------------
+# Compliance — which OpenSCAP benchmark + profile to enforce
+# --------------------------------------------------------------------------
+compliance:
+  # Example: CIS Level 1 Server
+  benchmark: xccdf_org.ssgproject.content_benchmark_YOUR_OS
+  profile: xccdf_org.ssgproject.content_profile_cis_level1_server
+  datastream: /usr/share/xml/scap/ssg/content/ssg-your-os-ds.xml
+  fail_on_findings: true
+  severity_threshold: medium
+
+# --------------------------------------------------------------------------
+# Controls — per-rule overrides with justifications
+# --------------------------------------------------------------------------
+controls: {}
+  # Example of an override:
+  # xccdf_org.ssgproject.content_rule_sshd_disable_root_login:
+  #   enabled: true
+  #   justification: Mandatory requirement to block direct root SSH access.

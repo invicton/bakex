@@ -1,0 +1,314 @@
+{% extends "base.html" %}
+
+{% block title %}Profile Hub — {{ app_name }}{% endblock %}
+
+{% block breadcrumbs %}
+<div class="flex items-center text-sm">
+  <span class="text-slate-300 font-semibold">Profile Hub</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-8">
+  <div class="flex items-end justify-between">
+    <div>
+      <h1 class="text-3xl font-bold text-white tracking-tight">Profile Hub</h1>
+      <p class="text-slate-400 mt-2 text-sm">Manage your compliance profiles — view scores, edit metadata, or trigger builds.</p>
+    </div>
+    <div class="flex gap-3">
+      <button
+        hx-post="/api/registry/sync"
+        hx-target="#sync-status"
+        hx-swap="innerHTML"
+        class="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700/50 text-sm text-slate-300 font-medium rounded-lg transition-all shadow-sm">
+        ↻ Sync Community
+      </button>
+      <button
+        onclick="document.getElementById('upload-modal').classList.remove('hidden')"
+        class="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700/50 text-sm text-slate-300 font-medium rounded-lg transition-all shadow-sm">
+        ↑ Upload Blueprint
+      </button>
+      <a href="/builder" class="px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-lg text-sm font-semibold transition-all shadow-[0_0_15px_rgba(6,182,212,0.3)]">
+        + New Blueprint
+      </a>
+    </div>
+  </div>
+
+  <span id="sync-status" class="text-sm font-medium text-emerald-400"></span>
+
+  <!-- Local Profiles -->
+  <section class="space-y-4">
+    <h2 class="text-xs font-semibold uppercase tracking-widest text-slate-500 px-1">Local Profiles</h2>
+    
+    {% if profiles %}
+      <div class="grid grid-cols-1 gap-4">
+        {% for profile in profiles %}
+        {% set badge = profile.metadata.source_badge | default('Local') %}
+        {% set badge_styles = {
+          'Official':  'bg-brand-900/30 border-brand-800/50 text-brand-400',
+          'Community': 'bg-blue-900/30 border-blue-800/50 text-blue-400',
+          'Private':   'bg-amber-900/30 border-amber-800/50 text-amber-400',
+          'Local':     'bg-slate-800 border-slate-700 text-slate-400',
+        } %}
+        {% set tier = profile.hardening.profile_tier | default('cis-l1') %}
+        {% set tier_styles = {
+          'cis-l1': 'bg-emerald-900/20 border-emerald-800/40 text-emerald-400',
+          'cis-l2': 'bg-teal-900/20 border-teal-800/40 text-teal-400',
+          'stig':   'bg-purple-900/20 border-purple-800/40 text-purple-400',
+          'custom': 'bg-slate-800 border-slate-700 text-slate-300',
+        } %}
+        <div class="bg-slate-900/40 backdrop-blur-md border border-slate-800/60 rounded-xl p-5 flex items-center justify-between group hover:border-brand-500/50 hover:bg-slate-800/40 transition-all">
+          <div class="space-y-2 flex-1 min-w-0">
+            <div class="flex items-center gap-2 flex-wrap">
+              <h3 class="text-lg font-bold text-slate-100 group-hover:text-brand-400 transition-colors">{{ profile.metadata.name }}</h3>
+              <span class="px-2 py-0.5 border rounded text-[10px] font-bold uppercase tracking-wider {{ badge_styles.get(badge, badge_styles['Local']) }}">
+                {{ badge }}
+              </span>
+              <span class="px-2 py-0.5 border rounded text-[10px] font-bold uppercase tracking-wider {{ tier_styles.get(tier, tier_styles['custom']) }}">
+                {{ tier | upper }}
+              </span>
+            </div>
+            {% if profile.metadata.description %}
+            <p class="text-xs text-slate-400 leading-relaxed max-w-xl">{{ profile.metadata.description }}</p>
+            {% endif %}
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="text-[10px] font-mono text-slate-500">v{{ profile.metadata.version }} • {{ profile.compliance.benchmark }}</span>
+              <span class="px-2 py-0.5 bg-slate-800 border border-slate-700 rounded text-[10px] font-bold text-slate-300 tracking-wider">
+                {{ profile.target.os }}
+              </span>
+              <span class="px-2 py-0.5 bg-brand-900/30 border border-brand-800/50 rounded text-[10px] font-bold text-brand-400 uppercase tracking-wider">
+                {{ profile.target.provider }}
+              </span>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2 ml-4 shrink-0">
+            <a
+              href="/api/blueprints/{{ profile.metadata.name }}/download"
+              download="{{ profile.metadata.name }}.yaml"
+              class="opacity-0 group-hover:opacity-100 transition-opacity px-3 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700/50 text-slate-300 text-xs font-medium rounded-lg shadow-sm"
+              title="Download YAML">
+              ↓ Download
+            </a>
+            <button
+              onclick="triggerBuild('{{ profile.metadata.name }}')"
+              class="opacity-0 group-hover:opacity-100 transition-opacity px-3 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700/50 text-slate-300 text-xs font-medium rounded-lg shadow-sm"
+              title="Trigger pipeline build">
+              ▶ Build
+            </button>
+            <a href="/blueprints/studio/{{ profile.metadata.name }}" class="opacity-0 group-hover:opacity-100 transition-opacity px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold rounded-lg shadow-sm">
+              Open Studio →
+            </a>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    {% else %}
+    <div class="p-10 text-center border border-dashed border-slate-700/50 rounded-xl bg-slate-900/20">
+      <p class="text-slate-500 text-sm">No local profiles found.</p>
+      <p class="text-xs text-slate-600 mt-1">Add .yaml files to the profiles/ directory.</p>
+    </div>
+    {% endif %}
+  </section>
+
+  <!-- Community Profiles -->
+  {% if community_profiles %}
+  <section class="space-y-4 pt-4">
+    <h2 class="text-xs font-semibold uppercase tracking-widest text-slate-500 px-1">Community Registry</h2>
+    <div class="grid grid-cols-1 gap-4 opacity-75 hover:opacity-100 transition-opacity">
+      {% for profile in community_profiles %}
+      {% set badge = profile.metadata.source_badge | default('Community') %}
+      {% set badge_styles = {
+        'Official':  'bg-brand-900/30 border-brand-800/50 text-brand-400',
+        'Community': 'bg-blue-900/30 border-blue-800/50 text-blue-400',
+        'Private':   'bg-amber-900/30 border-amber-800/50 text-amber-400',
+        'Local':     'bg-slate-800 border-slate-700 text-slate-400',
+      } %}
+      {% set tier = profile.hardening.profile_tier | default('cis-l1') %}
+      {% set tier_styles = {
+        'cis-l1': 'bg-emerald-900/20 border-emerald-800/40 text-emerald-400',
+        'cis-l2': 'bg-teal-900/20 border-teal-800/40 text-teal-400',
+        'stig':   'bg-purple-900/20 border-purple-800/40 text-purple-400',
+        'custom': 'bg-slate-800 border-slate-700 text-slate-300',
+      } %}
+      <div class="bg-slate-900/20 backdrop-blur-md border border-slate-800/30 rounded-xl p-5 flex items-center justify-between group hover:border-slate-700/50 hover:bg-slate-800/40 transition-all">
+        <div class="space-y-2 flex-1 min-w-0">
+          <div class="flex items-center gap-2 flex-wrap">
+            <h3 class="text-lg font-bold text-slate-300 group-hover:text-white transition-colors">{{ profile.metadata.name }}</h3>
+            <span class="px-2 py-0.5 border rounded text-[10px] font-bold uppercase tracking-wider {{ badge_styles.get(badge, badge_styles['Community']) }}">
+              {{ badge }}
+            </span>
+            <span class="px-2 py-0.5 border rounded text-[10px] font-bold uppercase tracking-wider {{ tier_styles.get(tier, tier_styles['custom']) }}">
+              {{ tier | upper }}
+            </span>
+          </div>
+          {% if profile.metadata.description %}
+          <p class="text-xs text-slate-500 leading-relaxed max-w-xl">{{ profile.metadata.description }}</p>
+          {% endif %}
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="text-[10px] font-mono text-slate-600">v{{ profile.metadata.version }}</span>
+            <span class="px-2 py-0.5 bg-slate-800/50 border border-slate-700/50 rounded text-[10px] font-bold text-slate-400 tracking-wider">
+              {{ profile.target.os }}
+            </span>
+            <span class="px-2 py-0.5 bg-slate-800/50 border border-slate-700/50 rounded text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+              {{ profile.target.provider }}
+            </span>
+          </div>
+        </div>
+
+        <div class="ml-4 shrink-0">
+          <a href="/blueprints/studio/{{ profile.metadata.name }}" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700/50 text-white text-xs font-semibold rounded-lg shadow-sm transition-colors">
+            View Blueprint
+          </a>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+</div>
+
+<!-- Upload Blueprint Modal -->
+<div id="upload-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+  <div class="bg-slate-900 border border-slate-700/60 rounded-2xl shadow-2xl w-full max-w-lg mx-4">
+    <div class="flex items-center justify-between px-6 py-4 border-b border-slate-800">
+      <h2 class="text-base font-bold text-white">Upload Blueprint</h2>
+      <button onclick="document.getElementById('upload-modal').classList.add('hidden')" class="text-slate-500 hover:text-white transition-colors">✕</button>
+    </div>
+    <div class="px-6 py-5 space-y-4">
+      <p class="text-sm text-slate-400">Upload a <span class="font-mono text-brand-400">ComplianceProfile</span> YAML file. It will be validated before saving.</p>
+      <div id="upload-drop-zone"
+           class="border-2 border-dashed border-slate-700 hover:border-brand-500/50 rounded-xl p-8 text-center cursor-pointer transition-colors"
+           onclick="document.getElementById('upload-file-input').click()"
+           ondragover="event.preventDefault(); this.classList.add('border-brand-500/70')"
+           ondragleave="this.classList.remove('border-brand-500/70')"
+           ondrop="handleUploadDrop(event)">
+        <p class="text-slate-400 text-sm">Drop YAML here or <span class="text-brand-400 font-medium">click to browse</span></p>
+        <p id="upload-filename" class="text-xs text-slate-600 mt-1"></p>
+      </div>
+      <input type="file" id="upload-file-input" accept=".yaml,.yml" class="hidden" onchange="handleUploadSelect(event)"/>
+      <div id="upload-error" class="hidden text-sm text-red-400 bg-red-900/20 border border-red-800/50 rounded-lg px-4 py-2"></div>
+      <div id="upload-success" class="hidden text-sm text-emerald-400 bg-emerald-900/20 border border-emerald-800/50 rounded-lg px-4 py-2"></div>
+    </div>
+    <div class="flex justify-end gap-3 px-6 py-4 border-t border-slate-800">
+      <button onclick="document.getElementById('upload-modal').classList.add('hidden')" class="px-4 py-2 text-sm text-slate-400 hover:text-white transition-colors">Cancel</button>
+      <button id="upload-submit-btn" onclick="submitUpload()" class="px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white text-sm font-semibold rounded-lg transition-all shadow-[0_0_10px_rgba(6,182,212,0.2)]">Upload</button>
+    </div>
+  </div>
+</div>
+
+<!-- Build Trigger Overlay -->
+<div id="build-overlay" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+  <div class="bg-slate-900 border border-slate-700/60 rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6 space-y-4">
+    <h2 class="text-base font-bold text-white">Trigger Build</h2>
+    <p class="text-sm text-slate-400">Profile: <span id="build-profile-label" class="font-mono text-brand-400"></span></p>
+    <p class="text-xs text-slate-500">This will POST to <span class="font-mono">/api/pipeline/build</span>. Requires an API key set in your session.</p>
+    <div id="build-result" class="hidden text-sm rounded-lg px-4 py-2"></div>
+    <div class="flex justify-end gap-3">
+      <button onclick="document.getElementById('build-overlay').classList.add('hidden')" class="px-4 py-2 text-sm text-slate-400 hover:text-white transition-colors">Cancel</button>
+      <button id="build-confirm-btn" class="px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white text-sm font-semibold rounded-lg transition-all">Start Build</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let _uploadFile = null;
+let _buildProfile = null;
+
+function handleUploadSelect(event) {
+  _uploadFile = event.target.files[0];
+  if (_uploadFile) {
+    document.getElementById('upload-filename').textContent = _uploadFile.name;
+  }
+}
+
+function handleUploadDrop(event) {
+  event.preventDefault();
+  event.currentTarget.classList.remove('border-brand-500/70');
+  _uploadFile = event.dataTransfer.files[0];
+  if (_uploadFile) {
+    document.getElementById('upload-filename').textContent = _uploadFile.name;
+  }
+}
+
+async function submitUpload() {
+  const errEl = document.getElementById('upload-error');
+  const okEl = document.getElementById('upload-success');
+  errEl.classList.add('hidden');
+  okEl.classList.add('hidden');
+
+  if (!_uploadFile) {
+    errEl.textContent = 'Select a YAML file first.';
+    errEl.classList.remove('hidden');
+    return;
+  }
+  const btn = document.getElementById('upload-submit-btn');
+  btn.disabled = true;
+  btn.textContent = 'Uploading…';
+
+  const form = new FormData();
+  form.append('file', _uploadFile);
+  try {
+    const resp = await fetch('/api/blueprints/upload', { method: 'POST', body: form });
+    const body = await resp.json();
+    if (resp.ok) {
+      okEl.textContent = `Uploaded "${body.name}" successfully. Refreshing…`;
+      okEl.classList.remove('hidden');
+      setTimeout(() => window.location.reload(), 1200);
+    } else {
+      errEl.textContent = body.detail || JSON.stringify(body);
+      errEl.classList.remove('hidden');
+    }
+  } catch (e) {
+    errEl.textContent = 'Network error: ' + e.message;
+    errEl.classList.remove('hidden');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Upload';
+  }
+}
+
+function triggerBuild(profileName) {
+  _buildProfile = profileName;
+  document.getElementById('build-profile-label').textContent = profileName;
+  document.getElementById('build-result').classList.add('hidden');
+  document.getElementById('build-overlay').classList.remove('hidden');
+  document.getElementById('build-confirm-btn').onclick = () => confirmBuild(profileName);
+}
+
+async function confirmBuild(profileName) {
+  const resultEl = document.getElementById('build-result');
+  const btn = document.getElementById('build-confirm-btn');
+  btn.disabled = true;
+  btn.textContent = 'Starting…';
+  resultEl.classList.add('hidden');
+  // API key from meta tag if present, else prompt
+  const apiKey = document.querySelector('meta[name="stratum-api-key"]')?.content || '';
+  const headers = { 'Content-Type': 'application/json' };
+  if (apiKey) headers['X-Api-Key'] = apiKey;
+  try {
+    const resp = await fetch('/api/pipeline/build', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ profile_name: profileName, wait: false }),
+    });
+    const body = await resp.json();
+    if (resp.ok) {
+      resultEl.textContent = `Build started — job ${body.job_id}`;
+      resultEl.className = 'text-sm rounded-lg px-4 py-2 text-emerald-400 bg-emerald-900/20 border border-emerald-800/50';
+    } else {
+      resultEl.textContent = body.detail || JSON.stringify(body);
+      resultEl.className = 'text-sm rounded-lg px-4 py-2 text-red-400 bg-red-900/20 border border-red-800/50';
+    }
+    resultEl.classList.remove('hidden');
+  } catch (e) {
+    resultEl.textContent = 'Network error: ' + e.message;
+    resultEl.className = 'text-sm rounded-lg px-4 py-2 text-red-400 bg-red-900/20 border border-red-800/50';
+    resultEl.classList.remove('hidden');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Start Build';
+  }
+}
+</script>
+{% endblock %}

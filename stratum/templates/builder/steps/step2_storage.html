@@ -1,0 +1,512 @@
+<!-- Step 2: Instance & Storage Configuration -->
+<div class="space-y-5" id="step2-content">
+
+  <!-- Top row: Instance config + Disk budget -->
+  <div class="grid grid-cols-2 gap-5">
+
+    <!-- Instance Configuration -->
+    <div class="bg-slate-900/50 border border-slate-800 rounded-xl p-5 space-y-4">
+      <h2 class="text-sm font-semibold text-white">Instance Configuration</h2>
+
+      <div>
+        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1.5">Instance Type</label>
+        {% if instance_types %}
+        <select id="instance-type-select" name="wizard_instance_type"
+                class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-300 font-mono focus:outline-none focus:border-cyan-500 transition-colors">
+          {% for t in instance_types %}
+          <option value="{{ t.value }}">{{ t.label }}</option>
+          {% endfor %}
+        </select>
+        {% else %}
+        <input type="text" id="instance-type-select" name="wizard_instance_type"
+               placeholder="e.g. t3.medium / e2-medium / Standard_B2s"
+               class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-300 font-mono focus:outline-none focus:border-cyan-500 transition-colors">
+        {% endif %}
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1.5">
+          Base Image ID
+          <span class="text-slate-600 font-normal normal-case ml-1">leave blank to auto-resolve latest for your region</span>
+        </label>
+        <div class="flex gap-2 items-center">
+          <input type="text" id="base-image-input" name="wizard_base_image"
+                 placeholder="auto — resolves latest AMI at build time"
+                 class="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-300 font-mono focus:outline-none focus:border-cyan-500 transition-colors">
+          <button type="button" id="resolve-ami-btn" onclick="resolveAMI()"
+                  class="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-lg bg-slate-700 hover:bg-cyan-700 border border-slate-600 hover:border-cyan-500 text-slate-300 hover:text-white transition-all">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+            </svg>
+            Resolve
+          </button>
+        </div>
+        <p id="resolve-ami-status" class="hidden text-[10px] mt-1"></p>
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1.5">Root Volume Size</label>
+        <div class="flex items-center gap-2">
+          <input type="number" id="root-size-input" name="root_volume_size_gb"
+                 value="{{ min_root_gb }}" min="{{ min_root_gb }}" step="1"
+                 class="w-24 bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-300 font-mono focus:outline-none focus:border-cyan-500"
+                 oninput="updateBudget()">
+          <span class="text-sm text-slate-400">GB</span>
+          <span class="text-[10px] text-slate-500">(min {{ min_root_gb }} GB)</span>
+        </div>
+      </div>
+
+      <!-- LVM toggle -->
+      <div class="flex items-center gap-3 p-3 rounded-lg border border-slate-800 bg-slate-950/40">
+        <label class="flex items-center gap-2.5 cursor-pointer flex-1">
+          <div class="relative flex-shrink-0">
+            <input type="checkbox" name="use_lvm" id="lvm-toggle" onchange="toggleLVM(this)" class="sr-only peer">
+            <div class="w-9 h-5 bg-slate-700 rounded-full peer peer-checked:bg-cyan-600 transition-colors"></div>
+            <div class="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform peer-checked:translate-x-4"></div>
+          </div>
+          <div>
+            <span class="text-sm text-slate-300 font-medium">Use LVM</span>
+            <span class="block text-[10px] text-slate-500">Logical Volume Manager for flexible resizing</span>
+          </div>
+        </label>
+        <div id="lvm-vg-row" class="hidden">
+          <input type="text" name="lvm_vg_name" placeholder="vg_data" value="vg_data"
+                 class="text-xs font-mono bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-slate-300 focus:outline-none focus:border-cyan-500 w-24">
+        </div>
+      </div>
+    </div>
+
+    <!-- Disk Budget -->
+    <div class="bg-slate-900/50 border border-slate-800 rounded-xl p-5 space-y-4">
+      <h2 class="text-sm font-semibold text-white">Disk Budget</h2>
+
+      <div class="space-y-2">
+        <div class="flex justify-between text-xs text-slate-400">
+          <span>Space allocated</span>
+          <span id="budget-text">0 GB extra / <span id="budget-root-label">{{ min_root_gb }}</span> GB root</span>
+        </div>
+        <div class="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden">
+          <div id="budget-bar" class="h-full bg-cyan-500 rounded-full transition-all duration-300" style="width:0%"></div>
+        </div>
+        <div id="budget-warning" class="hidden text-xs text-amber-400 flex items-start gap-1.5">
+          <svg class="w-3.5 h-3.5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+          </svg>
+          Extra partitions are approaching or exceeding root volume size. Increase root or enable LVM.
+        </div>
+        <div id="budget-lvm-tip" class="hidden text-xs text-cyan-400 flex items-center gap-1.5">
+          <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          Tip: Multiple data partitions detected — enable LVM for easier resizing.
+        </div>
+      </div>
+
+      <!-- Partition summary list -->
+      <div class="space-y-1.5" id="budget-partition-list">
+        <div class="p-2 rounded bg-slate-950/60 border border-slate-800/60 text-xs font-mono flex items-center gap-2 text-slate-400">
+          <svg class="w-3.5 h-3.5 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M12 5l7 7-7 7"/>
+          </svg>
+          <span class="text-slate-300">/</span>
+          <span class="ml-auto text-slate-500"><span id="root-size-display">{{ min_root_gb }}</span> GB · root</span>
+        </div>
+        <!-- Budget summary rows injected by JS when partitions added -->
+        <div id="budget-rows"></div>
+      </div>
+
+      <p class="text-[10px] text-slate-600 italic mt-auto">
+        Budget shows logical allocation. Physical disk size = root volume only; extra partitions map to additional volumes.
+      </p>
+    </div>
+
+  </div>
+
+  <!-- Filesystem Layout — full width -->
+  <div class="bg-slate-900/50 border border-slate-800 rounded-xl p-5">
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <h2 class="text-sm font-semibold text-white">Filesystem Layout</h2>
+        <p class="text-[10px] text-slate-500 mt-0.5">Configure extra partitions. Root (/) is always present.</p>
+      </div>
+      <div class="flex items-center gap-2">
+        <button type="button" onclick="applyCISLayout()"
+                class="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-cyan-700/60 bg-cyan-950/20 text-cyan-300 hover:bg-cyan-900/30 hover:border-cyan-600 transition-all font-semibold">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          Apply CIS Standard Layout
+        </button>
+        <button type="button" onclick="addPartitionRow()"
+                class="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-200 transition-all font-semibold">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+          </svg>
+          Add Partition
+        </button>
+      </div>
+    </div>
+
+    <!-- Column headers — always visible -->
+    <div class="grid grid-cols-12 gap-2 px-1 mb-2 text-[10px] font-bold uppercase text-slate-500 tracking-wider">
+      <div class="col-span-4">Mount Point</div>
+      <div class="col-span-2">Filesystem</div>
+      <div class="col-span-2">Size</div>
+      <div class="col-span-1">Unit</div>
+      <div class="col-span-3">CIS Options</div>
+    </div>
+
+    <!-- Fixed root row (non-removable) -->
+    <div class="flex gap-2 items-center border border-slate-700/40 px-3 py-2.5 rounded-lg bg-slate-950/60 mb-1">
+      <div class="flex-1 grid grid-cols-12 gap-2 items-center">
+        <div class="col-span-4 flex items-center gap-2">
+          <span class="text-xs font-mono text-white font-bold">/</span>
+          <span class="text-[10px] text-slate-500">(root — always present)</span>
+        </div>
+        <div class="col-span-2"><span class="text-xs font-mono text-slate-400">xfs</span></div>
+        <div class="col-span-2">
+          <span class="text-xs font-mono text-slate-300" id="root-size-row-display">{{ min_root_gb }}</span>
+        </div>
+        <div class="col-span-1"><span class="text-xs text-slate-500">GB</span></div>
+        <div class="col-span-3"><span class="text-[10px] text-slate-600 italic">set by Root Volume Size above</span></div>
+      </div>
+      <div class="w-8 flex-shrink-0"></div><!-- spacer aligns with delete buttons -->
+    </div>
+
+    <!-- All extra partition rows live here -->
+    <div id="partitions-container" class="space-y-2"></div>
+
+    <p id="no-parts-msg" class="text-xs text-slate-500 italic text-center py-4 border border-dashed border-slate-800 rounded-lg">
+      No extra partitions. Click <strong class="text-slate-400">Add Partition</strong> or <strong class="text-cyan-400">Apply CIS Standard Layout</strong>.
+    </p>
+  </div>
+
+  <!-- Nav -->
+  <div class="flex justify-between">
+    <button type="button" onclick="goBackToStep1()"
+            class="flex items-center gap-2 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-sm rounded-xl transition-all border border-slate-700">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+      </svg>
+      Back
+    </button>
+    <button type="button" onclick="goToStep3()"
+            class="flex items-center gap-2 px-5 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-sm rounded-xl transition-all shadow-[0_0_15px_rgba(6,182,212,0.25)]">
+      Next: User Accounts
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+      </svg>
+    </button>
+  </div>
+
+</div>
+
+<script>
+var partCount = 0;
+
+(function init() {
+  setActiveStep(2);
+  const s2 = WizardState.get(2);
+  if (s2.rootGb) {
+    document.getElementById('root-size-input').value = s2.rootGb;
+    document.getElementById('root-size-display').textContent = s2.rootGb;
+    document.getElementById('budget-root-label').textContent = s2.rootGb;
+  }
+  if (s2.instanceType) {
+    const sel = document.getElementById('instance-type-select');
+    if (sel) sel.value = s2.instanceType;
+  }
+  updateBudget();
+})();
+
+function toggleLVM(cb) {
+  document.getElementById('lvm-vg-row').classList.toggle('hidden', !cb.checked);
+}
+
+function updateBudget() {
+  const rootGb = parseInt(document.getElementById('root-size-input')?.value || 20);
+  document.getElementById('root-size-display').textContent = rootGb;
+  document.getElementById('budget-root-label').textContent = rootGb;
+  const rootRow = document.getElementById('root-size-row-display');
+  if (rootRow) rootRow.textContent = rootGb;
+
+  let totalExtra = 0;
+  const budgetRows = document.getElementById('budget-rows');
+  if (budgetRows) budgetRows.innerHTML = '';
+
+  document.querySelectorAll('[data-part-row]').forEach(row => {
+    const idx = row.dataset.partIdx;
+    const sizeInput = row.querySelector(`[name="extra_vol_${idx}_size"]`);
+    const unitSelect = row.querySelector(`[name="extra_vol_${idx}_unit"]`);
+    const mountSelect = row.querySelector(`[name="extra_vol_${idx}_mount"]`);
+    const mountCustom = row.querySelector(`[name="extra_vol_${idx}_mount_custom"]`);
+
+    if (!sizeInput) return;
+    const val = parseFloat(sizeInput.value) || 0;
+    const unit = unitSelect?.value || 'GB';
+    let gb = unit === 'TB' ? val * 1024 : unit === 'MB' ? val / 1024 : val;
+    totalExtra += gb;
+
+    // Budget summary row
+    if (budgetRows) {
+      let mount = mountSelect?.value || '/';
+      if (mount === '__custom__') mount = mountCustom?.value || '/custom';
+      const gbRounded = Math.round(gb * 10) / 10;
+      budgetRows.insertAdjacentHTML('beforeend',
+        `<div class="p-2 rounded bg-slate-950/60 border border-slate-800/40 text-xs font-mono flex items-center gap-2 text-slate-400">
+          <svg class="w-3 h-3 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14"/>
+          </svg>
+          <span class="text-slate-300">${mount}</span>
+          <span class="ml-auto text-slate-500">${gbRounded} ${unit}</span>
+        </div>`);
+    }
+  });
+
+  const pct = rootGb > 0 ? Math.min((totalExtra / rootGb) * 100, 100) : 0;
+  const bar = document.getElementById('budget-bar');
+  if (bar) {
+    bar.style.width = pct + '%';
+    bar.className = `h-full rounded-full transition-all duration-300 ${pct >= 100 ? 'bg-rose-500' : pct >= 80 ? 'bg-amber-500' : 'bg-cyan-500'}`;
+  }
+  const txt = document.getElementById('budget-text');
+  if (txt) txt.textContent = `${Math.round(totalExtra * 10) / 10} GB extra / ${rootGb} GB root`;
+
+  const warning = document.getElementById('budget-warning');
+  if (warning) warning.classList.toggle('hidden', pct < 80);
+
+  const nonTmpfs = document.querySelectorAll('[data-part-row]').length;
+  const lvmOn = document.getElementById('lvm-toggle')?.checked;
+  const tip = document.getElementById('budget-lvm-tip');
+  if (tip) tip.classList.toggle('hidden', nonTmpfs < 2 || lvmOn);
+}
+
+function suggestFstype(mountpoint) {
+  if (['/tmp', '/var/tmp', '/dev/shm'].includes(mountpoint)) return 'tmpfs';
+  if (mountpoint === '/boot/efi') return 'vfat';
+  if (mountpoint === 'swap') return 'swap';
+  return 'xfs';
+}
+
+function suggestOptions(mountpoint) {
+  const map = {
+    '/tmp':          ['nosuid','nodev','noexec'],
+    '/var/tmp':      ['nosuid','nodev','noexec'],
+    '/dev/shm':      ['nosuid','nodev','noexec'],
+    '/home':         ['nosuid','nodev'],
+    '/var':          ['nodev'],
+    '/var/log':      ['nosuid','nodev','noexec'],
+    '/var/log/audit':['nosuid','nodev','noexec'],
+    '/opt':          ['nodev'],
+  };
+  return map[mountpoint] || [];
+}
+
+function onMountChange(sel, idx) {
+  if (sel.value === '__custom__') {
+    sel.classList.add('hidden');
+    const custom = document.getElementById(`mount-custom-${idx}`);
+    if (custom) custom.classList.remove('hidden');
+    return;
+  }
+  const fsSelect = document.querySelector(`[name="extra_vol_${idx}_fstype"]`);
+  if (fsSelect) fsSelect.value = suggestFstype(sel.value);
+  const recommended = suggestOptions(sel.value);
+  ['nosuid','nodev','noexec'].forEach(opt => {
+    const chip = document.querySelector(`[data-opt="${opt}"][data-row-idx="${idx}"]`);
+    if (chip) setChipActive(chip, idx, recommended.includes(opt));
+  });
+  updateBudget();
+}
+
+function toggleOpt(btn, idx) {
+  setChipActive(btn, idx, btn.dataset.active !== '1');
+}
+
+function setChipActive(btn, idx, active) {
+  btn.dataset.active = active ? '1' : '0';
+  btn.className = active
+    ? 'opt-chip px-2 py-0.5 rounded text-[10px] font-mono font-bold border border-cyan-500/60 bg-cyan-950/20 text-cyan-300 transition-all'
+    : 'opt-chip px-2 py-0.5 rounded text-[10px] font-mono font-bold border border-slate-700 bg-slate-900 text-slate-500 transition-all';
+  const allChips = document.querySelectorAll(`[data-opt][data-row-idx="${idx}"]`);
+  const opts = [...allChips].filter(c => c.dataset.active === '1').map(c => c.dataset.opt);
+  const hidden = document.getElementById(`opts-val-${idx}`);
+  if (hidden) hidden.value = opts.length ? opts.join(',') : 'defaults';
+}
+
+function removePartition(btn) {
+  btn.closest('[data-part-row]').remove();
+  updateNoPartsMsg();
+  updateBudget();
+}
+
+function updateNoPartsMsg() {
+  const hasParts = document.querySelector('[data-part-row]') !== null;
+  const noMsg = document.getElementById('no-parts-msg');
+  if (noMsg) noMsg.classList.toggle('hidden', hasParts);
+}
+
+function addPartitionRow(data = null) {
+  const idx = partCount++;
+  const mount  = data?.mountpoint || '/var';
+  const fstype = data?.fstype     || 'xfs';
+  const sizeGb = data?.size_gb    || 4;
+  const opts   = data?.options    || [];
+
+  const mountOptions = [
+    ['CIS Required', ['/var','/var/log','/var/log/audit','/home','/tmp','/var/tmp','/opt']],
+    ['Other Standard', ['/boot/efi','swap']],
+  ].map(([grp, items]) =>
+    `<optgroup label="${grp}">${items.map(m =>
+      `<option value="${m}" ${m===mount?'selected':''}>${m}</option>`
+    ).join('')}</optgroup>`
+  ).join('') + `<option value="__custom__">Custom path...</option>`;
+
+  const fstypes = ['xfs','ext4','ext3','ext2','btrfs','vfat','tmpfs']
+    .map(f => `<option value="${f}" ${f===fstype?'selected':''}>${f}</option>`).join('');
+
+  const chipDefs = ['nosuid','nodev','noexec'];
+  const chips = chipDefs.map(o => {
+    const active = opts.includes(o);
+    const cls = active
+      ? 'opt-chip px-2 py-0.5 rounded text-[10px] font-mono font-bold border border-cyan-500/60 bg-cyan-950/20 text-cyan-300 transition-all'
+      : 'opt-chip px-2 py-0.5 rounded text-[10px] font-mono font-bold border border-slate-700 bg-slate-900 text-slate-500 transition-all';
+    return `<button type="button" data-opt="${o}" data-row-idx="${idx}" data-active="${active?'1':'0'}" onclick="toggleOpt(this,${idx})" class="${cls}">${o}</button>`;
+  }).join('');
+
+  const html = `
+  <div class="flex gap-2 items-end border border-slate-700/60 p-3 rounded-lg bg-slate-900/40 hover:border-cyan-500/20 transition-all"
+       data-part-row data-part-idx="${idx}">
+    <div class="flex-1 grid grid-cols-12 gap-2">
+      <div class="col-span-4">
+        <select name="extra_vol_${idx}_mount"
+                class="mountpoint-select w-full text-xs font-mono bg-slate-950 border border-slate-800 rounded px-2 py-1.5 text-slate-300 focus:border-cyan-500 focus:outline-none"
+                onchange="onMountChange(this,${idx})">${mountOptions}</select>
+        <input type="text" id="mount-custom-${idx}" name="extra_vol_${idx}_mount_custom"
+               class="hidden w-full text-xs font-mono bg-slate-950 border border-cyan-500 rounded px-2 py-1.5 text-slate-300 focus:outline-none mt-1"
+               placeholder="/mnt/data">
+      </div>
+      <div class="col-span-2">
+        <select name="extra_vol_${idx}_fstype"
+                class="w-full text-xs font-mono bg-slate-950 border border-slate-800 rounded px-2 py-1.5 text-slate-300 focus:border-cyan-500 focus:outline-none">${fstypes}</select>
+      </div>
+      <div class="col-span-2">
+        <input type="number" name="extra_vol_${idx}_size" value="${sizeGb}" min="1" step="1"
+               class="w-full text-xs font-mono bg-slate-950 border border-slate-800 rounded px-2 py-1.5 text-slate-300 focus:border-cyan-500 focus:outline-none"
+               onchange="updateBudget()">
+      </div>
+      <div class="col-span-1">
+        <select name="extra_vol_${idx}_unit"
+                class="w-full text-xs font-mono bg-slate-950 border border-slate-800 rounded p-[5px] pb-[7px] text-slate-300 focus:border-cyan-500 focus:outline-none"
+                onchange="updateBudget()">
+          <option value="GB" selected>GB</option>
+          <option value="MB">MB</option>
+          <option value="TB">TB</option>
+        </select>
+      </div>
+      <div class="col-span-3">
+        <div class="flex gap-1 flex-wrap pt-1">${chips}</div>
+        <input type="hidden" name="extra_vol_${idx}_options" id="opts-val-${idx}"
+               value="${opts.length ? opts.join(',') : 'defaults'}">
+      </div>
+    </div>
+    <button type="button" onclick="removePartition(this)"
+            class="flex-shrink-0 text-slate-500 hover:text-rose-400 p-1.5 rounded bg-slate-950 border border-slate-800 hover:border-rose-900/50 hover:bg-rose-950/30 transition-colors mb-0.5">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+      </svg>
+    </button>
+  </div>`;
+
+  const container = document.getElementById('partitions-container');
+  container.insertAdjacentHTML('beforeend', html);
+  updateNoPartsMsg();
+  updateBudget();
+}
+
+function applyCISLayout() {
+  const s1 = WizardState.get(1);
+  const os = s1.os || 'ubuntu22.04';
+  const container = document.getElementById('partitions-container');
+  container.innerHTML = '';
+  partCount = 0;
+  fetch(`/api/builder/cis-layout?os=${encodeURIComponent(os)}`)
+    .then(r => r.text())
+    .then(html => {
+      loadHTML(container, html);
+      const rows = container.querySelectorAll('[data-part-idx]');
+      if (rows.length) partCount = parseInt(rows[rows.length - 1].dataset.partIdx) + 1;
+      updateNoPartsMsg();
+      updateBudget();
+    });
+}
+
+function resolveAMI() {
+  const s1 = WizardState.get(1);
+  const os = s1.os || '{{ os }}';
+  const provider = s1.provider || '{{ provider }}';
+  if (provider !== 'aws') return;  // only AWS needs AMI resolution
+
+  const s2 = WizardState.get(2);
+  const region = s2.region || 'us-east-1';
+
+  const btn = document.getElementById('resolve-ami-btn');
+  const status = document.getElementById('resolve-ami-status');
+  btn.disabled = true;
+  btn.innerHTML = '<svg class="w-3.5 h-3.5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg> Resolving…';
+  status.className = 'text-[10px] mt-1 text-slate-400';
+  status.textContent = `Querying latest ${os} AMI in ${region}…`;
+  status.classList.remove('hidden');
+
+  fetch(`/api/builder/resolve-image?os=${encodeURIComponent(os)}&provider=aws&region=${encodeURIComponent(region)}`)
+    .then(r => r.json())
+    .then(data => {
+      const input = document.getElementById('base-image-input');
+      if (data.ami_id) {
+        input.value = data.ami_id;
+        if (data.source === 'resolved') {
+          status.className = 'text-[10px] mt-1 text-emerald-400';
+          status.textContent = `✓ Resolved: ${data.ami_id} (${data.region})`;
+        } else {
+          status.className = 'text-[10px] mt-1 text-amber-400';
+          status.textContent = `⚠ Using catalog fallback: ${data.ami_id}${data.error ? ' — ' + data.error : ''}`;
+        }
+      } else {
+        status.className = 'text-[10px] mt-1 text-rose-400';
+        status.textContent = 'Resolution failed — enter AMI ID manually.';
+      }
+    })
+    .catch(err => {
+      status.className = 'text-[10px] mt-1 text-rose-400';
+      status.textContent = `Error: ${err}`;
+    })
+    .finally(() => {
+      btn.disabled = false;
+      btn.innerHTML = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg> Resolve';
+    });
+}
+
+function saveStep2() {
+  WizardState.save(2, {
+    rootGb:       parseInt(document.getElementById('root-size-input')?.value || 20),
+    instanceType: document.getElementById('instance-type-select')?.value || '',
+    baseImage:    document.getElementById('base-image-input')?.value || '',
+    useLVM:       document.getElementById('lvm-toggle')?.checked || false,
+  });
+}
+
+function goBackToStep1() {
+  saveStep2();
+  fetch('/builder/wizard/step1')
+    .then(r => r.text())
+    .then(html => { loadStep(html); setActiveStep(1); });
+}
+
+function goToStep3() {
+  saveStep2();
+  fetch('/builder/wizard/step3')
+    .then(r => r.text())
+    .then(html => { loadStep(html); setActiveStep(3); });
+}
+</script>

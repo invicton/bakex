@@ -1,0 +1,53 @@
+services:
+  stratum:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    image: stratum:latest
+    container_name: stratum-engine
+    restart: unless-stopped
+    ports:
+      - "8001:8000"
+    volumes:
+      # Pass through standard cloud credentials to the container
+      # This allows AWS, GCP, and SSH plugins to run out of the box
+      - ~/.aws:/root/.aws:ro,z
+      - ~/.config/gcloud:/root/.config/gcloud:ro,z
+      - ~/.ssh:/root/.ssh:ro,z
+
+      # Persist dynamically installed plugins and blueprint profiles locally
+      # so they survive container restarts seamlessly
+      - ./plugins/providers:/app/plugins/providers:z
+      - ./profiles:/app/profiles:z
+
+      # Persist encrypted credentials and encryption key across restarts.
+      # Set STRATUM_SECRET_KEY below for a deterministic key (no key file needed).
+      - ./data:/app/data:z
+
+    environment:
+      - APP_ENV=production
+      - STRATUM_LOG_LEVEL=INFO
+      # Uncomment and set a strong passphrase to use a deterministic encryption key.
+      # Without this, a random key is auto-generated and stored in ./data/.stratum_key
+      # - STRATUM_SECRET_KEY=change-me-to-a-strong-passphrase
+
+      # --- AI Builder: pick ONE backend and uncomment the relevant block ---
+
+      # Anthropic (default)
+      # - STRATUM_LLM_PROVIDER=anthropic
+      # - ANTHROPIC_API_KEY=sk-ant-...
+
+      # OpenAI or any OpenAI-compatible endpoint (Groq, Together, vLLM, LiteLLM)
+      # - STRATUM_LLM_PROVIDER=openai
+      # - STRATUM_LLM_MODEL=gpt-4o
+      # - STRATUM_LLM_API_KEY=sk-...
+      # - STRATUM_LLM_BASE_URL=https://api.groq.com/openai/v1   # optional override
+
+      # Ollama — local model, no API key. Requires Ollama running on host.
+      # - STRATUM_LLM_PROVIDER=ollama
+      # - STRATUM_LLM_MODEL=llama3.3:70b
+      # - STRATUM_LLM_BASE_URL=http://host.docker.internal:11434/v1
+
+      # AWS Bedrock — uses the ~/.aws credentials mounted above
+      # - STRATUM_LLM_PROVIDER=bedrock
+      # - STRATUM_LLM_MODEL=us.anthropic.claude-opus-4-5-20251101-v1:0

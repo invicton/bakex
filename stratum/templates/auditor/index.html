@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}Auditor — {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto space-y-8">
+  <div>
+    <h1 class="text-2xl font-bold text-white">Live Auditor</h1>
+    <p class="text-gray-400 mt-1">Scan a production system for compliance findings.</p>
+  </div>
+
+  <form
+    hx-post="/api/auditor/start"
+    hx-target="#audit-result"
+    hx-swap="innerHTML"
+    class="bg-gray-900 border border-gray-800 rounded-xl p-6 space-y-6"
+  >
+    <div class="grid grid-cols-2 gap-4">
+      <div>
+        <label class="block text-sm font-semibold text-gray-300 mb-2">Target Host</label>
+        <input type="text" name="target_host" placeholder="192.168.1.50" required
+               class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-brand-500" />
+      </div>
+      <div>
+        <label class="block text-sm font-semibold text-gray-300 mb-2">SSH User</label>
+        <input type="text" name="ssh_user" value="root"
+               class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-brand-500" />
+      </div>
+    </div>
+
+    <div>
+      <label class="block text-sm font-semibold text-gray-300 mb-2">Compliance Profile</label>
+      <select name="profile_name" required
+              class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-brand-500">
+        <option value="">-- select profile --</option>
+        {% for p in profiles %}
+        <option value="{{ p.metadata.name }}">{{ p.metadata.name }}</option>
+        {% else %}
+        <option disabled>No profiles found</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div>
+      <label class="block text-sm font-semibold text-gray-300 mb-2">
+        Baseline ARF (optional — for delta report)
+      </label>
+      <input type="text" name="baseline_arf" placeholder="/data/audits/previous-results-arf.xml"
+             class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-brand-500" />
+    </div>
+
+    <button type="submit"
+            class="w-full bg-brand-600 hover:bg-brand-700 text-white font-semibold py-2.5 rounded-lg transition text-sm">
+      Start Audit
+    </button>
+  </form>
+
+  <div id="audit-result"></div>
+</div>
+{% endblock %}

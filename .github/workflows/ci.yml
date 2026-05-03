@@ -1,0 +1,91 @@
+name: CI
+
+on:
+  push:
+    branches: ["main", "develop"]
+  pull_request:
+
+jobs:
+  lint:
+    name: Lint (ruff)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.11"
+      - run: uv sync --extra all-providers --group dev
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+
+  test:
+    name: Tests (pytest)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.11"
+      - run: uv sync --extra all-providers --group dev
+      - run: uv run pytest tests/ -v --tb=short
+
+  schema:
+    name: Validate blueprint YAML schemas
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.11"
+      - run: uv sync
+      - name: Validate all profiles
+        run: |
+          uv run python - <<'EOF'
+          import sys
+          from pathlib import Path
+          from stratum.core.blueprint import ComplianceProfile
+          import yaml
+
+          errors = []
+          profiles_dir = Path("profiles")
+          yaml_files = list(profiles_dir.rglob("*.yaml")) + list(profiles_dir.rglob("*.yml"))
+          # Skip the generic template — it intentionally has null controls
+          skip = {"generic-hardening-blueprint.yaml"}
+
+          for p in sorted(yaml_files):
+              if p.name in skip:
+                  print(f"  SKIP  {p}")
+                  continue
+              try:
+                  raw = yaml.safe_load(p.read_text())
+                  if not isinstance(raw, dict):
+                      errors.append(f"  ERROR {p}: top-level is not a mapping")
+                      continue
+                  ComplianceProfile.model_validate(raw)
+                  print(f"  OK    {p}")
+              except Exception as exc:
+                  errors.append(f"  ERROR {p}: {exc}")
+
+          if errors:
+              print("\nSchema validation failed:")
+              for e in errors:
+                  print(e)
+              sys.exit(1)
+          else:
+              print(f"\nAll {len(yaml_files) - len(skip)} profiles validated successfully.")
+          EOF
+
+  ansible-syntax:
+    name: Ansible syntax check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Ansible
+        run: pip install ansible-core
+      - name: Check playbook syntax (if site.yml exists)
+        run: |
+          if [ -f ansible/site.yml ]; then
+            ansible-playbook --syntax-check ansible/site.yml
+          else
+            echo "No ansible/site.yml — skipping"
+          fi

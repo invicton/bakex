@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-950">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}{{ app_name }}{% endblock %}</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono&display=swap" rel="stylesheet">
+
+  <!-- Compiled local Tailwind CSS -->
+  <link href="/static/css/tailwind.css" rel="stylesheet">
+
+  <!-- HTMX — vendored in prod, CDN fallback for dev -->
+  <script src="/static/js/htmx.min.js" onerror="this.onerror=null;this.src='https://unpkg.com/htmx.org@1.9.12/dist/htmx.min.js'"></script>
+
+  {% block head %}{% endblock %}
+</head>
+<body class="h-full text-slate-300 font-sans antialiased">
+  <div class="flex h-full">
+    <!-- Sidebar nav -->
+    <nav class="w-64 shrink-0 bg-slate-900/50 backdrop-blur-md border-r border-slate-800/50 flex flex-col z-20">
+      <div class="px-6 py-6 border-b border-slate-800/50 flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-500 to-blue-600 flex items-center justify-center shadow-[0_0_15px_rgba(6,182,212,0.4)]">
+          <svg class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+        </div>
+        <div>
+          <span class="text-white font-bold tracking-tight">{{ app_name }}</span>
+        </div>
+      </div>
+      
+      <div class="flex-1 overflow-y-auto py-4 space-y-6 px-3">
+        <!-- Configuration Section -->
+        <div>
+          <h3 class="px-3 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Configuration</h3>
+          <ul class="space-y-1">
+            <li>
+              <a href="/integrations"
+                 class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all hover:bg-slate-800/40 hover:text-white {% if '/integrations' in request.url.path %}bg-slate-800/60 text-brand-400 border-l-2 border-brand-500 shadow-sm{% else %}text-slate-400 border-l-2 border-transparent{% endif %}">
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
+                Integrations
+              </a>
+            </li>
+            <li>
+              <a href="/blueprints"
+                 class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all hover:bg-slate-800/40 hover:text-white {% if '/blueprints' in request.url.path %}bg-slate-800/60 text-brand-400 border-l-2 border-brand-500 shadow-sm{% else %}text-slate-400 border-l-2 border-transparent{% endif %}">
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                Blueprints
+              </a>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Operations Section -->
+        <div>
+          <h3 class="px-3 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Operations</h3>
+          <ul class="space-y-1">
+            <li>
+              <a href="/"
+                 class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all hover:bg-slate-800/40 hover:text-white {% if request.url.path == '/' %}bg-slate-800/60 text-brand-400 border-l-2 border-brand-500 shadow-sm{% else %}text-slate-400 border-l-2 border-transparent{% endif %}">
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                Dashboard
+              </a>
+            </li>
+            <li>
+              <a href="/builder"
+                 class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all hover:bg-slate-800/40 hover:text-white {% if '/builder' in request.url.path %}bg-slate-800/60 text-brand-400 border-l-2 border-brand-500 shadow-sm{% else %}text-slate-400 border-l-2 border-transparent{% endif %}">
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+                Image Builder
+              </a>
+            </li>
+            <li>
+              <a href="/agent"
+                 class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all hover:bg-slate-800/40 hover:text-white {% if '/agent' in request.url.path %}bg-slate-800/60 text-brand-400 border-l-2 border-brand-500 shadow-sm{% else %}text-slate-400 border-l-2 border-transparent{% endif %}">
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
+                AI Builder
+              </a>
+            </li>
+            <li>
+              <a href="/auditor/scanner"
+                 class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all hover:bg-slate-800/40 hover:text-white {% if request.url.path.startswith('/auditor/scanner') %}bg-slate-800/60 text-brand-400 border-l-2 border-brand-500 shadow-sm{% else %}text-slate-400 border-l-2 border-transparent{% endif %}">
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                Compliance Scanner
+              </a>
+            </li>
+            <li>
+              <a href="/auditor/history"
+                 class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all hover:bg-slate-800/40 hover:text-white {% if request.url.path == '/auditor/history' %}bg-slate-800/60 text-brand-400 border-l-2 border-brand-500 shadow-sm{% else %}text-slate-400 border-l-2 border-transparent{% endif %}">
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                Scan History
+              </a>
+            </li>
+            <li>
+              <a href="/auditor"
+                 class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all hover:bg-slate-800/40 hover:text-white {% if request.url.path == '/auditor' %}bg-slate-800/60 text-brand-400 border-l-2 border-brand-500 shadow-sm{% else %}text-slate-400 border-l-2 border-transparent{% endif %}">
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+                Live Auditor
+              </a>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="px-4 pb-2">
+        <div class="text-[10px] uppercase font-bold text-slate-600 tracking-widest px-2 py-1.5">Settings</div>
+        <ul class="space-y-0.5">
+          <li>
+            <a href="/settings/api-keys"
+               class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all hover:bg-slate-800/40 hover:text-white {% if '/settings/api-keys' in request.url.path %}bg-slate-800/60 text-brand-400 border-l-2 border-brand-500 shadow-sm{% else %}text-slate-400 border-l-2 border-transparent{% endif %}">
+              <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+              API Keys
+            </a>
+          </li>
+          <li>
+            <a href="/settings/webhooks"
+               class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all hover:bg-slate-800/40 hover:text-white {% if '/settings/webhooks' in request.url.path %}bg-slate-800/60 text-brand-400 border-l-2 border-brand-500 shadow-sm{% else %}text-slate-400 border-l-2 border-transparent{% endif %}">
+              <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+              Webhooks
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <div class="px-6 py-4 border-t border-slate-800/50 flex items-center justify-between">
+        <span class="text-xs text-slate-500 font-mono">v0.3.0</span>
+        <div class="text-[10px] uppercase font-bold text-slate-600 tracking-widest">Open-Core</div>
+      </div>
+    </nav>
+
+    <!-- Main Content Area with Top Navbar -->
+    <div class="flex-1 flex flex-col min-w-0 overflow-hidden bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 to-slate-950">
+      
+      <!-- Top Navbar -->
+      <header class="h-16 shrink-0 border-b border-slate-800/30 flex items-center justify-between px-8 bg-slate-900/20 backdrop-blur-sm z-10 transition-all">
+        <div class="flex-1 flex items-center">
+          {% block breadcrumbs %}
+            <span class="text-sm font-medium text-slate-400">Environment Insight</span>
+          {% endblock %}
+        </div>
+        <div class="flex items-center gap-4">
+          <button class="w-8 h-8 rounded-full bg-slate-800/50 border border-slate-700/50 flex items-center justify-center text-xs text-slate-300 hover:text-white hover:border-slate-500 transition shadow-sm">
+            Admin
+          </button>
+        </div>
+      </header>
+
+      <!-- Page Content -->
+      <main class="flex-1 overflow-y-auto p-8 relative">
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+  </div>
+</body>
+</html>

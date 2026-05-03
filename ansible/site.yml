@@ -1,0 +1,55 @@
+---
+# Stratum Pluggable Hardening Entrypoint
+#
+# This playbook is executed by the Stratum engine during image builds
+# when using the 'ansible-galaxy' hardening strategy.
+
+- name: Apply Stratum Compliance Hardening
+  hosts: all
+  become: true
+  gather_facts: true
+
+  vars:
+    # Set explicitly by catalog plugins, or defaults to "auto"
+    stratum_lockdown_role: "auto"
+    stratum_target_os: "ubuntu22"
+
+  pre_tasks:
+    - name: Determine ansible-lockdown role from OS
+      ansible.builtin.set_fact:
+        _auto_role: >-
+          {%- if stratum_target_os is search('ubuntu22') -%}
+            UBUNTU22-CIS
+          {%- elif stratum_target_os is search('ubuntu24') -%}
+            UBUNTU24-CIS
+          {%- elif stratum_target_os is search('rhel9|rocky9|alma9') -%}
+            RHEL9-CIS
+          {%- elif stratum_target_os is search('debian12') -%}
+            DEBIAN12-CIS
+          {%- elif stratum_target_os is search('amazon2023') -%}
+            AMAZON2023-CIS
+          {%- else -%}
+            UBUNTU22-CIS
+          {%- endif -%}
+      when: stratum_lockdown_role == 'auto'
+
+    - name: Set final role
+      ansible.builtin.set_fact:
+        final_role: >-
+          {{ ("ansible-lockdown." + _auto_role | trim) if stratum_lockdown_role == "auto" else stratum_lockdown_role }}
+
+    - name: Show selected role
+      ansible.builtin.debug:
+        msg: "Applying hardening role: {{ final_role | trim }}"
+
+    - name: Install required role locally on Stratum Host
+      ansible.builtin.command:
+        cmd: "ansible-galaxy install {{ final_role | trim }} --force"
+      delegate_to: localhost
+      changed_when: false
+      become: false
+
+  tasks:
+    - name: Apply selected hardening role
+      ansible.builtin.include_role:
+        name: "{{ final_role | trim }}"

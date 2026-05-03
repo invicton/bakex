@@ -1,0 +1,111 @@
+<div class="h-full flex flex-col pt-4">
+  <div class="px-8 pb-4 border-b border-slate-800/50 flex justify-between items-center">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-lg bg-slate-800 border border-slate-700/50 flex items-center justify-center">
+        <span class="text-xs font-bold text-slate-300 uppercase tracking-wider">{{ (plugin_meta.name if plugin_meta else provider_name)[:3] }}</span>
+      </div>
+      <div>
+        <h2 class="text-xl font-bold text-white capitalize">{{ plugin_meta.name if plugin_meta else provider_name }} Configuration</h2>
+        <p class="text-sm text-slate-400">{{ 'Configure the dynamic provider integration.' if not plugin_meta else 'Manage your integration securely.' }}</p>
+      </div>
+    </div>
+    <button type="button" onclick="document.getElementById('generic-info-panel').classList.toggle('hidden')" class="w-8 h-8 flex items-center justify-center bg-slate-800/50 hover:bg-slate-700 text-slate-400 hover:text-brand-400 rounded-full border border-slate-700/50 transition-colors" title="Configuration Info">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+    </button>
+  </div>
+
+  <div id="generic-info-panel" class="hidden">
+  {% if plugin_meta and plugin_meta.description %}
+  <div class="px-8 py-5 bg-brand-900/10 border-b border-brand-800/30 flex gap-4 text-sm text-slate-300 relative shadow-inner">
+    <div class="mt-0.5 shrink-0"><svg class="w-4 h-4 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div>
+    <div class="space-y-3">
+      <div>
+        <strong class="text-brand-400 block mb-1">Integration Details</strong>
+        {{ plugin_meta.description }}
+      </div>
+      {% if plugin_meta.connectivity %}
+      <div>
+        <strong class="text-brand-400 block mb-1">Connectivity</strong>
+        {{ plugin_meta.connectivity }}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  {% else %}
+  <div class="px-8 py-5 bg-indigo-900/10 border-b border-indigo-800/30 flex gap-4 text-sm text-slate-300 relative shadow-inner">
+    <div class="mt-0.5 shrink-0"><svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div>
+    <div>
+      <strong class="text-indigo-400 block mb-1">Generic Configuration Tracker</strong>
+      This provider does not have specific metadata, but you can configure it below.
+    </div>
+  </div>
+  {% endif %}
+  </div>
+
+  <div class="flex-1 overflow-y-auto p-8">
+    <form
+      hx-post="/api/integrations/{{ provider_name }}"
+      hx-target="#generic-status"
+      hx-swap="innerHTML"
+      class="space-y-5"
+    >
+      {% if plugin_meta and plugin_meta.credential_fields %}
+        {% for field in plugin_meta.credential_fields %}
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">{{ field.label }} {% if field.required %}<span class="text-rose-400">*</span>{% endif %}</label>
+          {% if field.type == 'textarea' %}
+            <textarea name="{{ field.key }}" rows="4"
+              class="w-full bg-slate-900/50 border border-slate-700/80 rounded-lg px-4 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-all font-mono">{{ creds.get(field.key, field.default | default('')) if creds else field.default | default('') }}</textarea>
+          {% elif field.type == 'checkbox' %}
+            <label class="flex items-center gap-3 cursor-pointer group">
+              <input type="checkbox" name="{{ field.key }}" value="true"
+                {% if creds.get(field.key, field.default) in ['true', true, '1'] %}checked{% endif %}
+                class="w-5 h-5 rounded border-slate-700/80 bg-slate-900/50 text-brand-500 focus:ring-brand-500/50 focus:ring-offset-slate-900 transition-colors" />
+              <span class="text-sm text-slate-300 group-hover:text-white transition-colors">Enable {{ field.label }}</span>
+            </label>
+          {% else %}
+            <input type="{{ field.type }}" name="{{ field.key }}"
+              value="{{ creds.get(field.key, field.default | default('')) if creds else field.default | default('') }}"
+              class="w-full bg-slate-900/50 border border-slate-700/80 rounded-lg px-4 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-all font-mono" />
+          {% endif %}
+        </div>
+        {% endfor %}
+      {% else %}
+      <div>
+        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">JSON Options</label>
+        <textarea name="json_config" rows="6"
+          placeholder='{"api_key": "YOUR_KEY"}'
+          class="w-full bg-slate-900/50 border border-slate-700/80 rounded-lg px-4 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-all font-mono">{{ creds.json_config if creds else '' }}</textarea>
+      </div>
+      {% endif %}
+
+      <div class="pt-4 flex flex-col gap-4 border-t border-slate-800/50">
+        <div class="flex items-start justify-between">
+          <div class="flex items-center gap-3">
+            <button type="submit"
+              class="px-5 py-2.5 bg-brand-600 hover:bg-brand-500 text-white text-sm font-semibold rounded-lg transition-all shadow-[0_0_15px_rgba(6,182,212,0.3)] min-w-[120px]">
+              Update Config
+            </button>
+            <button type="button"
+              hx-post="/api/integrations/{{ provider_name }}/test"
+              hx-include="closest form"
+              hx-target="#generic-status"
+              hx-swap="innerHTML"
+              class="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 hover:border-slate-500 text-sm font-semibold rounded-lg transition-all flex items-center gap-2">
+              <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+              Test Connectivity
+            </button>
+          </div>
+          <button type="button"
+            hx-post="/api/plugins/{{ provider_name }}/remove"
+            hx-target="body"
+            hx-confirm="Are you sure you want to permanently remove this integration?"
+            class="px-4 py-2 hover:bg-rose-500/10 border border-transparent hover:border-rose-500/30 text-slate-500 hover:text-rose-400 text-xs font-medium rounded-lg transition-all">
+            Remove Integration
+          </button>
+        </div>
+        <div id="generic-status" class="w-full"></div>
+      </div>
+    </form>
+  </div>
+</div>

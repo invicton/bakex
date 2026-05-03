@@ -1,0 +1,209 @@
+<!-- Scanner Step 1: Target Selection -->
+<div class="space-y-6" id="scan-step1-content">
+
+  <!-- Scan mode toggle -->
+  <div class="flex gap-3">
+    <button type="button" id="mode-vm-btn" onclick="setScanMode('vm')"
+            class="flex-1 flex items-center justify-center gap-2.5 p-4 rounded-xl border transition-all font-semibold text-sm
+                   border-cyan-500 bg-cyan-950/20 text-cyan-300 shadow-[0_0_12px_rgba(6,182,212,0.15)]">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"/>
+      </svg>
+      Scan a Running VM
+    </button>
+    <button type="button" id="mode-image-btn" onclick="setScanMode('image')"
+            class="flex-1 flex items-center justify-center gap-2.5 p-4 rounded-xl border transition-all font-semibold text-sm
+                   border-slate-700/60 bg-slate-900/40 text-slate-400">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2 1 3 3 3h10c2 0 3-1 3-3V7c0-2-1-3-3-3H7C5 4 4 5 4 7z"/>
+      </svg>
+      Scan a Cloud Image
+    </button>
+  </div>
+
+  <div class="grid grid-cols-2 gap-6">
+
+    <!-- OS Picker -->
+    <div class="space-y-3">
+      <h2 class="text-base font-semibold text-white">Operating System</h2>
+      <div class="grid grid-cols-1 gap-2" id="scan-os-cards">
+        {% for slug, data in os_catalog.items() %}
+        <button type="button" data-os-slug="{{ slug }}"
+                class="scan-os-card group relative p-3.5 rounded-xl border border-slate-700/60 bg-slate-900/40
+                       hover:border-cyan-500/50 hover:bg-slate-800/50 transition-all cursor-pointer text-left"
+                onclick="selectScanOS('{{ slug }}', this)">
+          <div class="flex items-center gap-3">
+            <span class="text-xl">{{ data.icon }}</span>
+            <div class="flex-1 min-w-0">
+              <div class="text-sm font-semibold text-white group-hover:text-cyan-300 transition-colors">{{ data.display }}</div>
+              <div class="text-[10px] text-slate-500 font-mono mt-0.5">{{ slug }}</div>
+            </div>
+            <div class="flex gap-1 flex-wrap justify-end">
+              {% for tier in data.supported_tiers %}
+              <span class="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-400">{{ tier }}</span>
+              {% endfor %}
+            </div>
+          </div>
+        </button>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Right column: Provider + Target input -->
+    <div class="space-y-4">
+
+      <!-- Provider picker -->
+      <div class="space-y-2">
+        <h2 class="text-base font-semibold text-white">Cloud Provider</h2>
+        <div class="grid grid-cols-2 gap-2" id="scan-provider-cards">
+          {% for pid, pdata in provider_catalog.items() %}
+          <button type="button" data-provider="{{ pid }}"
+                  class="scan-provider-card group p-3 rounded-xl border border-slate-700/60 bg-slate-900/40
+                         hover:border-cyan-500/50 hover:bg-slate-800/50 transition-all cursor-pointer text-left"
+                  onclick="selectScanProvider('{{ pid }}', this)">
+            <div class="flex items-center gap-2">
+              <span class="text-lg">{{ pdata.icon }}</span>
+              <div>
+                <div class="text-sm font-semibold text-white group-hover:text-cyan-300 transition-colors">{{ pdata.display }}</div>
+                <div class="text-[10px] text-slate-500">{{ pdata.label }}</div>
+              </div>
+            </div>
+          </button>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Target ID -->
+      <div>
+        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1.5" id="target-id-label">
+          Instance ID
+        </label>
+        <input type="text" id="target-id-input" placeholder="e.g. i-0abc1234..."
+               class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-300 font-mono
+                      focus:outline-none focus:border-cyan-500 transition-colors">
+      </div>
+
+      <!-- Region -->
+      <div>
+        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1.5">Region</label>
+        <input type="text" id="scan-region-input" placeholder="us-east-1"
+               class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-300 font-mono
+                      focus:outline-none focus:border-cyan-500 transition-colors">
+      </div>
+
+      <!-- Instance type (image scan only) -->
+      <div id="instance-type-row">
+        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1.5">
+          Instance Type
+          <span class="text-slate-600 font-normal normal-case ml-1">used to launch temp scan instance</span>
+        </label>
+        <input type="text" id="scan-instance-type-input" placeholder="t3.medium" value="t3.medium"
+               class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-300 font-mono
+                      focus:outline-none focus:border-cyan-500 transition-colors">
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Error -->
+  <div id="step1-scan-error" class="hidden text-xs text-rose-400 bg-rose-950/20 border border-rose-800/30 rounded-lg px-3 py-2">
+    Please select an OS, provider, and enter a target ID.
+  </div>
+
+  <!-- Next -->
+  <div class="flex justify-end">
+    <button type="button" onclick="goToScanStep2()"
+            class="flex items-center gap-2 px-5 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-sm rounded-xl transition-all shadow-[0_0_15px_rgba(6,182,212,0.25)]">
+      Next: Benchmark
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+      </svg>
+    </button>
+  </div>
+
+</div>
+
+<script>
+(function init() {
+  setScanActiveStep(1);
+  const s1 = ScanWizardState.get(1);
+  if (s1.scanMode) setScanMode(s1.scanMode, true);
+  if (s1.os) selectScanOS(s1.os, document.querySelector(`[data-os-slug="${s1.os}"]`));
+  if (s1.provider) selectScanProvider(s1.provider, document.querySelector(`[data-provider="${s1.provider}"]`));
+  if (s1.targetId) document.getElementById('target-id-input').value = s1.targetId;
+  if (s1.region) document.getElementById('scan-region-input').value = s1.region;
+  if (s1.instanceType) document.getElementById('scan-instance-type-input').value = s1.instanceType;
+})();
+
+function setScanMode(mode, silent) {
+  const vmBtn = document.getElementById('mode-vm-btn');
+  const imgBtn = document.getElementById('mode-image-btn');
+  const label = document.getElementById('target-id-label');
+  const itRow = document.getElementById('instance-type-row');
+  const input = document.getElementById('target-id-input');
+  if (mode === 'vm') {
+    vmBtn.className = vmBtn.className.replace('border-slate-700/60 bg-slate-900/40 text-slate-400', 'border-cyan-500 bg-cyan-950/20 text-cyan-300 shadow-[0_0_12px_rgba(6,182,212,0.15)]');
+    imgBtn.className = imgBtn.className.replace('border-cyan-500 bg-cyan-950/20 text-cyan-300 shadow-[0_0_12px_rgba(6,182,212,0.15)]', 'border-slate-700/60 bg-slate-900/40 text-slate-400');
+    label.textContent = 'Instance ID';
+    input.placeholder = 'e.g. i-0abc1234... (EC2) or 12345678 (droplet)';
+    if (itRow) itRow.classList.add('hidden');
+  } else {
+    imgBtn.className = imgBtn.className.replace('border-slate-700/60 bg-slate-900/40 text-slate-400', 'border-cyan-500 bg-cyan-950/20 text-cyan-300 shadow-[0_0_12px_rgba(6,182,212,0.15)]');
+    vmBtn.className = vmBtn.className.replace('border-cyan-500 bg-cyan-950/20 text-cyan-300 shadow-[0_0_12px_rgba(6,182,212,0.15)]', 'border-slate-700/60 bg-slate-900/40 text-slate-400');
+    label.textContent = 'Image / AMI ID';
+    input.placeholder = 'e.g. ami-0abc1234... (AWS) or image-name (GCP)';
+    if (itRow) itRow.classList.remove('hidden');
+  }
+  if (!silent) ScanWizardState.save(1, { scanMode: mode });
+}
+
+function selectScanOS(slug, card) {
+  if (!card) return;
+  document.querySelectorAll('.scan-os-card').forEach(c => {
+    c.classList.remove('border-cyan-500', 'bg-cyan-950/20', 'shadow-[0_0_12px_rgba(6,182,212,0.2)]');
+    c.classList.add('border-slate-700/60', 'bg-slate-900/40');
+  });
+  card.classList.remove('border-slate-700/60', 'bg-slate-900/40');
+  card.classList.add('border-cyan-500', 'bg-cyan-950/20', 'shadow-[0_0_12px_rgba(6,182,212,0.2)]');
+  const osData = window.OS_CATALOG[slug] || {};
+  ScanWizardState.save(1, { os: slug, osDisplay: osData.display || slug, supportedTiers: osData.supported_tiers || ['cis-l1'] });
+
+  // Grey incompatible providers
+  const compat = osData.providers || [];
+  document.querySelectorAll('.scan-provider-card').forEach(pc => {
+    pc.disabled = !compat.includes(pc.dataset.provider);
+    pc.classList.toggle('opacity-30', !compat.includes(pc.dataset.provider));
+    pc.classList.toggle('pointer-events-none', !compat.includes(pc.dataset.provider));
+  });
+}
+
+function selectScanProvider(pid, card) {
+  if (!card || card.disabled) return;
+  document.querySelectorAll('.scan-provider-card').forEach(c => {
+    c.classList.remove('border-cyan-500', 'bg-cyan-950/20', 'shadow-[0_0_12px_rgba(6,182,212,0.2)]');
+    c.classList.add('border-slate-700/60', 'bg-slate-900/40');
+  });
+  card.classList.remove('border-slate-700/60', 'bg-slate-900/40');
+  card.classList.add('border-cyan-500', 'bg-cyan-950/20', 'shadow-[0_0_12px_rgba(6,182,212,0.2)]');
+  ScanWizardState.save(1, { provider: pid, providerDisplay: (window.PROVIDER_CATALOG[pid] || {}).display || pid });
+}
+
+function goToScanStep2() {
+  const targetId = document.getElementById('target-id-input')?.value?.trim();
+  const region   = document.getElementById('scan-region-input')?.value?.trim() || 'us-east-1';
+  const instType = document.getElementById('scan-instance-type-input')?.value?.trim() || 't3.medium';
+  ScanWizardState.save(1, { targetId, region, instanceType: instType });
+
+  const s1 = ScanWizardState.get(1);
+  if (!s1.os || !s1.provider || !targetId) {
+    document.getElementById('step1-scan-error').classList.remove('hidden');
+    return;
+  }
+  document.getElementById('step1-scan-error').classList.add('hidden');
+  const params = new URLSearchParams({ os: s1.os, provider: s1.provider });
+  fetch(`/auditor/scanner/step2?${params}`).then(r => r.text()).then(html => {
+    loadScanStep(html);
+    setScanActiveStep(2);
+  });
+}
+</script>

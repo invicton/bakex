@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block title %}Audit Results — {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-6">
+  <div>
+    <h1 class="text-2xl font-bold text-white">Audit Results</h1>
+    {% if job %}
+    <p class="text-gray-400 mt-1">Target: <span class="text-white">{{ job.target_host }}</span> &middot; Profile: {{ job.profile_name }}</p>
+    {% endif %}
+  </div>
+
+  {% if not job %}
+  <p class="text-red-400">Audit job not found.</p>
+  {% elif job.status.value == 'failed' %}
+  <div class="bg-red-900/30 border border-red-700 rounded-xl p-4 text-red-300 text-sm">
+    <strong>Audit failed:</strong> {{ job.error }}
+  </div>
+  {% elif job.status.value != 'complete' %}
+  <div class="bg-yellow-900/30 border border-yellow-700 rounded-xl p-4 text-yellow-300 text-sm"
+       hx-get="/auditor/results/{{ job.id }}"
+       hx-trigger="every 3s"
+       hx-target="body"
+       hx-swap="innerHTML">
+    Scan in progress…
+  </div>
+  {% else %}
+
+  <!-- Score banner -->
+  {% if job.results %}
+  <div class="bg-gray-900 border border-gray-800 rounded-xl p-6 flex items-center gap-6">
+    <div class="text-5xl font-bold {% if job.results.score and job.results.score > 80 %}text-green-400{% else %}text-red-400{% endif %}">
+      {{ "%.1f"|format(job.results.score) if job.results.score else "N/A" }}
+    </div>
+    <div>
+      <p class="text-sm text-gray-400">Compliance score</p>
+      <p class="text-xs text-gray-500 mt-1">{{ job.results.benchmark_id }}</p>
+    </div>
+    <div class="ml-auto flex gap-6 text-center">
+      <div>
+        <div class="text-2xl font-bold text-green-400">{{ job.results.counts.get('pass', 0) }}</div>
+        <div class="text-xs text-gray-500">pass</div>
+      </div>
+      <div>
+        <div class="text-2xl font-bold text-red-400">{{ job.results.counts.get('fail', 0) }}</div>
+        <div class="text-xs text-gray-500">fail</div>
+      </div>
+      <div>
+        <div class="text-2xl font-bold text-gray-400">{{ job.results.counts.get('notchecked', 0) }}</div>
+        <div class="text-xs text-gray-500">skipped</div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Delta report -->
+  {% if job.delta %}
+  {% include "partials/report_table.html" %}
+  {% endif %}
+
+  <!-- Failed rules table -->
+  {% if job.results and job.results.rules %}
+  <section>
+    <h2 class="text-sm font-semibold uppercase tracking-widest text-gray-500 mb-3">Failed Rules</h2>
+    <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+      <table class="w-full text-sm">
+        <thead class="bg-gray-800 text-gray-400 text-xs uppercase">
+          <tr>
+            <th class="px-4 py-3 text-left">Rule ID</th>
+            <th class="px-4 py-3 text-left">Severity</th>
+            <th class="px-4 py-3 text-left">Result</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-800">
+          {% for rule in job.results.rules if rule.result == 'fail' %}
+          <tr>
+            <td class="px-4 py-3 text-xs font-mono text-gray-300">{{ rule.id }}</td>
+            <td class="px-4 py-3">
+              <span class="px-2 py-0.5 rounded text-xs font-semibold
+                {% if rule.severity == 'high' or rule.severity == 'critical' %}bg-red-900 text-red-300
+                {% elif rule.severity == 'medium' %}bg-yellow-900 text-yellow-300
+                {% else %}bg-gray-800 text-gray-400{% endif %}">
+                {{ rule.severity }}
+              </span>
+            </td>
+            <td class="px-4 py-3 text-red-400 font-semibold text-xs">{{ rule.result }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="3" class="px-4 py-4 text-gray-500 text-center">No failures — system is compliant.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+  {% endif %}
+
+  {% endif %}
+</div>
+{% endblock %}

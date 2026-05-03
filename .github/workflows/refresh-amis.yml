@@ -1,0 +1,54 @@
+name: Refresh AWS AMI Catalog Defaults
+
+on:
+  schedule:
+    - cron: '0 6 * * 1'   # Monday 06:00 UTC
+  workflow_dispatch:        # allow manual trigger
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install boto3
+        run: pip install boto3
+
+      - name: Resolve latest AMIs and update catalog
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AMI_REFRESH_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AMI_REFRESH_AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: us-east-1
+        run: python scripts/refresh_ami_catalog.py
+
+      - name: Check for changes
+        id: diff
+        run: |
+          git diff --quiet stratum/core/os_catalog.py || echo "changed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Commit and open PR
+        if: steps.diff.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          BRANCH="chore/refresh-amis-$(date +%Y%m%d)"
+          git checkout -b "$BRANCH"
+          git add stratum/core/os_catalog.py
+          git commit -m "chore: refresh AWS AMI catalog defaults $(date +%Y-%m-%d)"
+          git push origin "$BRANCH"
+          gh pr create \
+            --title "chore: refresh AWS AMI catalog defaults $(date +%Y-%m-%d)" \
+            --body "Automated weekly AMI refresh. Fallback AMI IDs in \`os_catalog.py\` updated to current us-east-1 values." \
+            --base main \
+            --head "$BRANCH"

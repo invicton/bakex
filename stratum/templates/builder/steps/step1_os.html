@@ -1,0 +1,178 @@
+<!-- Step 1: OS & Cloud Provider Selection -->
+<div class="space-y-6" id="step1-content">
+
+  <div class="grid grid-cols-2 gap-6">
+
+    <!-- OS Picker -->
+    <div class="space-y-3">
+      <div>
+        <h2 class="text-base font-semibold text-white">Operating System</h2>
+        <p class="text-xs text-slate-500 mt-0.5">Select the base OS for your hardened image.</p>
+      </div>
+      <div class="grid grid-cols-1 gap-2" id="os-cards">
+        {% for slug, data in os_catalog.items() %}
+        <button type="button"
+                data-os-slug="{{ slug }}"
+                class="os-card group relative p-3.5 rounded-xl border border-slate-700/60 bg-slate-900/40
+                       hover:border-cyan-500/50 hover:bg-slate-800/50 transition-all cursor-pointer text-left
+                       focus:outline-none focus:ring-2 focus:ring-cyan-500/40"
+                onclick="selectOS('{{ slug }}', this)">
+          <div class="flex items-center gap-3">
+            <span class="text-xl">{{ data.icon }}</span>
+            <div class="flex-1 min-w-0">
+              <div class="text-sm font-semibold text-white group-hover:text-cyan-300 transition-colors">{{ data.display }}</div>
+              <div class="text-[10px] text-slate-500 font-mono mt-0.5">{{ slug }}</div>
+            </div>
+            <div class="flex gap-1 flex-wrap justify-end">
+              {% for tier in data.supported_tiers %}
+              <span class="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-400">{{ tier }}</span>
+              {% endfor %}
+            </div>
+          </div>
+        </button>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Provider Picker -->
+    <div class="space-y-3">
+      <div>
+        <h2 class="text-base font-semibold text-white">Cloud Provider</h2>
+        <p class="text-xs text-slate-500 mt-0.5">Select where the image will be built.</p>
+      </div>
+
+      <!-- Compatibility notice -->
+      <div id="compat-notice" class="hidden text-xs text-amber-400 bg-amber-950/20 border border-amber-800/30 rounded-lg px-3 py-2">
+        <svg class="w-3.5 h-3.5 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+        </svg>
+        Greyed-out providers are not compatible with the selected OS.
+      </div>
+
+      <div class="grid grid-cols-2 gap-2" id="provider-cards">
+        {% for pid, pdata in provider_catalog.items() %}
+        <button type="button"
+                data-provider="{{ pid }}"
+                class="provider-card group relative p-3.5 rounded-xl border border-slate-700/60 bg-slate-900/40
+                       hover:border-cyan-500/50 hover:bg-slate-800/50 transition-all cursor-pointer text-left
+                       focus:outline-none focus:ring-2 focus:ring-cyan-500/40"
+                onclick="selectProvider('{{ pid }}', this)">
+          <div class="flex items-center gap-2.5">
+            <span class="text-lg">{{ pdata.icon }}</span>
+            <div>
+              <div class="text-sm font-semibold text-white group-hover:text-cyan-300 transition-colors">{{ pdata.display }}</div>
+              <div class="text-[10px] text-slate-500 mt-0.5">{{ pdata.label }}</div>
+            </div>
+          </div>
+        </button>
+        {% endfor %}
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Validation error -->
+  <div id="step1-error" class="hidden text-xs text-rose-400 bg-rose-950/20 border border-rose-800/30 rounded-lg px-3 py-2">
+    Please select both an operating system and a cloud provider to continue.
+  </div>
+
+  <!-- Next button -->
+  <div class="flex justify-end">
+    <button type="button"
+            onclick="goToStep2()"
+            class="flex items-center gap-2 px-5 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-sm rounded-xl transition-all shadow-[0_0_15px_rgba(6,182,212,0.25)] hover:shadow-[0_0_20px_rgba(6,182,212,0.4)]">
+      Next: Instance &amp; Storage
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+      </svg>
+    </button>
+  </div>
+
+</div>
+
+<script>
+(function() {
+  /* Restore prior selection */
+  const prior = WizardState.get(1);
+  if (prior.os) selectOS(prior.os, document.querySelector(`[data-os-slug="${prior.os}"]`));
+  if (prior.provider) selectProvider(prior.provider, document.querySelector(`[data-provider="${prior.provider}"]`));
+  setActiveStep(1);
+})();
+
+function selectOS(slug, card) {
+  if (!card) return;
+  /* Clear all OS cards */
+  document.querySelectorAll('.os-card').forEach(c => {
+    c.classList.remove('border-cyan-500', 'bg-cyan-950/20', 'shadow-[0_0_12px_rgba(6,182,212,0.2)]');
+    c.classList.add('border-slate-700/60', 'bg-slate-900/40');
+  });
+  /* Highlight selected */
+  card.classList.remove('border-slate-700/60', 'bg-slate-900/40');
+  card.classList.add('border-cyan-500', 'bg-cyan-950/20', 'shadow-[0_0_12px_rgba(6,182,212,0.2)]');
+
+  /* Grey out incompatible providers */
+  const compatProviders = (window.OS_CATALOG[slug] || {}).providers || [];
+  document.getElementById('compat-notice').classList.toggle('hidden', compatProviders.length === 0);
+  document.querySelectorAll('.provider-card').forEach(pc => {
+    const pid = pc.dataset.provider;
+    if (compatProviders.includes(pid)) {
+      pc.removeAttribute('disabled');
+      pc.classList.remove('opacity-30', 'cursor-not-allowed', 'pointer-events-none');
+    } else {
+      pc.setAttribute('disabled', '');
+      pc.classList.add('opacity-30', 'cursor-not-allowed', 'pointer-events-none');
+      /* Deselect if it was selected */
+      if (pc.classList.contains('border-cyan-500')) {
+        pc.classList.remove('border-cyan-500', 'bg-cyan-950/20', 'shadow-[0_0_12px_rgba(6,182,212,0.2)]');
+        pc.classList.add('border-slate-700/60', 'bg-slate-900/40');
+        WizardState.save(1, {...WizardState.get(1), provider: null, providerLabel: null});
+      }
+    }
+  });
+
+  const osData = window.OS_CATALOG[slug] || {};
+  WizardState.save(1, {
+    ...WizardState.get(1),
+    os: slug,
+    osDisplay: osData.display || slug,
+    minRootGb: osData.min_root_gb || 20,
+    supportedTiers: osData.supported_tiers || ['cis-l1'],
+    selinux: osData.selinux || false,
+  });
+  document.getElementById('step1-error').classList.add('hidden');
+}
+
+function selectProvider(pid, card) {
+  if (!card || card.disabled) return;
+  document.querySelectorAll('.provider-card').forEach(c => {
+    c.classList.remove('border-cyan-500', 'bg-cyan-950/20', 'shadow-[0_0_12px_rgba(6,182,212,0.2)]');
+    c.classList.add('border-slate-700/60', 'bg-slate-900/40');
+  });
+  card.classList.remove('border-slate-700/60', 'bg-slate-900/40');
+  card.classList.add('border-cyan-500', 'bg-cyan-950/20', 'shadow-[0_0_12px_rgba(6,182,212,0.2)]');
+
+  const pdata = window.PROVIDER_CATALOG[pid] || {};
+  WizardState.save(1, {
+    ...WizardState.get(1),
+    provider: pid,
+    providerDisplay: pdata.display || pid,
+  });
+  document.getElementById('step1-error').classList.add('hidden');
+}
+
+function goToStep2() {
+  const s1 = WizardState.get(1);
+  if (!s1.os || !s1.provider) {
+    document.getElementById('step1-error').classList.remove('hidden');
+    return;
+  }
+  /* Fetch step 2 partial from server */
+  const params = new URLSearchParams({ os: s1.os, provider: s1.provider, min_root_gb: s1.minRootGb || 20 });
+  fetch(`/builder/wizard/step2?${params}`)
+    .then(r => r.text())
+    .then(html => {
+      loadStep(html);
+      setActiveStep(2);
+    });
+}
+</script>

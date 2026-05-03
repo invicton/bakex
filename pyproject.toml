@@ -1,0 +1,92 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "stratum"
+version = "0.3.0"
+description = "Open-core multi-cloud DevSecOps platform — the Terraform of OS Hardening"
+readme = "README.md"
+license = { text = "Apache-2.0" }
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.111.0",
+    "uvicorn[standard]>=0.29.0",
+    "jinja2>=3.1.4",
+    "python-multipart>=0.0.9",
+    "pydantic>=2.7.0",
+    "pydantic-settings>=2.2.1",
+    "pyyaml>=6.0.1",
+    "anyio>=4.3.0",
+    "httpx>=0.27.0",
+    "cryptography>=42.0",
+    "anthropic>=0.40.0",
+]
+
+[project.optional-dependencies]
+# Cloud provider plugins
+aws = ["boto3>=1.34"]
+gcp = ["google-cloud-compute>=1.14.0", "google-auth>=2.29.0"]
+azure = ["azure-mgmt-compute>=30.0.0", "azure-mgmt-network>=25.0.0", "azure-mgmt-resource>=23.0.0", "azure-identity>=1.17.0"]
+linode = ["linode-api4>=5.0.0"]
+digitalocean = ["requests>=2.31.0"]
+proxmox = ["proxmoxer>=2.0.0", "requests>=2.31.0"]
+all-providers = ["stratum[aws,gcp,azure,linode,digitalocean,proxmox]"]
+# LLM backend extras (anthropic is a core dep; these add alternative backends)
+llm-openai = ["openai>=1.30.0"]
+llm-bedrock = ["boto3>=1.34"]       # reuses boto3 already pulled in by aws extra
+llm-all = ["stratum[llm-openai,llm-bedrock]"]
+dev = [
+    "pytest>=8.2.0",
+    "httpx>=0.27.0",
+    "pytest-asyncio>=0.24.0",
+    "pytest-anyio>=0.0.0",
+    "anyio[trio]>=4.3.0",
+    "ruff>=0.4.0",
+    "playwright>=1.44.0",
+    "pytest-playwright>=0.5.0",
+]
+
+[project.entry-points."stratum.providers"]
+# Register pip-installed providers here, e.g.:
+# aws = "stratum_aws:AWSProvider"
+# proxmox = "stratum_proxmox:ProxmoxProvider"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.2.0",
+    "httpx>=0.27.0",
+    "pytest-asyncio>=0.24.0",
+    "anyio[trio]>=4.3.0",
+    "ruff>=0.4.0",
+    "playwright>=1.44.0",
+    "pytest-playwright>=0.5.0",
+]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "PLC"]
+ignore = ["E501", "B008", "B904", "UP042"]
+
+[tool.ruff.lint.per-file-ignores]
+"plugins/**/*.py" = ["PLC0415"]
+"scripts/**/*.py" = ["PLC0415"]
+"stratum/**/*.py" = ["PLC0415"]
+"tests/**/*.py" = ["B017", "PLC0415"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["stratum"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+markers = [
+    "integration: live cloud integration tests (require STRATUM_RUN_INTEGRATION=1)",
+    "aws_fast: fast AWS checks — STS, AMI resolution, list_images (< 30s each)",
+    "aws_smoke: smoke build — EC2 + SSM + CreateImage, no hardening (~10 min)",
+    "aws_full: full CIS pipeline — Ansible-Lockdown + OpenSCAP + AMI (~45 min)",
+    "ui: browser-based UI smoke tests via Playwright (require STRATUM_RUN_UI=1 and running server at localhost:8001)",
+]

@@ -1,0 +1,216 @@
+{% extends "base.html" %}
+{% block title %}Webhooks — Stratum{% endblock %}
+{% block content %}
+<div class="px-8 py-6 space-y-6 max-w-3xl">
+
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-xl font-bold text-white">Webhooks</h1>
+      <p class="text-sm text-slate-400 mt-0.5">Receive HTTP POST notifications when scans complete or fail.</p>
+    </div>
+    <button onclick="document.getElementById('create-modal').classList.remove('hidden')"
+            class="flex items-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-sm rounded-xl transition-all">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+      </svg>
+      Add Webhook
+    </button>
+  </div>
+
+  <!-- Signature hint -->
+  <div class="bg-slate-900/50 border border-slate-800 rounded-xl p-4 space-y-2">
+    <div class="text-xs font-bold text-slate-400 uppercase tracking-wider">Signature Verification</div>
+    <p class="text-xs text-slate-500">Each request includes <code class="text-slate-300 bg-slate-800 rounded px-1">X-Stratum-Signature: sha256=&lt;hmac&gt;</code> computed with your webhook secret.</p>
+    <div class="font-mono text-xs text-slate-300 bg-slate-950/60 rounded px-3 py-1.5">
+      import hmac, hashlib<br>
+      sig = hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()<br>
+      assert f"sha256={sig}" == request.headers["X-Stratum-Signature"]
+    </div>
+  </div>
+
+  <!-- Hooks table -->
+  {% if hooks %}
+  <div class="bg-slate-900/50 border border-slate-800 rounded-xl overflow-hidden">
+    <table class="w-full text-xs">
+      <thead class="bg-slate-800/60">
+        <tr>
+          <th class="text-left px-4 py-3 text-slate-400 font-semibold">Label / URL</th>
+          <th class="text-left px-4 py-3 text-slate-400 font-semibold">Events</th>
+          <th class="text-center px-4 py-3 text-slate-400 font-semibold w-20">Status</th>
+          <th class="px-4 py-3"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for hook in hooks %}
+        <tr class="border-t border-slate-800 hover:bg-slate-800/20 transition-colors" id="hook-row-{{ hook.id }}">
+          <td class="px-4 py-3">
+            <div class="text-slate-200 font-medium">{{ hook.label or hook.url }}</div>
+            {% if hook.label %}<div class="text-slate-500 font-mono truncate max-w-xs">{{ hook.url }}</div>{% endif %}
+          </td>
+          <td class="px-4 py-3">
+            <div class="flex flex-wrap gap-1">
+              {% for ev in hook.events %}
+              <span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">{{ ev }}</span>
+              {% endfor %}
+            </div>
+          </td>
+          <td class="px-4 py-3 text-center">
+            {% if hook.enabled %}
+            <span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-900/40 text-emerald-400">active</span>
+            {% else %}
+            <span class="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-500">disabled</span>
+            {% endif %}
+          </td>
+          <td class="px-4 py-3">
+            <div class="flex items-center gap-1.5 justify-end">
+              <button onclick="testHook('{{ hook.id }}')"
+                      class="text-[10px] px-2 py-1 rounded bg-slate-700 hover:bg-slate-600 text-slate-300 transition-colors">
+                Test
+              </button>
+              <button onclick="deleteHook('{{ hook.id }}')"
+                      class="text-[10px] px-2 py-1 rounded bg-rose-900/30 hover:bg-rose-800/50 text-rose-400 transition-colors">
+                Delete
+              </button>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="flex flex-col items-center justify-center py-16 text-center space-y-3">
+    <div class="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center">
+      <svg class="w-6 h-6 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+      </svg>
+    </div>
+    <div class="text-slate-400 font-semibold">No webhooks registered</div>
+    <p class="text-slate-600 text-sm">Add a webhook to receive real-time scan notifications in Slack, PagerDuty, or any HTTP endpoint.</p>
+  </div>
+  {% endif %}
+
+</div>
+
+<!-- Create webhook modal -->
+<div id="create-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+  <div class="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-md shadow-2xl space-y-4">
+    <div class="flex items-center justify-between">
+      <h2 class="text-base font-bold text-white">Add Webhook</h2>
+      <button onclick="closeModal()" class="text-slate-500 hover:text-white transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="space-y-3">
+      <label class="block">
+        <span class="text-xs text-slate-400 font-medium">URL</span>
+        <input id="hook-url" type="url" placeholder="https://hooks.example.com/..."
+               class="mt-1 w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"/>
+      </label>
+      <label class="block">
+        <span class="text-xs text-slate-400 font-medium">Label (optional)</span>
+        <input id="hook-label" type="text" placeholder="e.g. Slack #security-alerts" maxlength="80"
+               class="mt-1 w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"/>
+      </label>
+      <div>
+        <span class="text-xs text-slate-400 font-medium">Events</span>
+        <div class="mt-1.5 space-y-1.5">
+          {% for ev in valid_events %}
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" name="events" value="{{ ev }}" checked
+                   class="rounded border-slate-600 bg-slate-800 text-cyan-500 focus:ring-cyan-500"/>
+            <span class="text-xs text-slate-300">{{ ev }}</span>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div id="secret-reveal" class="hidden bg-amber-950/30 border border-amber-800/40 rounded-xl p-3 space-y-1.5">
+        <div class="text-xs font-bold text-amber-400">Webhook secret — copy it now</div>
+        <div class="flex items-center gap-2">
+          <code id="secret-text" class="flex-1 font-mono text-xs text-amber-300 bg-slate-950/60 rounded px-2 py-1.5 break-all"></code>
+          <button onclick="copySecret()" class="shrink-0 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-white text-xs rounded-lg transition-colors">Copy</button>
+        </div>
+      </div>
+
+      <div id="create-btn-area">
+        <button onclick="createHook()"
+                class="w-full py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-sm rounded-xl transition-all">
+          Register
+        </button>
+      </div>
+      <div id="done-btn-area" class="hidden">
+        <button onclick="closeModal(true)"
+                class="w-full py-2 bg-slate-700 hover:bg-slate-600 text-white font-semibold text-sm rounded-xl transition-all">
+          Done
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+async function createHook() {
+  const url = document.getElementById('hook-url').value.trim();
+  const label = document.getElementById('hook-label').value.trim();
+  const events = [...document.querySelectorAll('input[name="events"]:checked')].map(c => c.value);
+  if (!url) { document.getElementById('hook-url').focus(); return; }
+  if (!events.length) { alert('Select at least one event'); return; }
+  const res = await fetch('/api/webhooks', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({url, label, events}),
+  });
+  if (!res.ok) { const e = await res.json(); alert(e.detail || 'Failed'); return; }
+  const data = await res.json();
+  document.getElementById('secret-text').textContent = data.secret;
+  document.getElementById('secret-reveal').classList.remove('hidden');
+  document.getElementById('create-btn-area').classList.add('hidden');
+  document.getElementById('done-btn-area').classList.remove('hidden');
+}
+
+async function copySecret() {
+  await navigator.clipboard.writeText(document.getElementById('secret-text').textContent);
+  event.target.textContent = 'Copied!';
+  setTimeout(() => event.target.textContent = 'Copy', 2000);
+}
+
+function closeModal(reload = false) {
+  document.getElementById('create-modal').classList.add('hidden');
+  document.getElementById('secret-reveal').classList.add('hidden');
+  document.getElementById('create-btn-area').classList.remove('hidden');
+  document.getElementById('done-btn-area').classList.add('hidden');
+  document.getElementById('hook-url').value = '';
+  document.getElementById('hook-label').value = '';
+  if (reload) location.reload();
+}
+
+async function deleteHook(hookId) {
+  if (!confirm('Delete this webhook?')) return;
+  const res = await fetch(`/api/webhooks/${hookId}`, {method: 'DELETE'});
+  if (res.ok || res.status === 204) {
+    document.getElementById(`hook-row-${hookId}`)?.remove();
+  } else {
+    alert('Failed to delete webhook');
+  }
+}
+
+async function testHook(hookId) {
+  const btn = event.target;
+  btn.textContent = 'Firing…';
+  btn.disabled = true;
+  const res = await fetch(`/api/webhooks/${hookId}/test`, {method: 'POST'});
+  if (res.ok) {
+    btn.textContent = 'Sent!';
+    btn.classList.add('text-emerald-400');
+  } else {
+    btn.textContent = 'Failed';
+    btn.classList.add('text-rose-400');
+  }
+  setTimeout(() => { btn.textContent = 'Test'; btn.disabled = false; btn.classList.remove('text-emerald-400','text-rose-400'); }, 3000);
+}
+</script>
+{% endblock %}

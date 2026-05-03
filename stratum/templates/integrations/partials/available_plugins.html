@@ -1,0 +1,34 @@
+<h2 class="text-xs font-semibold uppercase tracking-widest text-slate-500 mb-3 px-1 mt-6 border-t border-slate-800/80 pt-4">Available to Install</h2>
+{% for p in plugins %}
+<div class="w-full text-left border border-slate-800/50 rounded-xl p-3 mb-2 flex flex-col gap-2 bg-slate-900/40 relative">
+  <div class="flex items-center gap-3">
+    <div class="w-8 h-8 rounded shrink-0 bg-slate-800 flex items-center justify-center text-sm shadow-inner opacity-80">
+      {{ p.icon }}
+    </div>
+    <div class="flex-1 min-w-0">
+      <div class="text-sm font-semibold text-slate-300 truncate">{{ p.name }}</div>
+      <div class="text-[10px] text-slate-500 truncate">{{ p.description }}</div>
+    </div>
+  </div>
+  <button 
+    hx-post="/api/plugins/install" 
+    hx-vals='{"provider_id": "{{ p.id }}"}'
+    hx-target="#install-status-{{ p.id }}"
+    hx-swap="innerHTML"
+    class="w-full py-1.5 px-3 bg-brand-600/20 hover:bg-brand-600/40 border border-brand-500/30 text-brand-400 rounded-lg text-xs font-semibold transition-colors disabled:opacity-50"
+    onclick="$(this).addClass('opacity-50 pointer-events-none').text('Installing...')"
+  >
+    Install Provider
+  </button>
+  <div id="install-status-{{ p.id }}" class="text-[10px] text-center mt-1"></div>
+</div>
+{% else %}
+<p class="text-xs text-slate-500 px-2 italic">All available community plugins are installed.</p>
+{% endfor %}
+
+{% if installed_count == 0 %}
+<script>
+  // Automatically clear empty state if no providers were installed previously
+  $('#integration-form-pane').html('<div class="text-center p-8"><div class="inline-flex w-16 h-16 rounded-full bg-slate-800/50 items-center justify-center mb-4 border border-slate-700/50"><svg class="w-7 h-7 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg></div><h3 class="text-lg font-semibold text-slate-300">Install Plugins</h3><p class="text-sm text-slate-500 mt-1 max-w-sm mx-auto">Select a provider from the available list on the left to securely download and configure its settings.</p></div>');
+</script>
+{% endif %}

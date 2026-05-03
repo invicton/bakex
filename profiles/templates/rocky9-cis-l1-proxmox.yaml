@@ -1,0 +1,79 @@
+# Stratum HardeningBlueprint — Rocky Linux 9 CIS Level 1 Server (Proxmox VE)
+#
+# Prerequisites:
+#   1. A Rocky Linux 9 cloud-init VM template on your Proxmox node
+#      (set base_image to its VMID, e.g. "9001")
+#   2. qemu-guest-agent installed in the template
+#   3. Proxmox credentials configured in Stratum integrations
+
+stratum_version: "0.3.0"
+kind: HardeningBlueprint
+
+metadata:
+  name: rocky9-cis-l1-proxmox
+  version: "1.0.0"
+  description: >
+    CIS RHEL 9 Benchmark — Level 1 Server for Proxmox VE, applied to Rocky Linux 9.
+    Clones a cloud-init template, hardens it, and converts to a new Proxmox template.
+  author: "Vamshi Krishna Santhapuri"
+  tags: [rocky, rocky9, cis, level1, server, proxmox, on-premises, selinux]
+
+target:
+  os: rocky9
+  arch: x86_64
+  provider: proxmox
+  # VMID of your Rocky Linux 9 cloud-init template (update to match your environment)
+  base_image: "9001"
+  instance_type: 2c-4g              # 2 cores, 4 GB RAM (Proxmox format)
+  root_volume_size_gb: 20
+
+system:
+  hostname: hardened-node
+  timezone: UTC
+  locale: en_US.UTF-8
+  selinux_mode: enforcing
+
+filesystem:
+  - device: tmpfs
+    mountpoint: /tmp
+    fstype: tmpfs
+    options: [rw, nosuid, nodev, noexec, relatime]
+    size: 2G
+
+  - device: tmpfs
+    mountpoint: /var/tmp
+    fstype: tmpfs
+    options: [rw, nosuid, nodev, noexec, relatime]
+    size: 1G
+
+  - device: tmpfs
+    mountpoint: /dev/shm
+    fstype: tmpfs
+    options: [rw, nosuid, nodev, noexec, relatime]
+
+users:
+  root:
+    lock: true
+
+  accounts:
+    - name: stratum-admin
+      comment: "Stratum-managed admin account"
+      groups: [wheel]
+      shell: /bin/bash
+      ssh_authorized_keys: []
+
+compliance:
+  benchmark: xccdf_org.ssgproject.content_benchmark_RHEL-9
+  profile: xccdf_org.ssgproject.content_profile_cis_server_l1
+  datastream: /usr/share/xml/scap/ssg/content/ssg-rhel9-ds.xml
+  fail_on_findings: true
+  severity_threshold: medium
+
+controls:
+  xccdf_org.ssgproject.content_rule_package_telnet_removed: true
+  xccdf_org.ssgproject.content_rule_sshd_disable_root_login:
+    enabled: true
+    justification: Root SSH login is prohibited by CIS and organisational security policy.
+  xccdf_org.ssgproject.content_rule_selinux_state:
+    enabled: true
+    justification: SELinux must be in enforcing mode per CIS RHEL 9 Level 1.

@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+
+{% block title %}Scan {{ job.image_id[:12] }}… — {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+
+  <!-- Header -->
+  <div class="flex items-start justify-between">
+    <div>
+      <h1 class="text-2xl font-bold text-white">Image Scan Report</h1>
+      <p class="text-slate-400 mt-1 font-mono text-sm">{{ job.image_id }}</p>
+    </div>
+    <a href="/auditor/scan-image"
+       class="text-sm text-slate-400 hover:text-white transition px-3 py-1.5 border border-slate-700 rounded-lg">
+      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg> New Scan
+    </a>
+  </div>
+
+  <!-- Live polling wrapper — polls until job completes -->
+  <div
+    id="scan-status"
+    {% if job.status in ['pending', 'scanning'] %}
+    hx-get="/api/auditor/jobs/{{ job.id }}"
+    hx-trigger="every 3s"
+    hx-target="#scan-page-content"
+    hx-swap="outerHTML"
+    {% endif %}
+  >
+    <div id="scan-page-content">
+
+      {% if job.status in ['pending', 'scanning'] %}
+      <!-- In-progress state -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-8 text-center space-y-4">
+        <div class="inline-flex items-center gap-3 text-slate-300">
+          <svg class="animate-spin h-5 w-5 text-brand-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <span class="font-medium">{{ job.status | title }}…</span>
+        </div>
+        <p class="text-sm text-slate-500">
+          Provisioning a temporary instance from <span class="font-mono text-slate-300">{{ job.image_id }}</span>,
+          running OpenSCAP, then terminating. This typically takes 3–8 minutes.
+        </p>
+      </div>
+
+      {% elif job.status == 'failed' %}
+      <!-- Failed state -->
+      <div class="bg-red-950/30 border border-red-800/40 rounded-xl p-6 space-y-2">
+        <h2 class="text-lg font-semibold text-red-300">Scan Failed</h2>
+        <p class="font-mono text-sm text-red-400">{{ job.error }}</p>
+      </div>
+
+      {% else %}
+      <!-- Complete state — grade + results -->
+
+      <!-- Grade card -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-6">
+        <div class="flex items-center gap-8">
+          <!-- Large grade letter -->
+          {% set grade_colors = {
+            'A': 'text-emerald-400',
+            'B': 'text-green-400',
+            'C': 'text-yellow-400',
+            'D': 'text-orange-400',
+            'F': 'text-red-400'
+          } %}
+          {% set grade_bg = {
+            'A': 'bg-emerald-950/50 border-emerald-800/40',
+            'B': 'bg-green-950/50 border-green-800/40',
+            'C': 'bg-yellow-950/50 border-yellow-800/40',
+            'D': 'bg-orange-950/50 border-orange-800/40',
+            'F': 'bg-red-950/50 border-red-800/40'
+          } %}
+          <div class="flex-shrink-0 w-24 h-24 rounded-2xl border {{ grade_bg.get(job.grade, 'bg-slate-800 border-slate-700') }} flex items-center justify-center">
+            <span class="text-5xl font-black {{ grade_colors.get(job.grade, 'text-slate-300') }}">
+              {{ job.grade or '?' }}
+            </span>
+          </div>
+          <!-- Score + metadata -->
+          <div class="flex-1 space-y-1">
+            <div class="text-3xl font-bold text-white">
+              {% if job.score_pct is not none %}
+              {{ "%.1f"|format(job.score_pct) }}%
+              {% else %}
+              N/A
+              {% endif %}
+              <span class="text-base font-normal text-slate-400 ml-1">compliance score</span>
+            </div>
+            <div class="flex flex-wrap gap-4 text-xs text-slate-400 font-mono mt-2">
+              <span class="flex items-center gap-1.5"><svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"></path></svg>{{ job.image_id }}</span>
+              <span class="flex items-center gap-1.5"><svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"></path></svg>{{ job.provider }}</span>
+              <span class="flex items-center gap-1.5"><svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>{{ job.region }}</span>
+              <span class="flex items-center gap-1.5"><svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>{{ job.profile_name }}</span>
+            </div>
+          </div>
+          <!-- Export button -->
+          <div>
+            <a href="/api/auditor/scan-image/{{ job.id }}/report" target="_blank"
+               class="inline-flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm font-medium rounded-lg border border-slate-700 transition">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+              Export Report
+            </a>
+          </div>
+        </div>
+
+        <!-- Compliance score bar -->
+        {% if job.score_pct is not none %}
+        <div class="mt-5">
+          <div class="h-2 rounded-full bg-slate-800 overflow-hidden">
+            <div class="h-full rounded-full transition-all {{ grade_colors.get(job.grade, 'bg-slate-500') | replace('text-', 'bg-') }}"
+                 style="width: {{ job.score_pct }}%"></div>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Severity breakdown -->
+      {% if job.severity_counts %}
+      <div class="grid grid-cols-4 gap-3">
+        {% set sev_config = [
+          ('critical', 'Critical', 'text-red-300', 'bg-red-950/40 border-red-800/30'),
+          ('high',     'High',     'text-orange-300', 'bg-orange-950/40 border-orange-800/30'),
+          ('medium',   'Medium',   'text-yellow-300', 'bg-yellow-950/40 border-yellow-800/30'),
+          ('low',      'Low',      'text-blue-300', 'bg-blue-950/40 border-blue-800/30'),
+        ] %}
+        {% for key, label, text_cls, bg_cls in sev_config %}
+        <div class="rounded-xl border {{ bg_cls }} p-4 text-center">
+          <div class="text-2xl font-bold {{ text_cls }}">
+            {{ job.severity_counts.get(key, 0) }}
+          </div>
+          <div class="text-xs text-slate-500 uppercase tracking-wide mt-1">{{ label }} findings</div>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <!-- Findings table -->
+      {% if job.results and job.results.rules %}
+      {% set failed_rules = job.results.rules | selectattr('result', 'eq', 'fail') | list %}
+      {% if failed_rules %}
+      <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
+        <div class="px-5 py-3 border-b border-slate-800 flex items-center justify-between">
+          <h2 class="text-sm font-semibold text-white">
+            Failed Rules
+            <span class="ml-2 text-xs font-normal text-slate-400">({{ failed_rules | length }} total)</span>
+          </h2>
+        </div>
+        <div class="divide-y divide-slate-800/60">
+          {% for rule in failed_rules %}
+          {% set sev = rule.severity | lower %}
+          {% set sev_badge = {
+            'critical': 'bg-red-900/60 text-red-300',
+            'high': 'bg-orange-900/60 text-orange-300',
+            'medium': 'bg-yellow-900/60 text-yellow-300',
+            'low': 'bg-blue-900/60 text-blue-300',
+          } %}
+          <div class="px-5 py-3 flex items-center gap-4 hover:bg-slate-800/30 transition">
+            <span class="text-xs px-2 py-0.5 rounded-full font-medium {{ sev_badge.get(sev, 'bg-slate-700 text-slate-300') }}">
+              {{ sev | upper }}
+            </span>
+            <span class="font-mono text-xs text-slate-300 flex-1 truncate">{{ rule.id }}</span>
+            {% if rule.title %}
+            <span class="text-xs text-slate-500 truncate max-w-xs">{{ rule.title }}</span>
+            {% endif %}
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Pass/skip summary -->
+      <div class="grid grid-cols-3 gap-3">
+        {% set counts = job.results.get('counts', {}) %}
+        <div class="bg-slate-900 border border-slate-800 rounded-lg px-4 py-3 text-center">
+          <div class="text-xl font-bold text-emerald-400">{{ counts.get('pass', job.results.get('passed', 0)) }}</div>
+          <div class="text-xs text-slate-500 mt-0.5">Passed</div>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 rounded-lg px-4 py-3 text-center">
+          <div class="text-xl font-bold text-red-400">{{ counts.get('fail', job.results.get('failed', 0)) }}</div>
+          <div class="text-xs text-slate-500 mt-0.5">Failed</div>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 rounded-lg px-4 py-3 text-center">
+          <div class="text-xl font-bold text-slate-400">{{ counts.get('notchecked', counts.get('notapplicable', 0)) }}</div>
+          <div class="text-xs text-slate-500 mt-0.5">Skipped / N/A</div>
+        </div>
+      </div>
+      {% endif %}
+
+      {% endif %}{# end if complete #}
+    </div>{# end #scan-page-content #}
+  </div>{# end #scan-status #}
+
+</div>
+{% endblock %}
