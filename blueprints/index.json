@@ -1,0 +1,20 @@
+[
+  "alma/9/cis-l1-aws.yaml",
+  "amazon-linux/2023/cis-l1-aws.yaml",
+  "debian/12/cis-l1-aws.yaml",
+  "debian/12/cis-l1-digitalocean.yaml",
+  "debian/12/cis-l1-gcp.yaml",
+  "generic/hardening-blueprint.yaml",
+  "rocky/9/cis-l1-aws.yaml",
+  "rocky/9/cis-l1-azure.yaml",
+  "rocky/9/cis-l1-digitalocean.yaml",
+  "rocky/9/cis-l1-gcp.yaml",
+  "rocky/9/cis-l1-linode.yaml",
+  "rocky/9/cis-l1-proxmox.yaml",
+  "ubuntu/22.04/cis-l1-aws.yaml",
+  "ubuntu/22.04/cis-l1-azure.yaml",
+  "ubuntu/22.04/cis-l1-digitalocean.yaml",
+  "ubuntu/22.04/cis-l1-gcp.yaml",
+  "ubuntu/22.04/cis-l1-linode.yaml",
+  "ubuntu/22.04/cis-l1-proxmox.yaml"
+]

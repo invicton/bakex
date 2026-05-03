@@ -1,0 +1,73 @@
+# Stratum HardeningBlueprint — Rocky Linux 9 CIS Level 1 Server (Linode / Akamai Cloud)
+
+stratum_version: "0.3.0"
+kind: HardeningBlueprint
+
+metadata:
+  name: rocky9-cis-l1-linode
+  version: "1.0.0"
+  description: >
+    CIS RHEL 9 Benchmark — Level 1 Server for Linode (Akamai Cloud) instances
+    running Rocky Linux 9. Produces a reusable private Linode image.
+  author: "Vamshi Krishna Santhapuri"
+  tags: [rocky, rocky9, cis, level1, server, linode, akamai, selinux]
+
+target:
+  os: rocky9
+  arch: x86_64
+  provider: linode
+  # Linode image ID for Rocky Linux 9
+  base_image: linode/rocky9
+  instance_type: g6-standard-2      # 2 vCPU / 4 GB RAM ($18/mo)
+  root_volume_size_gb: 50            # Linode minimum for g6-standard-2
+
+system:
+  hostname: hardened-node
+  timezone: UTC
+  locale: en_US.UTF-8
+  selinux_mode: enforcing
+
+filesystem:
+  - device: tmpfs
+    mountpoint: /tmp
+    fstype: tmpfs
+    options: [rw, nosuid, nodev, noexec, relatime]
+    size: 2G
+
+  - device: tmpfs
+    mountpoint: /var/tmp
+    fstype: tmpfs
+    options: [rw, nosuid, nodev, noexec, relatime]
+    size: 1G
+
+  - device: tmpfs
+    mountpoint: /dev/shm
+    fstype: tmpfs
+    options: [rw, nosuid, nodev, noexec, relatime]
+
+users:
+  root:
+    lock: true
+
+  accounts:
+    - name: stratum-admin
+      comment: "Stratum-managed admin account"
+      groups: [wheel]
+      shell: /bin/bash
+      ssh_authorized_keys: []
+
+compliance:
+  benchmark: xccdf_org.ssgproject.content_benchmark_RHEL-9
+  profile: xccdf_org.ssgproject.content_profile_cis_server_l1
+  datastream: /usr/share/xml/scap/ssg/content/ssg-rhel9-ds.xml
+  fail_on_findings: true
+  severity_threshold: medium
+
+controls:
+  xccdf_org.ssgproject.content_rule_package_telnet_removed: true
+  xccdf_org.ssgproject.content_rule_sshd_disable_root_login:
+    enabled: true
+    justification: Root SSH login is prohibited by CIS and organisational security policy.
+  xccdf_org.ssgproject.content_rule_selinux_state:
+    enabled: true
+    justification: SELinux must be in enforcing mode per CIS RHEL 9 Level 1.

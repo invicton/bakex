@@ -50,14 +50,15 @@ HardeningBlueprint (YAML)  ──or──  5-Step Guided Wizard
 2. [Features](#features)
 3. [Supported Platforms](#supported-platforms)
 4. [HardeningBlueprint Reference](#hardeningblueprint-reference)
-5. [AI Builder](#ai-builder)
-6. [Compliance Scanner](#compliance-scanner)
-7. [CI/CD Integration](#cicd-integration)
-8. [Provider Plugin System](#provider-plugin-system)
-9. [LLM Backends](#llm-backends)
-10. [Configuration](#configuration)
-11. [Development](#development)
-12. [Architecture](#architecture)
+5. [Community Blueprint Library](#community-blueprint-library)
+6. [AI Builder](#ai-builder)
+7. [Compliance Scanner](#compliance-scanner)
+8. [CI/CD Integration](#cicd-integration)
+9. [Provider Plugin System](#provider-plugin-system)
+10. [LLM Backends](#llm-backends)
+11. [Configuration](#configuration)
+12. [Development](#development)
+13. [Architecture](#architecture)
 
 ---
 
@@ -268,22 +269,48 @@ controls:
 
 ### Pre-built templates
 
-All templates are in [`profiles/templates/`](profiles/templates/). Load any of them in the UI or reference them by name.
+Built-in app templates are in [`profiles/templates/`](profiles/templates/). Load any of them in the UI or reference them by name.
 
 | File | OS | Provider | Profile |
 |---|---|---|---|
 | `amazon-linux-2023-cis-l1-aws.yaml` | Amazon Linux 2023 | AWS | CIS L1 |
-| `amazon-linux-2023-cis-l2-aws.yaml` | Amazon Linux 2023 | AWS | CIS L2 |
-| `ubuntu22-cis-l1-aws.yaml` | Ubuntu 22.04 | AWS | CIS L1 |
-| `ubuntu22-cis-l2-aws.yaml` | Ubuntu 22.04 | AWS | CIS L2 |
-| `ubuntu24-cis-l1-aws.yaml` | Ubuntu 24.04 | AWS | CIS L1 |
-| `rocky9-cis-l1-aws.yaml` | Rocky Linux 9 | AWS | CIS L1 |
-| `rocky9-cis-l2-aws.yaml` | Rocky Linux 9 | AWS | CIS L2 |
+| `alma9-cis-l1-aws.yaml` | AlmaLinux 9 | AWS | CIS L1 |
+| `debian12-cis-l1-aws.yaml` | Debian 12 | AWS | CIS L1 |
+| `debian12-cis-l1-digitalocean.yaml` | Debian 12 | DigitalOcean | CIS L1 |
 | `debian12-cis-l1-gcp.yaml` | Debian 12 | GCP | CIS L1 |
+| `rocky9-cis-l1-aws.yaml` | Rocky Linux 9 | AWS | CIS L1 |
+| `rocky9-cis-l1-azure.yaml` | Rocky Linux 9 | Azure | CIS L1 |
+| `rocky9-cis-l1-digitalocean.yaml` | Rocky Linux 9 | DigitalOcean | CIS L1 |
+| `rocky9-cis-l1-gcp.yaml` | Rocky Linux 9 | GCP | CIS L1 |
+| `rocky9-cis-l1-linode.yaml` | Rocky Linux 9 | Linode | CIS L1 |
+| `rocky9-cis-l1-proxmox.yaml` | Rocky Linux 9 | Proxmox | CIS L1 |
+| `ubuntu22-cis-l1-aws.yaml` | Ubuntu 22.04 | AWS | CIS L1 |
 | `ubuntu22-cis-l1-azure.yaml` | Ubuntu 22.04 | Azure | CIS L1 |
 | `ubuntu22-cis-l1-digitalocean.yaml` | Ubuntu 22.04 | DigitalOcean | CIS L1 |
+| `ubuntu22-cis-l1-gcp.yaml` | Ubuntu 22.04 | GCP | CIS L1 |
 | `ubuntu22-cis-l1-linode.yaml` | Ubuntu 22.04 | Linode | CIS L1 |
 | `ubuntu22-cis-l1-proxmox.yaml` | Ubuntu 22.04 | Proxmox | CIS L1 |
+
+---
+
+## Community Blueprint Library
+
+Stratum includes a top-level [`blueprints/`](blueprints/) folder for contributor-submitted blueprints. This is the public library surface for adding more OS/provider/framework combinations without changing the Stratum engine.
+
+The folder is organized by OS family and version:
+
+```text
+blueprints/<os-family>/<os-version>/<framework>-<level>-<provider>.yaml
+```
+
+Each contribution should:
+
+- validate against the `HardeningBlueprint` schema
+- use a supported OpenSCAP datastream/profile for the target OS
+- include accurate provider defaults and metadata tags
+- add its path to [`blueprints/index.json`](blueprints/index.json)
+
+See [`blueprints/README.md`](blueprints/README.md) for the contribution checklist.
 
 ---
 

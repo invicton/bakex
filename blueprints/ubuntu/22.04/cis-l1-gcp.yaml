@@ -1,0 +1,87 @@
+# Stratum HardeningBlueprint — Ubuntu 22.04 LTS CIS Level 1 Server (GCP)
+#
+# This blueprint is the GCP equivalent of ubuntu22-cis-l1-aws.yaml.
+# The compliance controls, filesystem layout, and users are identical —
+# only the target.provider and target.base_image differ.
+# This cross-provider portability is the core Stratum USP.
+
+stratum_version: "0.3.0"
+kind: HardeningBlueprint
+
+metadata:
+  name: ubuntu22-cis-l1-gcp
+  version: "1.0.0"
+  description: >
+    CIS Ubuntu Linux 22.04 LTS Benchmark — Level 1 Server profile for GCP.
+    Identical compliance posture to ubuntu22-cis-l1-aws — different cloud, same standard.
+  author: "Vamshi Krishna Santhapuri"
+  tags:
+    - ubuntu
+    - ubuntu22.04
+    - cis
+    - level1
+    - server
+    - gcp
+
+target:
+  os: ubuntu22.04
+  arch: x86_64
+  provider: gcp
+  # GCP image family — resolves to the latest Ubuntu 22.04 LTS image automatically.
+  # Full path: projects/ubuntu-os-cloud/global/images/family/ubuntu-2204-lts
+  base_image: projects/ubuntu-os-cloud/global/images/family/ubuntu-2204-lts
+  instance_type: e2-medium
+  root_volume_size_gb: 20
+
+system:
+  hostname: hardened-node
+  timezone: UTC
+  locale: en_US.UTF-8
+  selinux_mode: null
+
+filesystem:
+  - device: tmpfs
+    mountpoint: /tmp
+    fstype: tmpfs
+    options: [rw, nosuid, nodev, noexec, relatime]
+    size: 2G
+
+  - device: tmpfs
+    mountpoint: /var/tmp
+    fstype: tmpfs
+    options: [rw, nosuid, nodev, noexec, relatime]
+    size: 1G
+
+  - device: tmpfs
+    mountpoint: /dev/shm
+    fstype: tmpfs
+    options: [rw, nosuid, nodev, noexec, relatime]
+
+users:
+  root:
+    lock: true
+
+  accounts:
+    - name: stratum-admin
+      comment: "Stratum-managed admin account"
+      groups:
+        - sudo
+      shell: /bin/bash
+      ssh_authorized_keys:
+        []
+
+compliance:
+  benchmark: xccdf_org.ssgproject.content_benchmark_UBUNTU2204
+  profile: xccdf_org.ssgproject.content_profile_cis_level1_server
+  datastream: /usr/share/xml/scap/ssg/content/ssg-ubuntu2204-ds.xml
+  fail_on_findings: true
+  severity_threshold: medium
+
+controls:
+  xccdf_org.ssgproject.content_rule_grub2_enable_selinux:
+    enabled: false
+    justification: Ubuntu Linux uses AppArmor. SELinux is not applicable.
+  xccdf_org.ssgproject.content_rule_package_telnet_removed: true
+  xccdf_org.ssgproject.content_rule_sshd_disable_root_login:
+    enabled: true
+    justification: Root SSH login is prohibited by CIS and organisational security policy.

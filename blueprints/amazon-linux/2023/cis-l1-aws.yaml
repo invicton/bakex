@@ -1,0 +1,109 @@
+# Stratum HardeningBlueprint — Amazon Linux 2023 CIS Level 1 Server (AWS)
+#
+# Amazon Linux 2023 is AWS's first-party Linux distribution.
+# It uses the RHEL 9 / Fedora lineage and is supported by SCAP Security Guide.
+
+stratum_version: "0.3.0"
+kind: HardeningBlueprint
+
+metadata:
+  name: amzn2023-cis-l1-aws
+  version: "1.0.0"
+  description: >
+    CIS Amazon Linux 2023 Benchmark — Level 1 Server profile.
+    Optimised for AWS workloads; SELinux enforcing (AL2023 ships with SELinux).
+  author: "Vamshi Krishna Santhapuri"
+  tags:
+    - amazon-linux
+    - amzn2023
+    - al2023
+    - cis
+    - level1
+    - server
+    - aws
+
+target:
+  os: amazon-linux-2023
+  arch: x86_64
+  provider: aws
+  # Use the AWS Systems Manager Parameter Store to get the current AMI:
+  #   aws ssm get-parameter --name /aws/service/ami-amazon-linux-latest/al2023-ami-minimal-kernel-default-x86_64
+  base_image: ami-0230bd60aa48260c6   # Amazon Linux 2023, us-east-1 (check for updates)
+  instance_type: t3.medium
+  root_volume_size_gb: 15
+  extra_volumes:
+    - device_name: /dev/sdf
+      size_gb: 2
+    - device_name: /dev/sdg
+      size_gb: 2
+    - device_name: /dev/sdh
+      size_gb: 2
+    - device_name: /dev/sdi
+      size_gb: 4
+
+system:
+  hostname: hardened-node
+  timezone: UTC
+  locale: en_US.UTF-8
+  selinux_mode: enforcing            # AL2023 ships with SELinux; CIS requires enforcing
+
+filesystem:
+  - device: /dev/nvme1n1
+    mountpoint: /var
+    fstype: xfs
+
+  - device: /dev/nvme2n1
+    mountpoint: /var/tmp
+    fstype: xfs
+
+  - device: /dev/nvme3n1
+    mountpoint: none
+    fstype: swap
+
+  - device: /dev/nvme4n1
+    mountpoint: /home
+    fstype: xfs
+
+  - device: tmpfs
+    mountpoint: /tmp
+    fstype: tmpfs
+    options: [rw, nosuid, nodev, noexec, relatime]
+    size: 2G
+
+  - device: tmpfs
+    mountpoint: /var/tmp
+    fstype: tmpfs
+    options: [rw, nosuid, nodev, noexec, relatime]
+    size: 1G
+
+  - device: tmpfs
+    mountpoint: /dev/shm
+    fstype: tmpfs
+    options: [rw, nosuid, nodev, noexec, relatime]
+
+users:
+  root:
+    lock: true
+
+  accounts:
+    - name: stratum-admin
+      comment: "Stratum-managed admin account"
+      groups:
+        - wheel
+      shell: /bin/bash
+      ssh_authorized_keys:
+        []
+
+compliance:
+  benchmark: xccdf_org.ssgproject.content_benchmark_AMAZON_LINUX_2023
+  profile: xccdf_org.ssgproject.content_profile_cis_server_l1
+  # Install on target: dnf install scap-security-guide
+  datastream: /usr/share/xml/scap/ssg/content/ssg-al2023-ds.xml
+  fail_on_findings: true
+  severity_threshold: medium
+
+controls:
+  xccdf_org.ssgproject.content_rule_package_telnet_removed: true
+  xccdf_org.ssgproject.content_rule_sshd_disable_root_login:
+    enabled: true
+    justification: Root SSH login is prohibited by CIS and organisational security policy.

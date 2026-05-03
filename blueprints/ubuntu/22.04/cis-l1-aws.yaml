@@ -1,0 +1,120 @@
+# Stratum HardeningBlueprint — Ubuntu 22.04 LTS CIS Level 1 Server (AWS)
+#
+# Download this file, fill in your base_image AMI ID, and run:
+#   stratum build ubuntu22-cis-l1-aws
+#
+# This blueprint produces an identical hardened AMI every time it is applied
+# to the same base image — the filesystem layout, users, and every CIS control
+# are all declared here and version-controlled with your infrastructure code.
+
+stratum_version: "0.3.0"
+kind: HardeningBlueprint
+
+metadata:
+  name: ubuntu22-cis-l1-aws
+  version: "1.0.0"
+  description: >
+    CIS Ubuntu Linux 22.04 LTS Benchmark — Level 1 Server profile for AWS.
+    Suitable for most production workloads; minimal performance impact.
+    Includes CIS-required separate filesystem mounts and a locked root account.
+  author: "Vamshi Krishna Santhapuri"
+  tags:
+    - ubuntu
+    - ubuntu22.04
+    - cis
+    - level1
+    - server
+    - aws
+
+# --------------------------------------------------------------------------
+# Target — which cloud + which base image to harden
+# --------------------------------------------------------------------------
+target:
+  os: ubuntu22.04
+  arch: x86_64
+  provider: aws
+  # Replace with the latest Ubuntu 22.04 official AMI for your region.
+  # Find current IDs at: https://cloud-images.ubuntu.com/locator/ec2/
+  base_image: ami-0c7217cdde317cfec   # Ubuntu 22.04 LTS, us-east-1 (x86_64)
+  instance_type: t3.medium            # 2 vCPU / 4 GB RAM — sufficient for Ansible + oscap
+  root_volume_size_gb: 20             # CIS requires /tmp, /var/tmp, /home on separate mounts
+
+# --------------------------------------------------------------------------
+# System — OS-level settings applied before hardening
+# --------------------------------------------------------------------------
+system:
+  hostname: hardened-node         # Override per-environment as needed
+  timezone: UTC
+  locale: en_US.UTF-8
+  selinux_mode: null              # Ubuntu uses AppArmor; leave null to skip SELinux
+
+# --------------------------------------------------------------------------
+# Filesystem — CIS requires these mounts to have specific options
+# CIS 1.1.x controls: /tmp, /var/tmp, /dev/shm must be separate with noexec/nosuid/nodev
+# --------------------------------------------------------------------------
+filesystem:
+  - device: tmpfs
+    mountpoint: /tmp
+    fstype: tmpfs
+    options: [rw, nosuid, nodev, noexec, relatime]
+    size: 2G
+
+  - device: tmpfs
+    mountpoint: /var/tmp
+    fstype: tmpfs
+    options: [rw, nosuid, nodev, noexec, relatime]
+    size: 1G
+
+  - device: tmpfs
+    mountpoint: /dev/shm
+    fstype: tmpfs
+    options: [rw, nosuid, nodev, noexec, relatime]
+
+# --------------------------------------------------------------------------
+# Users — root account and service accounts for the golden image
+# --------------------------------------------------------------------------
+users:
+  root:
+    lock: true                    # CIS 5.4.2: Lock the root account
+
+  accounts:
+    # Replace ssh_authorized_keys with your team's public key(s).
+    # This account will have sudo access on every image built from this blueprint.
+    - name: stratum-admin
+      comment: "Stratum-managed admin account"
+      groups:
+        - sudo
+      shell: /bin/bash
+      ssh_authorized_keys:
+        []                        # Add: - "ssh-ed25519 AAAA..."
+
+# --------------------------------------------------------------------------
+# Compliance — which OpenSCAP benchmark + profile to enforce
+# --------------------------------------------------------------------------
+compliance:
+  benchmark: xccdf_org.ssgproject.content_benchmark_UBUNTU2204
+  profile: xccdf_org.ssgproject.content_profile_cis_level1_server
+  # Install on target: apt install ssg-debderived
+  datastream: /usr/share/xml/scap/ssg/content/ssg-ubuntu2204-ds.xml
+  fail_on_findings: true
+  severity_threshold: medium
+
+# --------------------------------------------------------------------------
+# Controls — per-rule overrides with justifications
+# Use sparingly. Every exception must have a justification.
+# --------------------------------------------------------------------------
+controls:
+  # Ubuntu uses AppArmor, not SELinux — this rule is not applicable
+  xccdf_org.ssgproject.content_rule_grub2_enable_selinux:
+    enabled: false
+    justification: >
+      Ubuntu Linux uses AppArmor as the mandatory access control framework.
+      SELinux is not installed or applicable on this distribution.
+
+  # Telnet must not be installed (simple boolean — true = enforce)
+  xccdf_org.ssgproject.content_rule_package_telnet_removed: true
+
+  # Root SSH login is prohibited
+  xccdf_org.ssgproject.content_rule_sshd_disable_root_login:
+    enabled: true
+    justification: Root SSH login is prohibited by CIS and organisational security policy.

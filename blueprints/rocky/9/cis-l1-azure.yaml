@@ -1,0 +1,78 @@
+# Stratum HardeningBlueprint — Rocky Linux 9 CIS Level 1 Server (Azure)
+#
+# Set credentials in Stratum integrations (tenant_id, client_id, client_secret,
+# subscription_id, resource_group) then run:
+#   stratum build rocky9-cis-l1-azure
+
+stratum_version: "0.3.0"
+kind: HardeningBlueprint
+
+metadata:
+  name: rocky9-cis-l1-azure
+  version: "1.0.0"
+  description: >
+    CIS Red Hat Enterprise Linux 9 Benchmark — Level 1 Server profile for Azure,
+    applied to Rocky Linux 9. SELinux enforcing. Produces a reusable managed image.
+  author: "Vamshi Krishna Santhapuri"
+  tags: [rocky, rocky9, rhel9, cis, level1, server, azure, selinux]
+
+target:
+  os: rocky9
+  arch: x86_64
+  provider: azure
+  # Azure Marketplace: OpenLogic Rocky Linux 9
+  # Format: publisher:offer:sku:version
+  base_image: "erockyenterprisesoftwarefoundationinc1653071250513:rockylinux:free:9.latest"
+  instance_type: Standard_B2s       # 2 vCPU / 4 GB RAM
+  root_volume_size_gb: 30            # Azure minimum recommended
+
+system:
+  hostname: hardened-node
+  timezone: UTC
+  locale: en_US.UTF-8
+  selinux_mode: enforcing
+
+filesystem:
+  - device: tmpfs
+    mountpoint: /tmp
+    fstype: tmpfs
+    options: [rw, nosuid, nodev, noexec, relatime]
+    size: 2G
+
+  - device: tmpfs
+    mountpoint: /var/tmp
+    fstype: tmpfs
+    options: [rw, nosuid, nodev, noexec, relatime]
+    size: 1G
+
+  - device: tmpfs
+    mountpoint: /dev/shm
+    fstype: tmpfs
+    options: [rw, nosuid, nodev, noexec, relatime]
+
+users:
+  root:
+    lock: true
+
+  accounts:
+    - name: stratum-admin
+      comment: "Stratum-managed admin account"
+      groups: [wheel]
+      shell: /bin/bash
+      ssh_authorized_keys: []
+
+compliance:
+  benchmark: xccdf_org.ssgproject.content_benchmark_RHEL-9
+  profile: xccdf_org.ssgproject.content_profile_cis_server_l1
+  datastream: /usr/share/xml/scap/ssg/content/ssg-rhel9-ds.xml
+  fail_on_findings: true
+  severity_threshold: medium
+
+controls:
+  xccdf_org.ssgproject.content_rule_package_telnet_removed: true
+  xccdf_org.ssgproject.content_rule_sshd_disable_root_login:
+    enabled: true
+    justification: Root SSH login is prohibited by CIS and organisational security policy.
+  xccdf_org.ssgproject.content_rule_selinux_state:
+    enabled: true
+    justification: SELinux must be in enforcing mode per CIS RHEL 9 Level 1.
