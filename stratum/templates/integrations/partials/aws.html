@@ -23,7 +23,7 @@
       </div>
       <div>
         <strong class="text-brand-400 block mb-1">IAM PassRole (Optional)</strong>
-        You can also bind an <strong class="text-white font-medium">IAM Role ARN</strong> that trusts Stratum's execution context, or provide the <strong class="text-white font-medium">IAM Instance Profile Name</strong> if Stratum is running on EC2.
+        You can bind an <strong class="text-white font-medium">IAM Role ARN</strong> that trusts Stratum's execution context with an External ID, and provide the generated <strong class="text-white font-medium">IAM Instance Profile Name</strong> for temporary scan/build instances.
       </div>
       <div>
         <strong class="text-brand-400 block mb-1">Required Permissions</strong>
@@ -55,17 +55,24 @@
                 "ec2:DescribeImages",
                 "ec2:DescribeSecurityGroups",
                 "ec2:DescribeSubnets",
+                "ec2:DescribeVpcs",
+                "ec2:DescribeVolumes",
+                "ec2:DescribeSnapshots",
                 "ec2:CreateTags",
                 "ec2:CreateImage",
+                "ec2:CreateSnapshot",
+                "ec2:ModifyImageAttribute",
                 "ssm:SendCommand",
-                "ssm:GetCommandInvocation"
+                "ssm:GetCommandInvocation",
+                "ssm:ListCommandInvocations",
+                "ssm:DescribeInstanceInformation"
             ],
             "Resource": "*"
         },
         {
             "Effect": "Allow",
             "Action": "iam:PassRole",
-            "Resource": "arn:aws:iam::*:role/StratumInstanceProfile",
+            "Resource": "arn:aws:iam::*:role/Stratum*InstanceRole",
             "Condition": {
                 "StringEquals": {
                     "iam:PassedToService": "ec2.amazonaws.com"
@@ -81,6 +88,31 @@
   </div>
 
   <div class="flex-1 overflow-y-auto p-8">
+    <div class="mb-6 rounded-lg border border-cyan-900/40 bg-cyan-950/10 p-4">
+      <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <h3 class="text-sm font-semibold text-cyan-300">Onboard AWS with CloudFormation</h3>
+          <p class="mt-1 text-xs text-slate-400">
+            Create a Stratum IAM role and EC2 SSM instance profile in your AWS account, then paste the stack outputs below.
+          </p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <a href="https://console.aws.amazon.com/cloudformation/home#/stacks/create/review?templateURL=https://raw.githubusercontent.com/rrskris/Stratum/main/deploy/aws/stratum-scanner-role.yaml"
+             target="_blank"
+             rel="noopener noreferrer"
+             class="inline-flex items-center justify-center rounded-lg border border-cyan-700/60 bg-cyan-600/15 px-3 py-2 text-xs font-semibold text-cyan-200 hover:bg-cyan-600/25">
+            Scanner Stack
+          </a>
+          <a href="https://console.aws.amazon.com/cloudformation/home#/stacks/create/review?templateURL=https://raw.githubusercontent.com/rrskris/Stratum/main/deploy/aws/stratum-builder-role.yaml"
+             target="_blank"
+             rel="noopener noreferrer"
+             class="inline-flex items-center justify-center rounded-lg border border-amber-700/60 bg-amber-600/15 px-3 py-2 text-xs font-semibold text-amber-200 hover:bg-amber-600/25">
+            Builder Stack
+          </a>
+        </div>
+      </div>
+    </div>
+
     <form
       hx-post="/api/integrations/aws"
       hx-target="#aws-status"
@@ -115,9 +147,16 @@
           <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5" title="Only needed if you specifically want to assume a role">Role ARN (Optional)</label>
           <input type="text" name="role_arn"
             value="{{ creds.role_arn if creds else '' }}"
-            placeholder="arn:aws:iam::123456789:role/StratumRole"
+            placeholder="arn:aws:iam::123456789012:role/StratumBuilderRole"
             class="w-full bg-slate-900/50 border border-slate-700/80 rounded-lg px-4 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-all font-mono" />
         </div>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">External ID <span class="text-slate-600 normal-case font-normal">from CloudFormation output</span></label>
+        <input type="text" name="external_id"
+          value="{{ creds.external_id if creds else '' }}"
+          placeholder="stratum-your-company-or-random-id"
+          class="w-full bg-slate-900/50 border border-slate-700/80 rounded-lg px-4 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-all font-mono" />
       </div>
       <div>
         <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Region</label>

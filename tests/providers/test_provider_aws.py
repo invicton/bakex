@@ -132,6 +132,40 @@ def test_test_connection_raises_on_sts_failure():
             mod.test_connection({"region": "us-east-1"})
 
 
+def test_assume_role_uses_external_id():
+    mod, mock_boto3 = _load_aws_module()
+
+    base_session = MagicMock()
+    assumed_session = MagicMock()
+    mock_boto3.Session.side_effect = [base_session, assumed_session]
+    mock_sts = MagicMock()
+    base_session.client.return_value = mock_sts
+    mock_sts.assume_role.return_value = {
+        "Credentials": {
+            "AccessKeyId": "ASIAEXAMPLE",
+            "SecretAccessKey": "secret",
+            "SessionToken": "token",
+        }
+    }
+
+    with patch.dict(sys.modules, {"boto3": mock_boto3}):
+        session = mod._get_boto_session(
+            {
+                "role_arn": "arn:aws:iam::123456789012:role/StratumBuilderRole",
+                "external_id": "stratum-test-external-id",
+                "region": "us-east-1",
+            }
+        )
+
+    assert session is assumed_session
+    mock_sts.assume_role.assert_called_once_with(
+        RoleArn="arn:aws:iam::123456789012:role/StratumBuilderRole",
+        RoleSessionName="StratumSession",
+        DurationSeconds=3600,
+        ExternalId="stratum-test-external-id",
+    )
+
+
 # ===========================================================================
 # _resolve_ami — mocked ec2.describe_images
 # ===========================================================================

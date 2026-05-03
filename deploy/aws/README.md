@@ -1,0 +1,38 @@
+# AWS Onboarding
+
+Stratum can use an AWS IAM role instead of long-lived access keys. Launch one of these CloudFormation templates in the AWS account where Stratum should scan or build images, then paste the stack outputs into **Integrations -> AWS**.
+
+## Templates
+
+| Template | Use case | Creates resources |
+|---|---|---|
+| `stratum-scanner-role.yaml` | Scan existing AMIs or EC2 instances | Stratum scanner role, EC2 SSM instance role, instance profile |
+| `stratum-builder-role.yaml` | Build hardened golden AMIs | Stratum builder role, EC2 SSM instance role, instance profile |
+
+Use the scanner template first for demos. Use the builder template only when you are ready for Stratum to launch EC2 instances and create AMIs/snapshots.
+
+## Required Parameters
+
+- `TrustedPrincipalArn`: IAM user or role ARN allowed to assume the Stratum role. For local OSS usage, this is usually the IAM user or role configured in your local AWS profile.
+- `ExternalId`: A unique string you paste into Stratum along with the role ARN.
+- `RoleNamePrefix`: Optional name prefix for created IAM roles.
+
+The trusted principal must also have permission to call `sts:AssumeRole` on the generated Stratum role. If you use a local AWS profile, set `TrustedPrincipalArn` to that profile's IAM user or role ARN.
+
+## Stratum Fields
+
+After the stack completes, copy these outputs into **Integrations -> AWS**:
+
+- `StratumRoleArn` -> `Role ARN`
+- `ExternalId` -> `External ID`
+- `InstanceProfileName` -> `IAM Instance Profile Name`
+- `RegionHint` -> `Region`
+
+Then click **Test Connection**.
+
+## Security Notes
+
+- The trust policy requires `sts:ExternalId`.
+- The scanner template has fewer permissions than the builder template.
+- Both templates create an EC2 instance profile with `AmazonSSMManagedInstanceCore` so temporary scan/build instances can receive SSM commands.
+- Builder permissions can create EC2 instances, AMIs, EBS snapshots, and related costs. Use a test account or budget alerts for first runs.

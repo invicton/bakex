@@ -87,6 +87,24 @@ Open **http://localhost:8001** in your browser.
 | `./profiles` | `/app/profiles` | Blueprint YAML files (persisted) |
 | `./data` | `/app/data` | Encrypted credential store + audit results |
 
+### AWS onboarding
+
+For AWS, prefer role-based onboarding over long-lived access keys. Stratum includes CloudFormation templates that create the required IAM role and EC2 SSM instance profile:
+
+- [`deploy/aws/stratum-scanner-role.yaml`](deploy/aws/stratum-scanner-role.yaml) for scanning existing AMIs or instances
+- [`deploy/aws/stratum-builder-role.yaml`](deploy/aws/stratum-builder-role.yaml) for building hardened golden AMIs
+
+Launch the stack in your AWS account, then paste the stack outputs into **Integrations -> AWS**:
+
+| CloudFormation output | Stratum field |
+|---|---|
+| `StratumRoleArn` | Role ARN |
+| `ExternalId` | External ID |
+| `InstanceProfileName` | IAM Instance Profile Name |
+| `RegionHint` | Region |
+
+The IAM principal in your local AWS profile must be allowed to call `sts:AssumeRole` on the generated Stratum role. See [`deploy/aws/README.md`](deploy/aws/README.md) for details.
+
 ### Local Development
 
 **Prerequisites:** Python 3.11+, [uv](https://docs.astral.sh/uv/), Ansible, OpenSCAP

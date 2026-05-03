@@ -207,10 +207,17 @@ async def test_credentials(request: Request, provider_name: str) -> str:
 
             session = boto3.Session(**session_args)
             role_arn = creds.get("role_arn")
+            external_id = creds.get("external_id")
 
             if role_arn:
                 sts = session.client("sts")
-                assumed = sts.assume_role(RoleArn=role_arn, RoleSessionName="StratumConnectionTest")
+                assume_kwargs = {
+                    "RoleArn": role_arn,
+                    "RoleSessionName": "StratumConnectionTest",
+                }
+                if external_id:
+                    assume_kwargs["ExternalId"] = external_id
+                assumed = sts.assume_role(**assume_kwargs)
                 credentials = assumed["Credentials"]
                 session = boto3.Session(
                     aws_access_key_id=credentials["AccessKeyId"],

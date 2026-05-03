@@ -469,6 +469,62 @@ def test_test_credentials_aws_with_profile(client):
     assert resp.status_code == 200
 
 
+def test_test_credentials_aws_with_role_external_id(client):
+    """role_arn branch passes ExternalId through to sts:AssumeRole."""
+    role_arn = "arn:aws:iam::123456789012:role/StratumBuilderRole"
+    external_id = "stratum-test-external-id"
+
+    base_session = MagicMock()
+    assumed_session = MagicMock()
+
+    base_sts = MagicMock()
+    base_sts.assume_role.return_value = {
+        "Credentials": {
+            "AccessKeyId": "ASIAEXAMPLE",
+            "SecretAccessKey": "secret",
+            "SessionToken": "token",
+        }
+    }
+    base_session.client.return_value = base_sts
+
+    assumed_sts = MagicMock()
+    assumed_sts.get_caller_identity.return_value = {
+        "Account": "123456789012",
+        "Arn": role_arn,
+    }
+    assumed_ec2 = MagicMock()
+    assumed_ec2.describe_security_groups.return_value = {"SecurityGroups": []}
+    assumed_session.client.side_effect = lambda svc, **kw: assumed_sts if svc == "sts" else assumed_ec2
+
+    mock_boto3 = MagicMock()
+    mock_boto3.Session.side_effect = [base_session, assumed_session]
+
+    with patch.dict(
+        "sys.modules",
+        {
+            "boto3": mock_boto3,
+            "botocore": MagicMock(),
+            "botocore.exceptions": MagicMock(),
+        },
+    ):
+        with patch("stratum.api.integrations.boto3", mock_boto3, create=True):
+            resp = client.post(
+                "/api/integrations/aws/test",
+                data={
+                    "region": "us-east-1",
+                    "role_arn": role_arn,
+                    "external_id": external_id,
+                },
+            )
+
+    assert resp.status_code == 200
+    base_sts.assume_role.assert_called_once_with(
+        RoleArn=role_arn,
+        RoleSessionName="StratumConnectionTest",
+        ExternalId=external_id,
+    )
+
+
 # ---------------------------------------------------------------------------
 # Direct async unit tests for _test_* helper functions
 # (These hit the inner implementations — route-level tests mock them out)

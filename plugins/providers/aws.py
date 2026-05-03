@@ -43,6 +43,7 @@ def _get_boto_session(credentials: dict):
         raise RuntimeError("boto3 is not installed. Install with: pip install stratum[aws]") from exc
 
     role_arn = credentials.get("role_arn", "")
+    external_id = credentials.get("external_id", "")
     region = credentials.get("region", "us-east-1")
     profile = credentials.get("aws_profile", "")
     access_key = credentials.get("aws_access_key_id", "")
@@ -65,10 +66,16 @@ def _get_boto_session(credentials: dict):
         return session
 
     sts = session.client("sts")
+    assume_kwargs = {
+        "RoleArn": role_arn,
+        "RoleSessionName": "StratumSession",
+        "DurationSeconds": 3600,
+    }
+    if external_id:
+        assume_kwargs["ExternalId"] = external_id
+
     assumed = sts.assume_role(
-        RoleArn=role_arn,
-        RoleSessionName="StratumSession",
-        DurationSeconds=3600,
+        **assume_kwargs,
     )
     creds = assumed["Credentials"]
     session = boto3.Session(
