@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+  <title id="title">Stratum cloud onboarding screenshot preview</title>
+  <desc id="desc">A sanitized preview of cloud onboarding cards for AWS, Azure, and GCP.</desc>
+  <rect width="1200" height="720" fill="#071018"/>
+  <rect x="42" y="42" width="1116" height="636" rx="18" fill="#0f172a" stroke="#263244"/>
+  <text x="86" y="104" fill="#f8fafc" font-family="Inter, Arial, sans-serif" font-size="30" font-weight="800">Cloud onboarding</text>
+  <text x="86" y="136" fill="#94a3b8" font-family="Inter, Arial, sans-serif" font-size="15">Admin-reviewed templates create only the role permissions Stratum needs.</text>
+  <g font-family="Inter, Arial, sans-serif">
+    <rect x="86" y="190" width="318" height="346" rx="14" fill="#111827" stroke="#334155"/>
+    <text x="118" y="240" fill="#fde68a" font-size="26" font-weight="800">AWS</text>
+    <text x="118" y="278" fill="#cbd5e1" font-size="15">CloudFormation stacks</text>
+    <text x="118" y="328" fill="#94a3b8" font-size="14">Scanner role</text>
+    <text x="118" y="358" fill="#94a3b8" font-size="14">Builder role</text>
+    <text x="118" y="388" fill="#94a3b8" font-size="14">ExternalId trust condition</text>
+    <rect x="118" y="444" width="112" height="38" rx="8" fill="#ca8a04" opacity=".35"/>
+    <text x="142" y="468" fill="#fef3c7" font-size="13" font-weight="700">Launch</text>
+    <rect x="242" y="444" width="118" height="38" rx="8" fill="#1e293b"/>
+    <text x="264" y="468" fill="#e2e8f0" font-size="13" font-weight="700">Review</text>
+    <rect x="442" y="190" width="318" height="346" rx="14" fill="#111827" stroke="#334155"/>
+    <text x="474" y="240" fill="#7dd3fc" font-size="26" font-weight="800">Azure</text>
+    <text x="474" y="278" fill="#cbd5e1" font-size="15">ARM subscription templates</text>
+    <text x="474" y="328" fill="#94a3b8" font-size="14">Custom RBAC role</text>
+    <text x="474" y="358" fill="#94a3b8" font-size="14">Scoped role assignment</text>
+    <text x="474" y="388" fill="#94a3b8" font-size="14">Existing Entra app</text>
+    <rect x="474" y="444" width="112" height="38" rx="8" fill="#0369a1" opacity=".45"/>
+    <text x="498" y="468" fill="#e0f2fe" font-size="13" font-weight="700">Deploy</text>
+    <rect x="598" y="444" width="118" height="38" rx="8" fill="#1e293b"/>
+    <text x="620" y="468" fill="#e2e8f0" font-size="13" font-weight="700">Review</text>
+    <rect x="798" y="190" width="318" height="346" rx="14" fill="#111827" stroke="#334155"/>
+    <text x="830" y="240" fill="#86efac" font-size="26" font-weight="800">GCP</text>
+    <text x="830" y="278" fill="#cbd5e1" font-size="15">Terraform modules</text>
+    <text x="830" y="328" fill="#94a3b8" font-size="14">Custom IAM role</text>
+    <text x="830" y="358" fill="#94a3b8" font-size="14">Optional service account</text>
+    <text x="830" y="388" fill="#94a3b8" font-size="14">IAP SSH firewall rule</text>
+    <rect x="830" y="444" width="112" height="38" rx="8" fill="#15803d" opacity=".40"/>
+    <text x="852" y="468" fill="#dcfce7" font-size="13" font-weight="700">Module</text>
+    <rect x="954" y="444" width="118" height="38" rx="8" fill="#1e293b"/>
+    <text x="976" y="468" fill="#e2e8f0" font-size="13" font-weight="700">Review</text>
+  </g>
+  <text x="86" y="610" fill="#cbd5e1" font-family="Inter, Arial, sans-serif" font-size="16" font-weight="700">Simple rule: a cloud admin reviews the permission set, deploys it, then pastes the outputs into Stratum.</text>
+</svg>

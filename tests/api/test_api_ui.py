@@ -37,6 +37,20 @@ def test_integrations_provider_form_aws(client):
     assert "text/html" in resp.headers.get("content-type", "")
 
 
+def test_integrations_provider_form_azure_has_onboarding(client):
+    resp = client.get("/integrations/azure/form")
+    assert resp.status_code == 200
+    assert "Onboard Azure with ARM templates" in resp.text
+    assert "Review Permissions" in resp.text
+
+
+def test_integrations_provider_form_gcp_has_onboarding(client):
+    resp = client.get("/integrations/gcp/form")
+    assert resp.status_code == 200
+    assert "Onboard GCP with Terraform" in resp.text
+    assert "Review Permissions" in resp.text
+
+
 def test_integrations_provider_form_generic_provider(client):
     resp = client.get("/integrations/nonexistent_provider/form")
     assert resp.status_code == 200

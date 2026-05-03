@@ -11,7 +11,8 @@ Requires the [gcp] optional extra: pip install stratum[gcp]
 Credential fields (stored via Stratum integrations UI):
     project_id            — GCP project ID (required)
     zone                  — Compute zone, e.g. "us-central1-a" (default: us-central1-a)
-    service_account_file  — Path to service account JSON key file (optional; uses ADC if absent)
+    service_account_json  — Service account JSON key content (optional; uses ADC if absent)
+    service_account_file  — Path to service account JSON key file (optional; legacy)
     network               — VPC network name (default: default)
     subnetwork            — Subnetwork name (optional)
     service_account_email — SA email to attach to the VM (optional)
@@ -61,8 +62,21 @@ def _get_compute_client(credentials: dict):
     except ImportError as exc:
         raise RuntimeError("google-cloud-compute is not installed. Install with: pip install stratum[gcp]") from exc
 
-    sa_file = credentials.get("service_account_file", "")
-    if sa_file and Path(sa_file).exists():
+    sa_json = credentials.get("service_account_json", "")
+    if sa_json:
+        import json as _json
+
+        info = _json.loads(sa_json) if isinstance(sa_json, str) else sa_json
+        creds = service_account.Credentials.from_service_account_info(
+            info,
+            scopes=["https://www.googleapis.com/auth/cloud-platform"],
+        )
+        instances_client = compute_v1.InstancesClient(credentials=creds)
+        images_client = compute_v1.ImagesClient(credentials=creds)
+        machine_images_client = compute_v1.MachineImagesClient(credentials=creds)
+        operations_client = compute_v1.ZoneOperationsClient(credentials=creds)
+        global_ops_client = compute_v1.GlobalOperationsClient(credentials=creds)
+    elif (sa_file := credentials.get("service_account_file", "")) and Path(sa_file).exists():
         creds = service_account.Credentials.from_service_account_file(
             sa_file,
             scopes=["https://www.googleapis.com/auth/cloud-platform"],
@@ -157,7 +171,8 @@ def execute_build(params: dict) -> dict:
     Credential / param fields:
         project_id            — GCP project (required)
         zone                  — Compute zone (default: us-central1-a)
-        service_account_file  — Path to SA JSON key (optional; uses ADC otherwise)
+    service_account_json  — Service account JSON key content (optional; uses ADC otherwise)
+    service_account_file  — Path to SA JSON key (optional; legacy)
         network               — VPC network (default: default)
         subnetwork            — Subnetwork (optional)
         service_account_email — SA email to attach to the VM (optional)

@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+  <title id="title">Stratum compliance report screenshot preview</title>
+  <desc id="desc">A sanitized preview of a compliance report with grade, findings, and SARIF export.</desc>
+  <rect width="1200" height="720" fill="#080c14"/>
+  <rect x="54" y="42" width="1092" height="636" rx="18" fill="#0f172a" stroke="#263244"/>
+  <text x="94" y="104" fill="#f8fafc" font-family="Inter, Arial, sans-serif" font-size="30" font-weight="800">Compliance Report</text>
+  <text x="94" y="136" fill="#94a3b8" font-family="Inter, Arial, sans-serif" font-size="15">CIS L1 hardened image evidence for release approval.</text>
+  <circle cx="214" cy="274" r="86" fill="#052e2b" stroke="#34d399" stroke-width="10"/>
+  <text x="180" y="292" fill="#d1fae5" font-family="Inter, Arial, sans-serif" font-size="58" font-weight="900">A</text>
+  <rect x="350" y="194" width="720" height="60" rx="9" fill="#111827"/>
+  <rect x="350" y="278" width="720" height="60" rx="9" fill="#111827"/>
+  <rect x="350" y="362" width="720" height="60" rx="9" fill="#111827"/>
+  <g font-family="Inter, Arial, sans-serif">
+    <text x="382" y="231" fill="#e2e8f0" font-size="16">1.1.1.1 Ensure mounting of cramfs filesystems is disabled</text>
+    <text x="982" y="231" fill="#34d399" font-size="14" font-weight="800">PASS</text>
+    <text x="382" y="315" fill="#e2e8f0" font-size="16">5.2.4 Ensure SSH root login is disabled</text>
+    <text x="982" y="315" fill="#34d399" font-size="14" font-weight="800">PASS</text>
+    <text x="382" y="399" fill="#e2e8f0" font-size="16">6.1.2 Ensure permissions on /etc/passwd are configured</text>
+    <text x="982" y="399" fill="#f59e0b" font-size="14" font-weight="800">WARN</text>
+  </g>
+  <rect x="94" y="488" width="204" height="52" rx="10" fill="#0e7490" opacity=".42"/>
+  <text x="126" y="521" fill="#cffafe" font-family="Inter, Arial, sans-serif" font-size="15" font-weight="800">Export SARIF</text>
+  <rect x="322" y="488" width="204" height="52" rx="10" fill="#1e293b"/>
+  <text x="354" y="521" fill="#e2e8f0" font-family="Inter, Arial, sans-serif" font-size="15" font-weight="800">Download JSON</text>
+  <rect x="550" y="488" width="204" height="52" rx="10" fill="#1e293b"/>
+  <text x="582" y="521" fill="#e2e8f0" font-family="Inter, Arial, sans-serif" font-size="15" font-weight="800">Compare Drift</text>
+  <text x="94" y="616" fill="#94a3b8" font-family="Inter, Arial, sans-serif" font-size="14">Sanitized preview. Reports include rule status, severity, evidence, SARIF, JSON, and printable HTML output.</text>
+</svg>

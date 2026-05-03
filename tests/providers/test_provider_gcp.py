@@ -86,6 +86,36 @@ def test_test_connection_success():
     assert result["project_id"] == "my-project"
 
 
+def test_get_compute_client_accepts_service_account_json():
+    mod, mock_compute, mock_sa = _load_gcp()
+    mock_credentials = MagicMock()
+    mock_sa.Credentials.from_service_account_info.return_value = mock_credentials
+
+    with patch.dict(
+        sys.modules,
+        {
+            "google.cloud.compute_v1": mock_compute,
+            "google.oauth2.service_account": mock_sa,
+        },
+    ):
+        clients = mod._get_compute_client(
+            {
+                "service_account_json": json.dumps(
+                    {
+                        "type": "service_account",
+                        "project_id": "my-project",
+                        "client_email": "stratum@my-project.iam.gserviceaccount.com",
+                        "private_key": "-----BEGIN PRIVATE KEY-----\\nredacted\\n-----END PRIVATE KEY-----\\n",
+                    }
+                )
+            }
+        )
+
+    assert len(clients) == 5
+    mock_sa.Credentials.from_service_account_info.assert_called_once()
+    mock_compute.InstancesClient.assert_called_once_with(credentials=mock_credentials)
+
+
 # ---------------------------------------------------------------------------
 # execute_build — missing project_id → ValueError
 # ---------------------------------------------------------------------------

@@ -11,6 +11,10 @@ Stratum is a self-hosted DevSecOps platform that turns a declarative YAML bluepr
 
 Write your security policy once. Build everywhere. Scan everything.
 
+<p align="center">
+  <img src="docs/assets/stratum-dashboard.svg" alt="Stratum dashboard preview" width="900">
+</p>
+
 ---
 
 ## How It Works
@@ -60,6 +64,24 @@ HardeningBlueprint (YAML)  ──or──  5-Step Guided Wizard
 12. [Development](#development)
 13. [Architecture](#architecture)
 
+## Screenshots
+
+| Cloud onboarding | Compliance evidence |
+|---|---|
+| ![Cloud onboarding preview](docs/assets/cloud-onboarding.svg) | ![Compliance report preview](docs/assets/compliance-report.svg) |
+
+> Screenshots are sanitized previews with no customer credentials or account data.
+
+## Documentation
+
+| Guide | Purpose |
+|---|---|
+| [User Guide](docs/user-guide.md) | End-to-end local workflow from onboarding to reports |
+| [Cloud Onboarding](docs/cloud-onboarding.md) | AWS, Azure, and GCP admin permission model and outputs |
+| [API Reference](docs/api.md) | Core REST endpoints and integration payloads |
+| [Pipeline Guide](docs/pipeline.md) | CI/CD, SARIF export, and Blueprint-as-Code examples |
+| [Blueprint Library Guide](docs/stratum-blueprints-repo-readme.md) | Community blueprint contribution model |
+
 ---
 
 ## Quick Start
@@ -104,6 +126,17 @@ Launch the stack in your AWS account, then paste the stack outputs into **Integr
 | `RegionHint` | Region |
 
 The IAM principal in your local AWS profile must be allowed to call `sts:AssumeRole` on the generated Stratum role. See [`deploy/aws/README.md`](deploy/aws/README.md) for details.
+
+### Azure and GCP onboarding
+
+Azure and GCP follow the same model: a cloud administrator reviews and applies the required permission set, then pastes the outputs into Stratum.
+
+| Provider | Onboarding path | Admin creates |
+|---|---|---|
+| Azure | [`deploy/azure`](deploy/azure) ARM templates | Custom RBAC role + role assignment for an existing Entra service principal |
+| GCP | [`deploy/gcp`](deploy/gcp) Terraform modules | Custom IAM role + optional Stratum service account + IAP SSH firewall rule |
+
+The templates are intentionally readable so customers can evaluate every permission and apply the same role manually if they prefer.
 
 ### Local Development
 

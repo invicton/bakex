@@ -2,6 +2,8 @@
 
 Stratum can use an AWS IAM role instead of long-lived access keys. Launch one of these CloudFormation templates in the AWS account where Stratum should scan or build images, then paste the stack outputs into **Integrations -> AWS**.
 
+The stack must be launched by an AWS principal that can create IAM roles, policies, instance profiles, and PassRole permissions. Customers can review the full permission set in the template and create equivalent resources manually if their security process requires it.
+
 ## Templates
 
 | Template | Use case | Creates resources |
