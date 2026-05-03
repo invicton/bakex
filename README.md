@@ -125,7 +125,7 @@ Download the template, create the stack in your AWS account with **Upload a temp
 | `InstanceProfileName` | IAM Instance Profile Name |
 | `RegionHint` | Region |
 
-The IAM principal in your local AWS profile must be allowed to call `sts:AssumeRole` on the generated Stratum role. See [`deploy/aws/README.md`](deploy/aws/README.md) for details.
+The IAM principal in your local AWS profile must be allowed to call `sts:AssumeRole` on the generated Stratum role. The template includes a demo-safe `ExternalId` default; replace it with a unique value for production. See [`deploy/aws/README.md`](deploy/aws/README.md) for details.
 
 ### Azure and GCP onboarding
 

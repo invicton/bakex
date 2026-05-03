@@ -12,6 +12,34 @@ import yaml
 ROOT = Path(__file__).parent.parent
 
 
+class CfnLoader(yaml.SafeLoader):
+    pass
+
+
+def _cfn(loader, node):
+    if isinstance(node, yaml.ScalarNode):
+        return loader.construct_scalar(node)
+    if isinstance(node, yaml.SequenceNode):
+        return loader.construct_sequence(node)
+    return loader.construct_mapping(node)
+
+
+for _tag in ("!Ref", "!Sub", "!GetAtt"):
+    CfnLoader.add_constructor(_tag, _cfn)
+
+
+def test_aws_onboarding_templates_have_external_id_default():
+    for relpath in (
+        "deploy/aws/stratum-scanner-role.yaml",
+        "deploy/aws/stratum-builder-role.yaml",
+    ):
+        data = yaml.load((ROOT / relpath).read_text(), Loader=CfnLoader)
+        external_id = data["Parameters"]["ExternalId"]
+        assert external_id["MinLength"] == 8
+        assert len(external_id["Default"]) >= 8
+        assert {"StratumRoleArn", "ExternalId", "InstanceProfileName", "RegionHint"} <= set(data["Outputs"])
+
+
 def test_azure_onboarding_templates_have_required_shape():
     for relpath in (
         "deploy/azure/stratum-scanner-role.json",

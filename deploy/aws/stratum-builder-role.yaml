@@ -8,7 +8,8 @@ Parameters:
     AllowedPattern: "^arn:aws:iam::[0-9]{12}:(user|role)/.+$"
   ExternalId:
     Type: String
-    Description: "Unique ExternalId that must also be configured in Stratum."
+    Default: "stratum-onboarding"
+    Description: "ExternalId that must also be configured in Stratum. Replace the default with a customer-unique value for production."
     MinLength: 8
   RoleNamePrefix:
     Type: String
