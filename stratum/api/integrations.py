@@ -12,12 +12,17 @@ from pathlib import Path
 from cryptography.fernet import Fernet, InvalidToken
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-from fastapi import APIRouter, Request
-from fastapi.responses import HTMLResponse
+from fastapi import APIRouter, HTTPException, Request
+from fastapi.responses import FileResponse, HTMLResponse
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/integrations", tags=["integrations"])
+_AWS_TEMPLATE_DIR = Path("deploy/aws")
+_AWS_TEMPLATES = {
+    "stratum-scanner-role.yaml",
+    "stratum-builder-role.yaml",
+}
 
 # KDF parameters — changing these invalidates existing encrypted files.
 _KDF_SALT = b"stratum-credential-store-v1"
@@ -146,6 +151,23 @@ credential_store: CredentialStore = _make_store()
 # ---------------------------------------------------------------------------
 # FastAPI routes
 # ---------------------------------------------------------------------------
+
+
+@router.get("/aws/templates/{template_name}")
+async def download_aws_template(template_name: str) -> FileResponse:
+    """Download a bundled AWS CloudFormation onboarding template."""
+    if template_name not in _AWS_TEMPLATES:
+        raise HTTPException(status_code=404, detail="AWS onboarding template not found")
+
+    template_path = _AWS_TEMPLATE_DIR / template_name
+    if not template_path.is_file():
+        raise HTTPException(status_code=404, detail="AWS onboarding template not found")
+
+    return FileResponse(
+        template_path,
+        media_type="application/x-yaml",
+        filename=template_name,
+    )
 
 _SAVED_HTML = (
     '<div class="rounded-xl border border-emerald-800/50 bg-emerald-950/20 p-4 space-y-3">'

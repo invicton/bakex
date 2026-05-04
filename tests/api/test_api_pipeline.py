@@ -345,9 +345,14 @@ def test_pipeline_build_wait_true_returns_complete(client, api_key):
 
 
 def test_pipeline_build_wait_false_returns_pending(client, api_key):
-    # Patch run_build only — the real asyncio.create_task schedules the AsyncMock
-    # coroutine, which the event loop consumes cleanly (no unawaited-coroutine warning).
-    with patch("stratum.api.pipeline.build_service.run_build", new_callable=AsyncMock):
+    def close_scheduled(coro):
+        coro.close()
+        return object()
+
+    with (
+        patch("stratum.api.pipeline.build_service.run_build", new_callable=AsyncMock),
+        patch("stratum.api.pipeline.asyncio.create_task", side_effect=close_scheduled),
+    ):
         resp = client.post(
             "/api/pipeline/build",
             json={"profile_name": "test-ubuntu22-cis", "wait": False},

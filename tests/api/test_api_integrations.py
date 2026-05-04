@@ -49,6 +49,19 @@ def test_get_credentials_returns_saved(client):
     assert data.get("subscription_id") == "s-456"
 
 
+def test_download_aws_template_serves_bundled_cloudformation(client):
+    resp = client.get("/api/integrations/aws/templates/stratum-scanner-role.yaml")
+    assert resp.status_code == 200
+    assert "application/x-yaml" in resp.headers.get("content-type", "")
+    assert "TrustedPrincipalArn" in resp.text
+    assert "^$|^arn:aws:iam::[0-9]{12}:((user|role)/.+|root)$" in resp.text
+
+
+def test_download_aws_template_unknown_name_returns_404(client):
+    resp = client.get("/api/integrations/aws/templates/not-a-template.yaml")
+    assert resp.status_code == 404
+
+
 # ---------------------------------------------------------------------------
 # POST /api/integrations/{provider}/test — test_credentials
 # ---------------------------------------------------------------------------
