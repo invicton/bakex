@@ -116,7 +116,7 @@ For AWS, prefer role-based onboarding over long-lived access keys. Stratum inclu
 - [`deploy/aws/stratum-scanner-role.yaml`](deploy/aws/stratum-scanner-role.yaml) for scanning existing AMIs or instances
 - [`deploy/aws/stratum-builder-role.yaml`](deploy/aws/stratum-builder-role.yaml) for building hardened golden AMIs
 
-Download the template, create the stack in your AWS account with **Upload a template file**, then paste the stack outputs into **Integrations -> AWS**:
+Download the template and create the stack in your AWS account with **Upload a template file**. In Stratum, enter your base AWS credentials and CloudFormation stack name, then click **Import Outputs** to fill:
 
 | CloudFormation output | Stratum field |
 |---|---|
@@ -125,7 +125,7 @@ Download the template, create the stack in your AWS account with **Upload a temp
 | `InstanceProfileName` | IAM Instance Profile Name |
 | `RegionHint` | Region |
 
-The IAM principal in your local AWS profile must be allowed to call `sts:AssumeRole` on the generated Stratum role. The template includes demo-safe defaults for `TrustedPrincipalArn` and `ExternalId`; replace them with a specific principal and unique external ID for production. See [`deploy/aws/README.md`](deploy/aws/README.md) for details.
+The IAM principal used by Stratum's base credentials must match `TrustedPrincipalArn` and must be allowed to call `sts:AssumeRole` on the generated Stratum role. If Stratum reports that base credentials cannot assume the configured Role ARN, update the stack with the IAM user/role ARN used by Stratum or attach an identity policy allowing `sts:AssumeRole`. See [`deploy/aws/README.md`](deploy/aws/README.md) for details.
 
 ### Azure and GCP onboarding
 

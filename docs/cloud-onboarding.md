@@ -25,12 +25,16 @@ Use CloudFormation:
 
 When using the public GitHub templates, download the YAML and upload it in CloudFormation. The AWS console quick-create `templateURL` field does not accept GitHub raw URLs as a supported template source.
 
+Set `TrustedPrincipalArn` to the IAM user or role ARN behind the credentials Stratum will use. For example, if Stratum uses access keys for `arn:aws:iam::123456789012:user/stratum-ci`, that exact ARN must be the trusted principal. The same principal also needs an identity policy allowing `sts:AssumeRole` on the generated Stratum role.
+
 Outputs:
 
 - `StratumRoleArn`
 - `ExternalId`
 - `InstanceProfileName`
 - `RegionHint`
+
+In **Integrations -> AWS**, enter the base AWS credentials and stack name, click **Import Outputs**, then click **Test Connectivity**. If Stratum reports that base credentials cannot assume the configured Role ARN, fix `TrustedPrincipalArn` or the caller's `sts:AssumeRole` permission.
 
 ## Azure
 

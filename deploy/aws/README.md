@@ -31,18 +31,30 @@ For the public GitHub templates:
 - `ExternalId`: A unique string you paste into Stratum along with the role ARN. The template default, `stratum-onboarding`, is provided so demos do not fail validation; replace it with a customer-unique value for production.
 - `RoleNamePrefix`: Optional name prefix for created IAM roles.
 
-The trusted principal must also have permission to call `sts:AssumeRole` on the generated Stratum role. If you use a local AWS profile in production, set `TrustedPrincipalArn` to that profile's IAM user or role ARN.
+The trusted principal must match the base credentials Stratum uses to connect to AWS. If you enter access keys for `arn:aws:iam::123456789012:user/stratum-ci`, set `TrustedPrincipalArn` to that exact user ARN. If you use an AWS profile, set it to the IAM user or role behind that profile.
+
+That same principal must also have an identity policy allowing it to call `sts:AssumeRole` on the generated Stratum role:
+
+```json
+{
+  "Effect": "Allow",
+  "Action": "sts:AssumeRole",
+  "Resource": "arn:aws:iam::123456789012:role/StratumBuilderRole"
+}
+```
+
+If Stratum reports `base credentials cannot assume the configured Role ARN`, either update the CloudFormation stack with the correct `TrustedPrincipalArn` or attach the `sts:AssumeRole` permission shown above to the IAM user/role used by Stratum.
 
 ## Stratum Fields
 
-After the stack completes, copy these outputs into **Integrations -> AWS**:
+After the stack completes, enter your base AWS credentials and stack name in **Integrations -> AWS**, then click **Import Outputs**. Stratum reads the CloudFormation outputs and fills:
 
 - `StratumRoleArn` -> `Role ARN`
 - `ExternalId` -> `External ID`
 - `InstanceProfileName` -> `IAM Instance Profile Name`
 - `RegionHint` -> `Region`
 
-Then click **Test Connection**.
+Then click **Test Connectivity**.
 
 ## Security Notes
 
