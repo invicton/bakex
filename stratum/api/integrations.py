@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import base64
+import html
 import json
 import logging
 from pathlib import Path
@@ -153,6 +154,50 @@ credential_store: CredentialStore = _make_store()
 # ---------------------------------------------------------------------------
 
 
+def _aws_session_args(creds: dict) -> dict:
+    session_args: dict = {}
+    if creds.get("region"):
+        session_args["region_name"] = creds["region"]
+    if creds.get("aws_access_key_id") and creds.get("aws_secret_access_key"):
+        session_args["aws_access_key_id"] = creds["aws_access_key_id"]
+        session_args["aws_secret_access_key"] = creds["aws_secret_access_key"]
+    elif creds.get("aws_profile"):
+        session_args["profile_name"] = creds["aws_profile"]
+    return session_args
+
+
+def _aws_stack_import_html(creds: dict, outputs: dict) -> str:
+    role_arn = html.escape(outputs.get("StratumRoleArn", ""), quote=True)
+    external_id = html.escape(outputs.get("ExternalId", ""), quote=True)
+    iam_profile_name = html.escape(outputs.get("InstanceProfileName", ""), quote=True)
+    region = html.escape(outputs.get("RegionHint") or creds.get("region", "us-east-1"), quote=True)
+
+    return (
+        '<div class="rounded-lg border border-emerald-800/50 bg-emerald-950/20 p-3 text-sm text-emerald-300">'
+        "CloudFormation outputs imported and saved.</div>"
+        f'<input id="aws-role-arn" hx-swap-oob="true" type="text" name="role_arn" value="{role_arn}" '
+        'placeholder="arn:aws:iam::123456789012:role/StratumBuilderRole" '
+        'class="w-full bg-slate-900/50 border border-slate-700/80 rounded-lg px-4 py-2.5 text-sm text-white '
+        'placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 '
+        'transition-all font-mono" />'
+        f'<input id="aws-external-id" hx-swap-oob="true" type="text" name="external_id" value="{external_id}" '
+        'placeholder="stratum-your-company-or-random-id" '
+        'class="w-full bg-slate-900/50 border border-slate-700/80 rounded-lg px-4 py-2.5 text-sm text-white '
+        'placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 '
+        'transition-all font-mono" />'
+        f'<input id="aws-region" hx-swap-oob="true" type="text" name="region" value="{region}" '
+        'placeholder="us-east-1" '
+        'class="w-full bg-slate-900/50 border border-slate-700/80 rounded-lg px-4 py-2.5 text-sm text-white '
+        'placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 '
+        'transition-all font-mono" />'
+        f'<input id="aws-iam-profile-name" hx-swap-oob="true" type="text" name="iam_profile_name" value="{iam_profile_name}" '
+        'placeholder="StratumInstanceProfile" '
+        'class="w-full bg-slate-900/50 border border-slate-700/80 rounded-lg px-4 py-2.5 text-sm text-white '
+        'placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 '
+        'transition-all font-mono" />'
+    )
+
+
 @router.get("/aws/templates/{template_name}")
 async def download_aws_template(template_name: str) -> FileResponse:
     """Download a bundled AWS CloudFormation onboarding template."""
@@ -168,6 +213,46 @@ async def download_aws_template(template_name: str) -> FileResponse:
         media_type="application/x-yaml",
         filename=template_name,
     )
+
+
+@router.post("/aws/import-stack", response_class=HTMLResponse)
+async def import_aws_stack_outputs(request: Request) -> str:
+    form_data = await request.form()
+    creds = dict(form_data)
+    stack_name = creds.get("cloudformation_stack_name", "").strip()
+    if not stack_name:
+        return _err_html("CloudFormation stack name is required.")
+
+    try:
+        import boto3
+        from botocore.exceptions import BotoCoreError, ClientError
+
+        session = boto3.Session(**_aws_session_args(creds))
+        cfn = session.client("cloudformation")
+        response = cfn.describe_stacks(StackName=stack_name)
+        stacks = response.get("Stacks", [])
+        if not stacks:
+            return _err_html(f"CloudFormation stack not found: {stack_name}")
+
+        outputs = {item["OutputKey"]: item.get("OutputValue", "") for item in stacks[0].get("Outputs", [])}
+        required = {"StratumRoleArn", "ExternalId", "InstanceProfileName"}
+        missing = sorted(required - set(outputs))
+        if missing:
+            return _err_html(f"Stack is missing required outputs: {', '.join(missing)}")
+
+        imported = {
+            **creds,
+            "role_arn": outputs["StratumRoleArn"],
+            "external_id": outputs["ExternalId"],
+            "iam_profile_name": outputs["InstanceProfileName"],
+            "region": outputs.get("RegionHint") or creds.get("region", "us-east-1"),
+        }
+        credential_store.set("aws", imported)
+        return _aws_stack_import_html(imported, outputs)
+    except (ClientError, BotoCoreError) as exc:
+        return _err_html(f"AWS Error: {exc}")
+    except Exception as exc:
+        return _err_html(str(exc))
 
 _SAVED_HTML = (
     '<div class="rounded-xl border border-emerald-800/50 bg-emerald-950/20 p-4 space-y-3">'
@@ -218,16 +303,7 @@ async def test_credentials(request: Request, provider_name: str) -> str:
         from botocore.exceptions import BotoCoreError, ClientError
 
         try:
-            session_args: dict = {}
-            if creds.get("region"):
-                session_args["region_name"] = creds["region"]
-            if creds.get("aws_access_key_id") and creds.get("aws_secret_access_key"):
-                session_args["aws_access_key_id"] = creds["aws_access_key_id"]
-                session_args["aws_secret_access_key"] = creds["aws_secret_access_key"]
-            elif creds.get("aws_profile"):
-                session_args["profile_name"] = creds["aws_profile"]
-
-            session = boto3.Session(**session_args)
+            session = boto3.Session(**_aws_session_args(creds))
             role_arn = creds.get("role_arn")
             external_id = creds.get("external_id")
 
@@ -269,6 +345,12 @@ async def test_credentials(request: Request, provider_name: str) -> str:
 
             if isinstance(exc, (NoCredentialsError, PartialCredentialsError)):
                 label = "No Credentials Found"
+            elif "AccessDenied" in str(exc) and "AssumeRole" in str(exc):
+                return _err_html(
+                    "AWS Error: base credentials cannot assume the configured Role ARN. "
+                    "Set the CloudFormation TrustedPrincipalArn to this IAM user/role ARN, "
+                    "or attach an identity policy allowing sts:AssumeRole on the Stratum role."
+                )
             else:
                 label = "AWS Error"
             return _err_html(f"{label}: {exc}")

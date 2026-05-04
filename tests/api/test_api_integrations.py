@@ -62,6 +62,51 @@ def test_download_aws_template_unknown_name_returns_404(client):
     assert resp.status_code == 404
 
 
+def test_import_aws_stack_outputs_saves_cloudformation_outputs(client):
+    mock_cfn = MagicMock()
+    mock_cfn.describe_stacks.return_value = {
+        "Stacks": [
+            {
+                "Outputs": [
+                    {"OutputKey": "StratumRoleArn", "OutputValue": "arn:aws:iam::123456789012:role/StratumBuilderRole"},
+                    {"OutputKey": "ExternalId", "OutputValue": "stratum-onboarding"},
+                    {"OutputKey": "InstanceProfileName", "OutputValue": "StratumBuilderInstanceProfile"},
+                    {"OutputKey": "RegionHint", "OutputValue": "us-east-1"},
+                ]
+            }
+        ]
+    }
+    mock_session = MagicMock()
+    mock_session.client.return_value = mock_cfn
+    mock_boto3 = MagicMock()
+    mock_boto3.Session.return_value = mock_session
+
+    with patch.dict("sys.modules", {"boto3": mock_boto3, "botocore": MagicMock(), "botocore.exceptions": MagicMock()}):
+        resp = client.post(
+            "/api/integrations/aws/import-stack",
+            data={
+                "cloudformation_stack_name": "stratum-builder",
+                "aws_access_key_id": "AKIA123",
+                "aws_secret_access_key": "secret",
+                "region": "us-east-1",
+            },
+        )
+
+    assert resp.status_code == 200
+    assert "imported and saved" in resp.text
+    mock_cfn.describe_stacks.assert_called_once_with(StackName="stratum-builder")
+    saved = client.get("/api/integrations/aws").json()
+    assert saved["role_arn"] == "arn:aws:iam::123456789012:role/StratumBuilderRole"
+    assert saved["external_id"] == "stratum-onboarding"
+    assert saved["iam_profile_name"] == "StratumBuilderInstanceProfile"
+
+
+def test_import_aws_stack_outputs_requires_stack_name(client):
+    resp = client.post("/api/integrations/aws/import-stack", data={"region": "us-east-1"})
+    assert resp.status_code == 200
+    assert "stack name is required" in resp.text
+
+
 # ---------------------------------------------------------------------------
 # POST /api/integrations/{provider}/test — test_credentials
 # ---------------------------------------------------------------------------
@@ -131,6 +176,47 @@ def test_test_credentials_aws_client_error_returns_error_html(client):
             )
     assert resp.status_code == 200
     # Should return error HTML (not a 500)
+
+
+def test_test_credentials_aws_assume_role_access_denied_returns_actionable_hint(client):
+    mock_exc_mod = MagicMock()
+
+    class FakeClientError(Exception):
+        pass
+
+    class FakeBotoCoreError(Exception):
+        pass
+
+    class FakeNoCredsError(FakeBotoCoreError):
+        pass
+
+    mock_exc_mod.ClientError = FakeClientError
+    mock_exc_mod.BotoCoreError = FakeBotoCoreError
+    mock_exc_mod.NoCredentialsError = FakeNoCredsError
+    mock_exc_mod.PartialCredentialsError = FakeNoCredsError
+
+    mock_sts = MagicMock()
+    mock_sts.assume_role.side_effect = FakeClientError("AccessDenied when calling the AssumeRole operation")
+    mock_session = MagicMock()
+    mock_session.client.return_value = mock_sts
+    mock_boto3 = MagicMock()
+    mock_boto3.Session.return_value = mock_session
+
+    with patch.dict("sys.modules", {"boto3": mock_boto3, "botocore": MagicMock(), "botocore.exceptions": mock_exc_mod}):
+        with patch("stratum.api.integrations.boto3", mock_boto3, create=True):
+            resp = client.post(
+                "/api/integrations/aws/test",
+                data={
+                    "region": "us-east-1",
+                    "aws_access_key_id": "AKIA123",
+                    "aws_secret_access_key": "secret",
+                    "role_arn": "arn:aws:iam::123456789012:role/StratumBuilderRole",
+                },
+            )
+
+    assert resp.status_code == 200
+    assert "TrustedPrincipalArn" in resp.text
+    assert "sts:AssumeRole" in resp.text
 
 
 # ---------------------------------------------------------------------------

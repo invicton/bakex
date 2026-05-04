@@ -123,19 +123,41 @@
     >
       <div class="grid grid-cols-2 gap-5">
         <div>
-          <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5" title="IAM user access key ID">Access Key ID (Optional)</label>
+          <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5" title="IAM user access key ID">Access Key ID</label>
           <input type="text" name="aws_access_key_id"
             value="{{ creds.aws_access_key_id if creds else '' }}"
             placeholder="AKIAIOSFODNN7EXAMPLE"
             class="w-full bg-slate-900/50 border border-slate-700/80 rounded-lg px-4 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-all font-mono" />
+          <p class="text-[10px] text-slate-500 mt-1">Required unless Stratum can use an AWS profile or environment credentials.</p>
         </div>
         <div>
-          <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5" title="IAM user secret access key">Secret Access Key (Optional)</label>
+          <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5" title="IAM user secret access key">Secret Access Key</label>
           <input type="password" name="aws_secret_access_key"
             value="{{ creds.aws_secret_access_key if creds else '' }}"
             placeholder="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
             class="w-full bg-slate-900/50 border border-slate-700/80 rounded-lg px-4 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-all font-mono" />
+          <p class="text-[10px] text-slate-500 mt-1">Stored encrypted by Stratum.</p>
         </div>
+      </div>
+      <div class="rounded-lg border border-cyan-900/40 bg-cyan-950/10 p-4">
+        <div class="grid grid-cols-[1fr_auto] gap-3 items-end">
+          <div>
+            <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">CloudFormation Stack Name</label>
+            <input type="text" name="cloudformation_stack_name"
+              value="{{ creds.cloudformation_stack_name if creds else '' }}"
+              placeholder="stratum-builder"
+              class="w-full bg-slate-900/50 border border-slate-700/80 rounded-lg px-4 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-all font-mono" />
+          </div>
+          <button type="button"
+            hx-post="/api/integrations/aws/import-stack"
+            hx-include="closest form"
+            hx-target="#aws-status"
+            hx-swap="innerHTML"
+            class="px-4 py-2.5 bg-cyan-700/30 hover:bg-cyan-700/45 text-cyan-200 border border-cyan-700/60 text-sm font-semibold rounded-lg transition-all">
+            Import Outputs
+          </button>
+        </div>
+        <p class="text-[10px] text-slate-500 mt-2">Uses the credentials above to read stack outputs and fill Role ARN, External ID, instance profile, and region.</p>
       </div>
       <div class="grid grid-cols-2 gap-5">
         <div>
@@ -146,8 +168,8 @@
             class="w-full bg-slate-900/50 border border-slate-700/80 rounded-lg px-4 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-all font-mono" />
         </div>
         <div>
-          <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5" title="Only needed if you specifically want to assume a role">Role ARN (Optional)</label>
-          <input type="text" name="role_arn"
+          <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5" title="CloudFormation StratumRoleArn output">Role ARN</label>
+          <input id="aws-role-arn" type="text" name="role_arn"
             value="{{ creds.role_arn if creds else '' }}"
             placeholder="arn:aws:iam::123456789012:role/StratumBuilderRole"
             class="w-full bg-slate-900/50 border border-slate-700/80 rounded-lg px-4 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-all font-mono" />
@@ -155,14 +177,14 @@
       </div>
       <div>
         <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">External ID <span class="text-slate-600 normal-case font-normal">from CloudFormation output</span></label>
-        <input type="text" name="external_id"
+        <input id="aws-external-id" type="text" name="external_id"
           value="{{ creds.external_id if creds else '' }}"
           placeholder="stratum-your-company-or-random-id"
           class="w-full bg-slate-900/50 border border-slate-700/80 rounded-lg px-4 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-all font-mono" />
       </div>
       <div>
         <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Region</label>
-        <input type="text" name="region"
+        <input id="aws-region" type="text" name="region"
           value="{{ creds.region if creds else 'us-east-1' }}"
           placeholder="us-east-1"
           class="w-full bg-slate-900/50 border border-slate-700/80 rounded-lg px-4 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-all font-mono" />
@@ -184,7 +206,7 @@
       </div>
       <div>
         <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">IAM Instance Profile Name</label>
-        <input type="text" name="iam_profile_name"
+        <input id="aws-iam-profile-name" type="text" name="iam_profile_name"
           value="{{ creds.iam_profile_name if creds else '' }}"
           placeholder="StratumInstanceProfile"
           class="w-full bg-slate-900/50 border border-slate-700/80 rounded-lg px-4 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-all font-mono" />
