@@ -6,6 +6,31 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [0.5.0] — 2026-07-05
+
+### Added
+
+**Local / on-prem image building (no cloud account required)**
+
+- New `kvm` provider (`plugins/providers/kvm.py` + `plugins/providers/_qemu_utils.py`) — builds hardened images on the machine running Stratum using `qemu-system-x86_64` (KVM-accelerated when `/dev/kvm` is available, falling back to slower TCG emulation). Reuses the existing Ansible-Lockdown hardening and OpenSCAP scanning flow unchanged.
+- Base images: pass a downloadable OS slug (`ubuntu22.04`, `ubuntu24.04`, `debian12`) to auto-download and checksum-verify the official upstream cloud image, or a path to a qcow2 you already have.
+- Output format: qcow2 (default) or raw, selectable via `output_format` in the build request. Every artifact ships with a `.sha256` checksum sidecar and a `metadata.json` provenance file.
+- Guest access via a per-build ephemeral SSH keypair injected through a cloud-init NoCloud seed ISO — key-only auth, no password ever set.
+- `GET /api/builder/jobs/{job_id}/artifact` and `.../artifact.sha256` — download routes for the built image (the first downloadable-file artifact type; every other provider's artifact is a cloud-native reference like an AMI ID).
+- Requires system packages (not pip): `qemu-system-x86`, `qemu-utils`, and either `cloud-image-utils` (`cloud-localds`) or `genisoimage`.
+
+### Fixed
+
+**Ansible-Lockdown integration — affects every provider, not just the new `kvm` one:**
+
+- Galaxy role identifiers in `_provider_utils.py`'s OS→role map used the ansible-lockdown GitHub repo name/casing (e.g. `UBUNTU22-CIS`) instead of the actual installable Galaxy package name (`ubuntu22_cis`) — `ansible-galaxy install` was failing with "role not found" for every OS. Debian 12 is a particularly non-obvious case: the Galaxy name is `deb12_cis`, not `debian12_cis`. `os_catalog.py`'s `lockdown_roles` field (used by the Builder wizard UI) had the same bug.
+- Several ansible-lockdown roles mix git tag formats (`V1.0.0` alongside `1.1.0`), which made `ansible-galaxy install <role>` with no version qualifier fail outright trying to resolve "latest". Now pins a known-good version for each auto-resolved role.
+- `_provider_utils.run_remote_cmd`'s error message only included the command's stderr, but most callers redirect stderr into stdout (`... 2>&1`) — failures were reported with an empty, useless message. Now includes both streams.
+
+All three were found by actually running a full build end-to-end against a local KVM guest rather than relying on mocked tests alone.
+
+---
+
 ## [0.4.0] — 2026-07-05
 
 ### Added

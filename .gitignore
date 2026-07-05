@@ -27,10 +27,12 @@ data/.stratum_salt
 data/.admin_token
 data/audits/
 data/builds/
+data/local-images/
 data/audit_jobs.json
 data/api_keys.json
 data/webhooks.json
 profiles/community/
+profiles/user/
 
 # Test / coverage artifacts
 .coverage

@@ -7,7 +7,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Request
-from fastapi.responses import HTMLResponse, Response
+from fastapi.responses import FileResponse, HTMLResponse, Response
 
 from stratum.config import settings
 from stratum.core import builder as build_service
@@ -538,6 +538,52 @@ async def get_build_job(job_id: str) -> dict:
     if job is None:
         raise HTTPException(status_code=404, detail="Job not found")
     return _job_to_dict(job)
+
+
+def _artifact_path_for_job(job_id: str) -> Path:
+    """Return the on-disk artifact path for *job_id*, or raise HTTPException.
+
+    Only meaningful for providers whose artifact_id is a local file path (the
+    local KVM builder) — cloud providers' artifact_id is a reference like an
+    AMI ID, not a downloadable file, and 404s here rather than pretending.
+    """
+    job = build_service.get_job(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="Job not found")
+    if job.result is None or not job.result.artifact_id:
+        raise HTTPException(status_code=404, detail="Job has no artifact yet")
+
+    path = Path(job.result.artifact_id)
+    if not path.is_file():
+        raise HTTPException(
+            status_code=404,
+            detail="This job's artifact is not a downloadable file (cloud provider artifacts are AMI IDs, "
+            "image references, etc. — use the provider's own console/API to access them)",
+        )
+    # Defense-in-depth: the artifact must live under the builds directory —
+    # job.result.artifact_id always originates from a provider script we
+    # trust, but this guards against a future provider returning an
+    # unexpected path.
+    if _RESULTS_DIR.resolve() not in path.resolve().parents:
+        raise HTTPException(status_code=404, detail="Artifact path is outside the builds directory")
+    return path
+
+
+@router.get("/jobs/{job_id}/artifact")
+async def download_build_artifact(job_id: str) -> FileResponse:
+    """Download the built image file (qcow2/raw) for local-provider builds."""
+    path = _artifact_path_for_job(job_id)
+    return FileResponse(path, media_type="application/octet-stream", filename=path.name)
+
+
+@router.get("/jobs/{job_id}/artifact.sha256")
+async def download_build_artifact_checksum(job_id: str) -> Response:
+    """Download the SHA-256 checksum sidecar for the built image file."""
+    path = _artifact_path_for_job(job_id)
+    checksum_path = path.with_suffix(path.suffix + ".sha256")
+    if not checksum_path.is_file():
+        raise HTTPException(status_code=404, detail="No checksum file for this artifact")
+    return Response(content=checksum_path.read_text(), media_type="text/plain")
 
 
 @router.get("/jobs/{job_id}/status", response_class=HTMLResponse)

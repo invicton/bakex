@@ -140,7 +140,7 @@ The templates are intentionally readable so customers can evaluate every permiss
 
 ### Local Development
 
-**Prerequisites:** Python 3.11+, [uv](https://docs.astral.sh/uv/), Ansible, OpenSCAP
+**Prerequisites:** Python 3.11+, [uv](https://docs.astral.sh/uv/), Ansible, OpenSCAP. Building images locally with the `kvm` provider additionally needs `qemu-system-x86`, `qemu-utils`, and either `cloud-image-utils` (`cloud-localds`) or `genisoimage` — system packages, not pip installs.
 
 ```bash
 git clone https://github.com/rrskris/Stratum.git

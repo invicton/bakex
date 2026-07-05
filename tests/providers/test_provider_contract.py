@@ -227,6 +227,11 @@ class TestRealProvidersContract:
         providers, _ = load_providers(Path("plugins/providers"))
         assert "azure" in providers, "azure provider must be loadable"
 
+    def test_kvm_provider_loaded_as_subprocess(self):
+        providers, _ = load_providers(Path("plugins/providers"))
+        assert "kvm" in providers, "kvm provider must be loadable"
+        assert providers["kvm"].handles_full_lifecycle is True
+
     def test_local_provider_loaded_as_class_based(self):
         providers, _ = load_providers(Path("plugins/providers"))
         assert "local" in providers
@@ -236,5 +241,5 @@ class TestRealProvidersContract:
         registry = ProviderRegistry()
         registry.load(Path("plugins/providers"))
         names = registry.names()
-        for expected in ("aws", "gcp", "azure", "local"):
+        for expected in ("aws", "gcp", "azure", "kvm", "local"):
             assert expected in names, f"Provider '{expected}' must be in registry"

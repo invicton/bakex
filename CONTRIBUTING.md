@@ -41,10 +41,25 @@ uv sync --extra all-providers --extra dev
 uv run uvicorn stratum.main:app --reload
 ```
 
-System dependencies (Ubuntu/Debian):
+System dependencies (Debian 12 / Ubuntu 24.04+):
 
 ```bash
-apt install openscap-scanner ssg-debderived ansible openssh-client
+apt install openscap-scanner scap-security-guide ansible openssh-client
+```
+
+> **Known gap — Debian-family OpenSCAP install:** `install_oscap_on_remote()`
+> bundles `openscap-scanner` with `scap-security-guide` in one `apt-get
+> install` — but `scap-security-guide` is the RHEL/Fedora package name and
+> doesn't exist for Debian/Ubuntu at all, so the whole install currently
+> fails on *every* Debian-family target, not just Ubuntu 22.04 (which also
+> lacks `openscap-scanner` itself via apt in any channel — it first appears
+> in 24.04). Hardening (Ansible-Lockdown) is unaffected; only the OpenSCAP
+> scan step is. Tracked as a known gap, fix in progress.
+
+Building images locally with the `kvm` provider additionally needs:
+
+```bash
+apt install qemu-system-x86 qemu-utils cloud-image-utils   # or: genisoimage instead of cloud-image-utils
 ```
 
 ---
