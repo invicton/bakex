@@ -10,6 +10,7 @@ from pydantic import BaseModel
 from stratum.core.notifications import (
     VALID_EVENTS,
     fire_webhook,
+    is_safe_webhook_url,
     list_webhooks,
     register_webhook,
     remove_webhook,
@@ -32,6 +33,9 @@ async def create_webhook(body: WebhookCreate) -> dict:
         raise HTTPException(status_code=422, detail=f"Unknown events: {invalid}. Valid: {sorted(VALID_EVENTS)}")
     if not body.url.startswith(("http://", "https://")):
         raise HTTPException(status_code=422, detail="url must start with http:// or https://")
+    safe, reason = is_safe_webhook_url(body.url)
+    if not safe:
+        raise HTTPException(status_code=422, detail=reason)
     return register_webhook(body.url, body.events, body.label)
 
 

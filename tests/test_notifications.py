@@ -116,8 +116,10 @@ async def test_fire_webhook_hmac_signature_correct():
 
 @pytest.mark.anyio
 async def test_fire_webhook_only_fires_to_subscribed():
-    notif_mod.register_webhook("https://scan-hook.example.com", ["scan.complete"])
-    notif_mod.register_webhook("https://build-hook.example.com", ["build.complete"])
+    # Same (resolvable) host, distinct paths — subdomains of example.com aren't
+    # guaranteed to resolve, only the bare domain is IANA-reserved for this.
+    notif_mod.register_webhook("https://example.com/scan-hook", ["scan.complete"])
+    notif_mod.register_webhook("https://example.com/build-hook", ["build.complete"])
 
     fired_urls = []
 

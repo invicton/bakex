@@ -6,11 +6,14 @@ from __future__ import annotations
 
 import hashlib
 import hmac
+import ipaddress
 import json
 import logging
 import secrets
+import socket
 from datetime import UTC, datetime
 from pathlib import Path
+from urllib.parse import urlparse
 
 try:
     import httpx
@@ -23,6 +26,39 @@ _WEBHOOKS_FILE = Path("data/webhooks.json")
 _webhooks: dict[str, dict] = {}
 
 VALID_EVENTS = {"scan.complete", "scan.failed", "scan.grade_change", "build.complete", "build.failed"}
+
+
+def is_safe_webhook_url(url: str) -> tuple[bool, str]:
+    """Reject webhook URLs that resolve to loopback/private/link-local/reserved
+    addresses — including the 169.254.169.254 cloud metadata IP — to close an
+    SSRF hole via unauthenticated (or attacker-configured) webhook targets.
+
+    Re-resolving at send time (not just at registration time) narrows, but does
+    not eliminate, a DNS-rebinding race: a hostname could pass this check then
+    have its DNS record repointed before the actual request is made.
+    """
+    parsed = urlparse(url)
+    if parsed.scheme not in ("http", "https") or not parsed.hostname:
+        return False, "url must be a valid http:// or https:// URL"
+
+    try:
+        infos = socket.getaddrinfo(parsed.hostname, None)
+    except OSError as exc:
+        return False, f"could not resolve host {parsed.hostname!r}: {exc}"
+
+    for info in infos:
+        ip = ipaddress.ip_address(info[4][0])
+        if (
+            ip.is_private
+            or ip.is_loopback
+            or ip.is_link_local
+            or ip.is_reserved
+            or ip.is_multicast
+            or ip.is_unspecified
+        ):
+            return False, f"webhook host resolves to a disallowed address ({ip}) — private/internal targets are blocked"
+
+    return True, ""
 
 
 def _persist() -> None:
@@ -97,6 +133,10 @@ async def fire_webhook(event: str, payload: dict) -> None:
     async with httpx.AsyncClient(timeout=10) as client:
         for hook in matching:
             try:
+                safe, reason = is_safe_webhook_url(hook["url"])
+                if not safe:
+                    logger.warning("Webhook %s blocked for event %s: %s", hook["id"], event, reason)
+                    continue
                 sig = hmac.new(hook["secret"].encode(), body.encode(), hashlib.sha256).hexdigest()
                 await client.post(
                     hook["url"],

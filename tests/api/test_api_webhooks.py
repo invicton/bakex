@@ -78,6 +78,22 @@ def test_create_webhook_relative_url_returns_422(client):
 
 
 # ---------------------------------------------------------------------------
+# WH-API-03c: POST with a URL resolving to the cloud metadata IP → 422 (SSRF)
+# ---------------------------------------------------------------------------
+
+
+def test_create_webhook_ssrf_target_returns_422(client):
+    resp = client.post(
+        "/api/webhooks",
+        json={
+            "url": "http://169.254.169.254/latest/meta-data/",
+            "events": ["scan.complete"],
+        },
+    )
+    assert resp.status_code == 422
+
+
+# ---------------------------------------------------------------------------
 # WH-API-04: GET after creating → secret absent from list items
 # ---------------------------------------------------------------------------
 
