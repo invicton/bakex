@@ -7,6 +7,7 @@ No cloud SDK calls. Everything here is testable without credentials.
 
 from __future__ import annotations
 
+import os
 import subprocess
 
 # Import the shared utils directly from the provider directory
@@ -383,3 +384,189 @@ class TestInstallOscapOnRemote:
         script = mock_run.call_args[0][3]
         assert "dnf install -y openscap openscap-scanner scap-security-guide" in script
         assert "yum install -y openscap openscap-scanner scap-security-guide" in script
+
+    def test_no_datastream_arg_skips_content_check(self, tmp_path):
+        """Without a datastream path, only the package-install call happens —
+        no `test -f` probe, no fallback download attempt."""
+        with patch("_provider_utils.run_remote_cmd") as mock_run:
+            mock_run.return_value = (0, "", "")
+            utils.install_oscap_on_remote("127.0.0.1", "ubuntu", tmp_path / "key")
+        assert mock_run.call_count == 1
+
+    def test_datastream_already_present_skips_fallback(self, tmp_path):
+        with (
+            patch("_provider_utils.run_remote_cmd") as mock_run,
+            patch("_provider_utils._ensure_scap_content_cached") as mock_fallback,
+        ):
+            mock_run.return_value = (0, "", "")  # install script, then `test -f` -> rc 0
+            utils.install_oscap_on_remote(
+                "127.0.0.1",
+                "ubuntu",
+                tmp_path / "key",
+                datastream="/usr/share/xml/scap/ssg/content/ssg-ubuntu2204-ds.xml",
+            )
+        mock_fallback.assert_not_called()
+
+    def test_datastream_missing_triggers_fallback_download_and_upload(self, tmp_path):
+        ds_path = "/usr/share/xml/scap/ssg/content/ssg-ubuntu2204-ds.xml"
+        local_content = tmp_path / "ssg-ubuntu2204-ds.xml"
+        local_content.write_text("<xccdf/>")
+
+        call_log = []
+
+        def fake_run_remote_cmd(host, user, key_path, command, **kwargs):
+            call_log.append(command)
+            if command.startswith("test -f"):
+                return (1, "", "")  # not present
+            return (0, "", "")
+
+        with (
+            patch("_provider_utils.run_remote_cmd", side_effect=fake_run_remote_cmd),
+            patch("_provider_utils._ensure_scap_content_cached", return_value=local_content) as mock_fallback,
+            patch("_provider_utils.copy_file_to_remote") as mock_copy,
+        ):
+            utils.install_oscap_on_remote(
+                "127.0.0.1", "ubuntu", tmp_path / "key", os_name="ubuntu22.04", datastream=ds_path
+            )
+
+        mock_fallback.assert_called_once_with(ds_path, Path("data/scap-content"))
+        # Must copy the local *file* (a real path, not literal file content —
+        # datastreams are 10MB+, too big to read into memory as a string twice).
+        mock_copy.assert_called_once()
+        assert mock_copy.call_args[0][0] == str(local_content)
+        assert any(f"mkdir -p {os.path.dirname(ds_path)}" in c for c in call_log)
+        assert any("mv " in c and ds_path in c for c in call_log)
+
+    def test_datastream_missing_and_no_fallback_available_does_not_raise(self, tmp_path):
+        """Best-effort: if the fallback can't provide content either, log and
+        move on — let the actual oscap invocation fail loudly instead."""
+
+        def fake_run_remote_cmd(host, user, key_path, command, **kwargs):
+            if command.startswith("test -f"):
+                return (1, "", "")
+            return (0, "", "")
+
+        with (
+            patch("_provider_utils.run_remote_cmd", side_effect=fake_run_remote_cmd),
+            patch("_provider_utils._ensure_scap_content_cached", return_value=None),
+            patch("_provider_utils.copy_file_to_remote") as mock_copy,
+        ):
+            utils.install_oscap_on_remote(
+                "127.0.0.1", "ubuntu", tmp_path / "key", os_name="ubuntu22.04", datastream="/some/ds.xml"
+            )
+        mock_copy.assert_not_called()
+
+
+# ===========================================================================
+# _ensure_scap_content_cached — ComplianceAsCode datastream download fallback
+# ===========================================================================
+
+
+class TestEnsureScapContentCached:
+    def test_returns_cached_file_without_downloading(self, tmp_path):
+        cached = tmp_path / "ssg-ubuntu2204-ds.xml"
+        cached.write_text("<xccdf/>")
+        with patch("_provider_utils.urllib.request.urlretrieve") as mock_dl:
+            result = utils._ensure_scap_content_cached("/some/path/ssg-ubuntu2204-ds.xml", tmp_path)
+        assert result == cached
+        mock_dl.assert_not_called()
+
+    def test_empty_basename_returns_none(self, tmp_path):
+        assert utils._ensure_scap_content_cached("", tmp_path) is None
+
+    def test_downloads_verifies_checksum_and_extracts_member(self, tmp_path):
+        import hashlib
+        import io
+        import zipfile
+
+        buf = io.BytesIO()
+        with zipfile.ZipFile(buf, "w") as zf:
+            zf.writestr(
+                f"scap-security-guide-{utils._SCAP_CONTENT_VERSION}/ssg-ubuntu2204-ds.xml", "<xccdf>content</xccdf>"
+            )
+        zip_bytes = buf.getvalue()
+        checksum = hashlib.sha512(zip_bytes).hexdigest()
+
+        def fake_urlretrieve(url, dest):
+            Path(dest).write_bytes(zip_bytes)
+
+        mock_checksum_resp = MagicMock()
+        mock_checksum_resp.__enter__ = MagicMock(return_value=mock_checksum_resp)
+        mock_checksum_resp.__exit__ = MagicMock(return_value=False)
+        mock_checksum_resp.read.return_value = f"{checksum}  scap-security-guide.zip".encode()
+
+        with (
+            patch("_provider_utils.urllib.request.urlretrieve", side_effect=fake_urlretrieve),
+            patch("_provider_utils.urllib.request.urlopen", return_value=mock_checksum_resp),
+        ):
+            result = utils._ensure_scap_content_cached("/some/path/ssg-ubuntu2204-ds.xml", tmp_path)
+
+        assert result is not None
+        assert result.read_text() == "<xccdf>content</xccdf>"
+
+    def test_checksum_mismatch_returns_none(self, tmp_path):
+        import io
+        import zipfile
+
+        buf = io.BytesIO()
+        with zipfile.ZipFile(buf, "w") as zf:
+            zf.writestr(f"scap-security-guide-{utils._SCAP_CONTENT_VERSION}/ssg-ubuntu2204-ds.xml", "<xccdf/>")
+        zip_bytes = buf.getvalue()
+
+        def fake_urlretrieve(url, dest):
+            Path(dest).write_bytes(zip_bytes)
+
+        mock_checksum_resp = MagicMock()
+        mock_checksum_resp.__enter__ = MagicMock(return_value=mock_checksum_resp)
+        mock_checksum_resp.__exit__ = MagicMock(return_value=False)
+        mock_checksum_resp.read.return_value = b"0" * 128 + b"  scap-security-guide.zip"
+
+        with (
+            patch("_provider_utils.urllib.request.urlretrieve", side_effect=fake_urlretrieve),
+            patch("_provider_utils.urllib.request.urlopen", return_value=mock_checksum_resp),
+        ):
+            result = utils._ensure_scap_content_cached("/some/path/ssg-ubuntu2204-ds.xml", tmp_path)
+
+        assert result is None
+
+    def test_missing_member_in_archive_returns_none(self, tmp_path):
+        import io
+        import zipfile
+
+        buf = io.BytesIO()
+        with zipfile.ZipFile(buf, "w") as zf:
+            zf.writestr(f"scap-security-guide-{utils._SCAP_CONTENT_VERSION}/ssg-rhel9-ds.xml", "<xccdf/>")
+        zip_bytes = buf.getvalue()
+
+        def fake_urlretrieve(url, dest):
+            Path(dest).write_bytes(zip_bytes)
+
+        with (
+            patch("_provider_utils.urllib.request.urlretrieve", side_effect=fake_urlretrieve),
+            patch("_provider_utils.urllib.request.urlopen", side_effect=Exception("no checksum")),
+        ):
+            result = utils._ensure_scap_content_cached("/some/path/ssg-does-not-exist-ds.xml", tmp_path)
+
+        assert result is None
+
+
+# ===========================================================================
+# run_oscap_remote — must raise, not silently return, when no results appear
+# ===========================================================================
+#
+# Regression: a build with the oscap binary or SCAP content missing entirely
+# (e.g. Ubuntu 22.04's missing openscap-scanner package) previously appeared
+# to "succeed" — the empty result was just logged as a warning and returned
+# as if it were a legitimate (if odd) scan outcome.
+
+
+class TestRunOscapRemote:
+    def test_empty_output_raises(self, tmp_path):
+        with patch("_provider_utils.run_remote_cmd", return_value=(1, "", "oscap: command not found")):
+            with pytest.raises(RuntimeError, match="oscap produced no results"):
+                utils.run_oscap_remote("127.0.0.1", "ubuntu", tmp_path / "key", "profile-id", "/some/ds.xml")
+
+    def test_nonempty_output_returns_it(self, tmp_path):
+        with patch("_provider_utils.run_remote_cmd", return_value=(2, "<xccdf>results</xccdf>", "")):
+            result = utils.run_oscap_remote("127.0.0.1", "ubuntu", tmp_path / "key", "profile-id", "/some/ds.xml")
+        assert result == "<xccdf>results</xccdf>"

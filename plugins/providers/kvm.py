@@ -164,7 +164,9 @@ def execute_build(params: dict) -> dict:
             utils.run_hardening_remote(host_ip, ssh_user, key_path, os_name, hardening_config, port=ssh_port)
 
             logger.info("Running OpenSCAP scan…")
-            utils.install_oscap_on_remote(host_ip, ssh_user, key_path, port=ssh_port)
+            utils.install_oscap_on_remote(
+                host_ip, ssh_user, key_path, os_name=os_name, datastream=datastream, port=ssh_port
+            )
             utils.run_oscap_remote(host_ip, ssh_user, key_path, profile_id, datastream, port=ssh_port)
 
             utils.cleanup_instance_history_remote(host_ip, ssh_user, key_path, port=ssh_port)

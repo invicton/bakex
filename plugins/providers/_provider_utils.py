@@ -16,6 +16,7 @@ subprocess provider scripts that run as one-shot CLI processes.
 from __future__ import annotations
 
 import base64
+import hashlib
 import json
 import logging
 import os
@@ -23,6 +24,8 @@ import socket
 import subprocess
 import tempfile
 import time
+import urllib.request
+import zipfile
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
@@ -562,22 +565,100 @@ def cleanup_instance_history_remote(host: str, user: str, key_path: Path, port: 
 # ---------------------------------------------------------------------------
 
 
-def install_oscap_on_remote(host: str, user: str, key_path: Path, port: int = 22) -> None:
-    """Ensure oscap is installed on the remote.
+# ComplianceAsCode/content release used as a fallback SCAP-content source when
+# the target's package manager doesn't ship it — verified this is a real,
+# previously-hit problem: a user on Ubuntu 22.04 solved it exactly this way
+# (Launchpad Question #704388). Only the release .zip contains prebuilt
+# ssg-<os>-ds.xml datastreams at its top level (scap-security-guide-<ver>/) —
+# the .tar.gz/.tar.bz2 assets are source-only and do not include them.
+_SCAP_CONTENT_VERSION = "0.1.81"
+_SCAP_CONTENT_ZIP_URL = (
+    f"https://github.com/ComplianceAsCode/content/releases/download/"
+    f"v{_SCAP_CONTENT_VERSION}/scap-security-guide-{_SCAP_CONTENT_VERSION}.zip"
+)
+_SCAP_CONTENT_SHA512_URL = _SCAP_CONTENT_ZIP_URL + ".sha512"
 
-    KNOWN GAP: on Debian-family targets this installs the `oscap` CLI only —
-    it does NOT install SCAP content (the XCCDF datastream files under
-    /usr/share/xml/scap/ssg/content/). `scap-security-guide` (bundled here
-    previously) is the RHEL/Fedora package name and does not exist for
-    Debian/Ubuntu under any name; `ssg-debderived` (also bundled previously)
-    does not exist either. Bundling either into the same `apt-get install`
-    call made the *entire* install fail even where `openscap-scanner` itself
-    is available (Debian 12, Ubuntu 24.04+) — fixed by installing it alone.
-    Ubuntu 22.04 additionally lacks `openscap-scanner` via apt in any channel
-    (first appears in 24.04) — the whole install is a no-op there today.
-    Getting real SCAP content onto a Debian-family target requires a separate
-    fix (e.g. downloading a ComplianceAsCode/content release), tracked as a
-    follow-up rather than solved here.
+
+def _ensure_scap_content_cached(datastream_path: str, cache_dir: Path) -> Path | None:
+    """Download+cache the ComplianceAsCode release zip (once) and extract the
+    datastream file matching *datastream_path*'s basename (e.g.
+    "ssg-ubuntu2204-ds.xml"). Returns the local path, or None if that exact
+    filename isn't in the release or the download/extraction fails — this is
+    a best-effort fallback, not a hard dependency.
+    """
+    filename = os.path.basename(datastream_path)
+    if not filename:
+        return None
+
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    extracted_path = cache_dir / filename
+    if extracted_path.is_file():
+        return extracted_path
+
+    zip_path = cache_dir / f"scap-security-guide-{_SCAP_CONTENT_VERSION}.zip"
+    try:
+        if not zip_path.is_file():
+            logger.info("Downloading ComplianceAsCode content v%s for SCAP fallback…", _SCAP_CONTENT_VERSION)
+            tmp_path = zip_path.with_suffix(".part")
+            urllib.request.urlretrieve(_SCAP_CONTENT_ZIP_URL, tmp_path)  # noqa: S310 — fixed, hardcoded HTTPS URL
+
+            expected = None
+            try:
+                with urllib.request.urlopen(_SCAP_CONTENT_SHA512_URL, timeout=30) as resp:  # noqa: S310
+                    expected = resp.read().decode().split()[0].strip().lower()
+            except Exception as exc:
+                logger.warning("Could not fetch ComplianceAsCode checksum: %s", exc)
+
+            h = hashlib.sha512()
+            with open(tmp_path, "rb") as f:
+                for chunk in iter(lambda: f.read(1024 * 1024), b""):
+                    h.update(chunk)
+            actual = h.hexdigest()
+            if expected is not None and expected != actual:
+                tmp_path.unlink(missing_ok=True)
+                raise RuntimeError(f"ComplianceAsCode content checksum mismatch: expected {expected}, got {actual}")
+            tmp_path.rename(zip_path)
+
+        with zipfile.ZipFile(zip_path) as zf:
+            member = f"scap-security-guide-{_SCAP_CONTENT_VERSION}/{filename}"
+            with zf.open(member) as src, open(extracted_path, "wb") as dst:
+                while chunk := src.read(1024 * 1024):
+                    dst.write(chunk)
+        return extracted_path
+    except KeyError:
+        logger.warning("ComplianceAsCode release v%s does not contain %s", _SCAP_CONTENT_VERSION, filename)
+        return None
+    except Exception as exc:
+        logger.warning("Could not prepare ComplianceAsCode SCAP content fallback for %s: %s", filename, exc)
+        return None
+
+
+def install_oscap_on_remote(
+    host: str,
+    user: str,
+    key_path: Path,
+    os_name: str = "",
+    datastream: str = "",
+    port: int = 22,
+) -> None:
+    """Ensure oscap and the target's SCAP content are available on the remote.
+
+    Debian-family targets: installs `openscap-scanner` alone (bundling it
+    with `scap-security-guide` or `ssg-debderived` — Debian package names
+    that don't correspond to real Debian/Ubuntu packages under those exact
+    names for this purpose — previously failed the *entire* install even
+    where openscap-scanner itself is available). Ubuntu 22.04 additionally
+    lacks `openscap-scanner` via apt in any channel (first appears in 24.04),
+    so this is a no-op there — the datastream-download fallback below still
+    provides real SCAP content, but the `oscap` binary itself is still
+    missing on 22.04 specifically until it's built from source (a separate,
+    tracked follow-up).
+
+    If *datastream* is given and isn't already present on the remote after
+    the package-manager attempt, downloads the matching content from a
+    ComplianceAsCode/content GitHub release and uploads it to that exact
+    path — this is what unblocks real compliance scanning on targets whose
+    package manager doesn't ship SCAP content at all.
     """
     script = (
         "if command -v apt-get >/dev/null 2>&1; then "
@@ -590,7 +671,39 @@ def install_oscap_on_remote(host: str, user: str, key_path: Path, port: int = 22
         "fi"
     )
     run_remote_cmd(host, user, key_path, f"sudo bash -c '{script}'", timeout=300, port=port)
-    logger.info("OpenSCAP ready on %s", host)
+
+    if not datastream:
+        logger.info("OpenSCAP package install attempted on %s", host)
+        return
+
+    rc, _, _ = run_remote_cmd(host, user, key_path, f"test -f {datastream}", check=False, port=port)
+    if rc == 0:
+        logger.info("OpenSCAP ready on %s (SCAP content present at %s)", host, datastream)
+        return
+
+    logger.warning(
+        "SCAP content not found at %s on %s — falling back to a ComplianceAsCode/content release download",
+        datastream,
+        host,
+    )
+    local_content = _ensure_scap_content_cached(datastream, Path("data/scap-content"))
+    if local_content is None:
+        logger.warning(
+            "No ComplianceAsCode fallback available for os=%r/datastream=%r — the scan will likely fail",
+            os_name,
+            datastream,
+        )
+        return
+
+    # copy_file_to_remote (not upload_content_to_remote, which takes literal
+    # string *content* — datastreams are 10MB+ files, not something to read
+    # into memory twice) — via a /tmp staging path + sudo mv, since the SSH
+    # user typically can't write directly to /usr/share/xml/scap/ssg/content/.
+    run_remote_cmd(host, user, key_path, f"sudo mkdir -p {os.path.dirname(datastream)}", port=port)
+    staging = f"/tmp/stratum-scap-content-{os.path.basename(datastream)}"
+    copy_file_to_remote(str(local_content), staging, host, user, key_path, timeout=300, port=port)
+    run_remote_cmd(host, user, key_path, f"sudo mv {staging} {datastream}", timeout=30, port=port)
+    logger.info("OpenSCAP content fallback uploaded to %s on %s", datastream, host)
 
 
 def run_oscap_remote(
@@ -605,20 +718,34 @@ def run_oscap_remote(
 ) -> str:
     """Run ``oscap xccdf eval`` on *host* and return the XCCDF results XML.
 
-    oscap exits with code 2 when findings are present (not an error for our purposes).
-    Returns the raw XML content.
+    oscap exits with code 2 when findings are present (not an error for our
+    purposes) — but since this command chains "oscap ...; cat results_path"
+    with a plain `;`, the exit code actually observed here is `cat`'s, not
+    oscap's, so it isn't a reliable success signal either way. What *is*
+    reliable: if oscap never ran at all (binary missing, e.g. Ubuntu 22.04
+    with no apt package for it) or the datastream is missing/invalid, no
+    results file gets created and `cat` produces no output — that case must
+    raise, not silently return an empty string as if it were a real (if
+    empty) scan result.
+
+    Raises:
+        RuntimeError: if no results were produced (see above).
     """
     cmd = (
         f"sudo oscap xccdf eval "
         f"--profile {profile_id} "
         f"--results {results_path} "
         f"--report /tmp/stratum-oscap-report.html "
-        f"{datastream}; "  # exit code 2 = findings — allowed
+        f"{datastream}; "
         f"cat {results_path}"
     )
     _, stdout, stderr = run_remote_cmd(host, user, key_path, cmd, timeout=timeout, check=False, port=port)
     if not stdout.strip():
-        logger.warning("oscap produced no output; stderr: %s", stderr[:500])
+        raise RuntimeError(
+            f"oscap produced no results on {host} (datastream={datastream!r}) — "
+            f"the oscap binary or SCAP content is likely missing on this target. "
+            f"stderr: {stderr[:500]}"
+        )
     return stdout
 
 

@@ -333,7 +333,7 @@ def execute_build(params: dict) -> dict:
 
             # 10. OpenSCAP
             logger.info("Running OpenSCAP scan…")
-            utils.install_oscap_on_remote(ip_address, ssh_user, key_path)
+            utils.install_oscap_on_remote(ip_address, ssh_user, key_path, os_name=os_name, datastream=datastream)
             utils.run_oscap_remote(ip_address, ssh_user, key_path, profile_id, datastream)
 
             # 10.5. Cleanup history
@@ -419,7 +419,7 @@ def execute_audit(params: dict) -> dict:
         key_path = Path(tmpdir) / "audit_key"
         key_path.write_text(ssh_key_pem)
         key_path.chmod(0o600)
-        utils.install_oscap_on_remote(target_ip, ssh_user, key_path)
+        utils.install_oscap_on_remote(target_ip, ssh_user, key_path, os_name=os_name, datastream=datastream)
         xml = utils.run_oscap_remote(target_ip, ssh_user, key_path, profile_id, datastream)
 
     return {"status": "success", "raw_xml": xml}

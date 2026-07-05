@@ -6,6 +6,18 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [0.5.1] — 2026-07-05
+
+### Fixed
+
+**OpenSCAP scans were silently no-ops when SCAP content was missing — affects every provider**
+
+- `run_oscap_remote` previously logged a warning and returned an empty string when `oscap` produced no output (e.g. the binary or SCAP content is missing on the target) instead of raising — a build could report `COMPLETE` despite the compliance scan never actually running. Now raises, so this failure mode is loud rather than silently accepted. This was caught by re-verifying a build that had appeared to succeed in the previous release.
+- `install_oscap_on_remote` now checks whether the target's SCAP datastream actually exists after the package-manager install attempt, and if not, downloads the matching content directly from a [ComplianceAsCode/content](https://github.com/ComplianceAsCode/content) GitHub release (checksum-verified, cached locally) and uploads it to the expected path. This is the same workaround a real user independently arrived at for the identical Ubuntu 22.04 gap (documented in a public Launchpad question) — not a guess. `scap-security-guide` (the package that would normally provide this content) turns out to be missing from **both** Ubuntu 22.04 and 24.04's archives, not just 22.04 as first thought, so this fix benefits every OS/provider combination, not only the one originally suspected.
+- Ubuntu 22.04 still cannot run OpenSCAP scans end-to-end even with this fix, since `openscap-scanner` itself has no apt package on that release in any channel — only the content-availability half of the problem is fixed there. Tracked in `CONTRIBUTING.md`.
+
+---
+
 ## [0.5.0] — 2026-07-05
 
 ### Added

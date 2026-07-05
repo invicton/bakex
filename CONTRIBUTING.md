@@ -41,20 +41,33 @@ uv sync --extra all-providers --extra dev
 uv run uvicorn stratum.main:app --reload
 ```
 
-System dependencies (Debian 12 / Ubuntu 24.04+):
+System dependencies (Debian 12):
 
 ```bash
 apt install openscap-scanner scap-security-guide ansible openssh-client
 ```
 
-> **Known gap — Debian-family OpenSCAP install:** `install_oscap_on_remote()`
-> bundles `openscap-scanner` with `scap-security-guide` in one `apt-get
-> install` — but `scap-security-guide` is the RHEL/Fedora package name and
-> doesn't exist for Debian/Ubuntu at all, so the whole install currently
-> fails on *every* Debian-family target, not just Ubuntu 22.04 (which also
-> lacks `openscap-scanner` itself via apt in any channel — it first appears
-> in 24.04). Hardening (Ansible-Lockdown) is unaffected; only the OpenSCAP
-> scan step is. Tracked as a known gap, fix in progress.
+System dependencies (Ubuntu 24.04+ — `scap-security-guide` isn't a real
+Ubuntu package under any name, unlike Debian; see the note below):
+
+```bash
+apt install openscap-scanner ansible openssh-client
+```
+
+> **OpenSCAP content on Debian-family targets:** `install_oscap_on_remote()`
+> installs `openscap-scanner` via the package manager, then checks whether
+> the target's SCAP datastream is actually present afterward. If not (true
+> for **every** Ubuntu release — `scap-security-guide` doesn't exist there
+> at all, not just on 22.04 as first suspected; Debian 12 does ship it), it
+> downloads the matching content directly from a
+> [ComplianceAsCode/content](https://github.com/ComplianceAsCode/content)
+> GitHub release (checksum-verified, cached locally) instead — the same
+> workaround a real user independently found for this exact gap. **Ubuntu
+> 22.04 still can't run a scan at all**, though, since it additionally lacks
+> the `openscap-scanner` binary itself via apt in any channel (first appears
+> in 24.04) — building `openscap` from source there is a tracked follow-up.
+> Hardening (Ansible-Lockdown) is unaffected either way; only the OpenSCAP
+> scan step is.
 
 Building images locally with the `kvm` provider additionally needs:
 

@@ -197,7 +197,7 @@ def execute_build(params: dict) -> dict:
 
             # 6. OpenSCAP
             logger.info("Running OpenSCAP scan…")
-            utils.install_oscap_on_remote(ip, ssh_user, key_path)
+            utils.install_oscap_on_remote(ip, ssh_user, key_path, os_name=os_name, datastream=datastream)
             utils.run_oscap_remote(ip, ssh_user, key_path, profile_id, datastream)
 
             # 6.5. Cleanup history
@@ -271,6 +271,7 @@ def execute_audit(params: dict) -> dict:
         profile    — XCCDF profile ID
         datastream — Path to SCAP datastream on the instance
     """
+    os_name = params.get("os", "ubuntu22")
     target_ip = params.get("target_ip", "")
     ssh_user = params.get("ssh_user") or "root"
     ssh_key_pem = params.get("ssh_key", "")
@@ -286,7 +287,7 @@ def execute_audit(params: dict) -> dict:
         key_path = Path(tmpdir) / "audit_key"
         key_path.write_text(ssh_key_pem)
         key_path.chmod(0o600)
-        utils.install_oscap_on_remote(target_ip, ssh_user, key_path)
+        utils.install_oscap_on_remote(target_ip, ssh_user, key_path, os_name=os_name, datastream=datastream)
         xml = utils.run_oscap_remote(target_ip, ssh_user, key_path, profile_id, datastream)
 
     return {"status": "success", "raw_xml": xml}
@@ -355,7 +356,7 @@ def execute_scan_image(params: dict) -> dict:
 
             utils.wait_for_ssh(ip, timeout=300)
             time.sleep(15)
-            utils.install_oscap_on_remote(ip, ssh_user, key_path)
+            utils.install_oscap_on_remote(ip, ssh_user, key_path, os_name=os_name, datastream=datastream)
             xml = utils.run_oscap_remote(ip, ssh_user, key_path, profile_id, datastream)
             return {"status": "success", "raw_xml": xml}
 
