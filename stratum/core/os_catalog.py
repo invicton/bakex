@@ -27,19 +27,20 @@ OS_CATALOG: dict[str, dict] = {
         "supported_tiers": ["cis-l1", "cis-l2"],
         "selinux": True,
         "lockdown_roles": {
-            "cis-l1": "ansible-lockdown.AMAZON2023-CIS",
-            "cis-l2": "ansible-lockdown.AMAZON2023-CIS",
+            "cis-l1": "ansible-lockdown.amazon2023_cis",
+            "cis-l2": "ansible-lockdown.amazon2023_cis",
         },
     },
     "ubuntu22.04": {
         "display": "Ubuntu 22.04 LTS",
         "icon": "🟣",
-        "providers": ["aws", "gcp", "azure", "digitalocean", "linode"],
+        "providers": ["aws", "gcp", "azure", "digitalocean", "linode", "kvm"],
         "min_root_gb": 20,
         "default_base_image": {
             "aws": "ami-00de3875b03809ec5",  # fallback us-east-1; resolved at build time
             "gcp": "projects/ubuntu-os-cloud/global/images/family/ubuntu-2204-lts",
             "azure": "ubuntu2204",
+            "kvm": "ubuntu22.04",  # downloadable OS slug — auto-fetched + checksum-verified
             "digitalocean": "ubuntu-22-04-x64",
             "linode": "linode/ubuntu22.04",
         },
@@ -53,14 +54,14 @@ OS_CATALOG: dict[str, dict] = {
         "supported_tiers": ["cis-l1", "cis-l2"],
         "selinux": False,
         "lockdown_roles": {
-            "cis-l1": "ansible-lockdown.UBUNTU22-CIS",
-            "cis-l2": "ansible-lockdown.UBUNTU22-CIS",
+            "cis-l1": "ansible-lockdown.ubuntu22_cis",
+            "cis-l2": "ansible-lockdown.ubuntu22_cis",
         },
     },
     "ubuntu24.04": {
         "display": "Ubuntu 24.04 LTS",
         "icon": "🟣",
-        "providers": ["aws", "gcp", "azure", "digitalocean", "linode"],
+        "providers": ["aws", "gcp", "azure", "digitalocean", "linode", "kvm"],
         "min_root_gb": 20,
         "default_base_image": {
             "aws": "ami-04eaa218f1349d88b",  # fallback us-east-1; resolved at build time
@@ -68,6 +69,7 @@ OS_CATALOG: dict[str, dict] = {
             "azure": "ubuntu2404",
             "digitalocean": "ubuntu-24-04-x64",
             "linode": "linode/ubuntu24.04",
+            "kvm": "ubuntu24.04",  # downloadable OS slug — auto-fetched + checksum-verified
         },
         "aws_image_query": {
             "owner": "099720109477",  # Canonical
@@ -79,8 +81,8 @@ OS_CATALOG: dict[str, dict] = {
         "supported_tiers": ["cis-l1", "cis-l2"],
         "selinux": False,
         "lockdown_roles": {
-            "cis-l1": "ansible-lockdown.UBUNTU24-CIS",
-            "cis-l2": "ansible-lockdown.UBUNTU24-CIS",
+            "cis-l1": "ansible-lockdown.ubuntu24_cis",
+            "cis-l2": "ansible-lockdown.ubuntu24_cis",
         },
     },
     "rocky9": {
@@ -106,9 +108,9 @@ OS_CATALOG: dict[str, dict] = {
         "supported_tiers": ["cis-l1", "cis-l2", "stig"],
         "selinux": True,
         "lockdown_roles": {
-            "cis-l1": "ansible-lockdown.RHEL9-CIS",
-            "cis-l2": "ansible-lockdown.RHEL9-CIS",
-            "stig": "ansible-lockdown.RHEL9-STIG",
+            "cis-l1": "ansible-lockdown.rhel9_cis",
+            "cis-l2": "ansible-lockdown.rhel9_cis",
+            "stig": "ansible-lockdown.rhel9_stig",
         },
     },
     "rhel9": {
@@ -131,15 +133,15 @@ OS_CATALOG: dict[str, dict] = {
         "supported_tiers": ["cis-l1", "cis-l2", "stig"],
         "selinux": True,
         "lockdown_roles": {
-            "cis-l1": "ansible-lockdown.RHEL9-CIS",
-            "cis-l2": "ansible-lockdown.RHEL9-CIS",
-            "stig": "ansible-lockdown.RHEL9-STIG",
+            "cis-l1": "ansible-lockdown.rhel9_cis",
+            "cis-l2": "ansible-lockdown.rhel9_cis",
+            "stig": "ansible-lockdown.rhel9_stig",
         },
     },
     "debian12": {
         "display": "Debian 12 (Bookworm)",
         "icon": "🌀",
-        "providers": ["aws", "gcp", "azure", "digitalocean", "linode"],
+        "providers": ["aws", "gcp", "azure", "digitalocean", "linode", "kvm"],
         "min_root_gb": 15,
         "default_base_image": {
             "aws": "ami-09f28a87e74de5c5a",  # fallback us-east-1; resolved at build time
@@ -147,6 +149,7 @@ OS_CATALOG: dict[str, dict] = {
             "azure": "debian12",
             "digitalocean": "debian-12-x64",
             "linode": "linode/debian12",
+            "kvm": "debian12",  # downloadable OS slug — auto-fetched + checksum-verified
         },
         "aws_image_query": {
             "owner": "136693071363",  # Debian
@@ -158,7 +161,7 @@ OS_CATALOG: dict[str, dict] = {
         "supported_tiers": ["cis-l1"],
         "selinux": False,
         "lockdown_roles": {
-            "cis-l1": "ansible-lockdown.DEBIAN12-CIS",
+            "cis-l1": "ansible-lockdown.deb12_cis",
         },
     },
 }

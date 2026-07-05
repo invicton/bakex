@@ -44,25 +44,55 @@ _OS_SSH_USER: dict[str, str] = {
     "opensuse": "opensuse",
 }
 
-# Ansible-Lockdown Galaxy role per OS identifier
+# Ansible-Lockdown Galaxy role per OS identifier.
+#
+# These MUST be the Galaxy role's `name` field (what `ansible-galaxy install
+# ansible-lockdown.<name>` actually needs), which frequently differs from the
+# GitHub repo name/casing — e.g. the GitHub repo is "UBUNTU22-CIS" but the
+# Galaxy name is "ubuntu22_cis"; the Debian 12 repo is "debian12-cis" but its
+# Galaxy name is "deb12_cis" (not "debian12_cis"). Verify against
+# https://galaxy.ansible.com/api/v1/roles/?owner__username=ansible-lockdown
+# before changing — installing the wrong string fails with "role not found".
 _OS_LOCKDOWN_ROLE: dict[str, str] = {
-    "ubuntu22": "UBUNTU22-CIS",
-    "ubuntu22.04": "UBUNTU22-CIS",
-    "ubuntu24": "UBUNTU24-CIS",
-    "ubuntu24.04": "UBUNTU24-CIS",
-    "ubuntu20": "UBUNTU20-04-CIS",
-    "ubuntu20.04": "UBUNTU20-04-CIS",
-    "debian12": "DEBIAN12-CIS",
-    "debian11": "DEBIAN11-CIS",
-    "rocky9": "RHEL9-CIS",
-    "alma9": "RHEL9-CIS",
-    "rhel9": "RHEL9-CIS",
-    "rocky8": "RHEL8-CIS",
-    "alma8": "RHEL8-CIS",
-    "rhel8": "RHEL8-CIS",
-    "amazon-linux-2023": "AMAZON2023-CIS",
-    "amazon2023": "AMAZON2023-CIS",
-    "amazon2": "AMAZON2-CIS",
+    "ubuntu22": "ubuntu22_cis",
+    "ubuntu22.04": "ubuntu22_cis",
+    "ubuntu24": "ubuntu24_cis",
+    "ubuntu24.04": "ubuntu24_cis",
+    "ubuntu20": "ubuntu20_cis",
+    "ubuntu20.04": "ubuntu20_cis",
+    "debian12": "deb12_cis",
+    "debian11": "debian11_cis",
+    "rocky9": "rhel9_cis",
+    "alma9": "rhel9_cis",
+    "rhel9": "rhel9_cis",
+    "rocky8": "rhel8_cis",
+    "alma8": "rhel8_cis",
+    "rhel8": "rhel8_cis",
+    "amazon-linux-2023": "amazon2023_cis",
+    "amazon2023": "amazon2023_cis",
+    "amazon2": "amazon2_cis",
+}
+
+# Pinned "latest known-good" version per Galaxy role name.
+#
+# `ansible-galaxy install ansible-lockdown.<role>` with NO version qualifier
+# asks Galaxy to compare all published version tags to find the newest one —
+# and several ansible-lockdown repos mix tag formats (e.g. "V1.0.0" alongside
+# "1.1.0"), which makes that comparison fail outright with "Unable to compare
+# role versions ... due to incompatible version formats", aborting the
+# install entirely. Requesting an explicit version sidesteps the comparison.
+# Update by checking https://galaxy.ansible.com/api/v1/roles/?owner__username=ansible-lockdown
+# (each role's summary_fields.versions, newest first) — do not guess.
+_ROLE_PINNED_VERSION: dict[str, str] = {
+    "ubuntu22_cis": "3.0.0",
+    "ubuntu24_cis": "1.6.0",
+    "ubuntu20_cis": "3.0.0",
+    "deb12_cis": "2.0.5",
+    "debian11_cis": "2.0.1",
+    "rhel9_cis": "2.2.0",
+    "rhel8_cis": "4.0.0",
+    "amazon2023_cis": "1.3.0",
+    "amazon2_cis": "3.0.2",
 }
 
 
@@ -72,56 +102,62 @@ _OS_LOCKDOWN_ROLE: dict[str, str] = {
 # Each entry maps profile_tier → extra_vars dict for that Ansible-Lockdown role.
 # Variable names follow the ansible-lockdown convention: <role_prefix>_level1 / _level2.
 # Roles not listed here fall back to the generic CIS mapping below.
+
+# Keys here are the Galaxy role name from _OS_LOCKDOWN_ROLE, upper-cased (see
+# tier_extra_vars below) — NOT the GitHub repo name. The Ansible variable
+# prefixes inside each dict (e.g. "ubuntu22cis_level1") are a separate,
+# role-internal convention defined by each role's own defaults/main.yml and
+# are unaffected by the Galaxy package name fix.
 _TIER_VARS_BY_ROLE: dict[str, dict[str, dict]] = {
-    "RHEL9-CIS": {
+    "RHEL9_CIS": {
         "cis-l1": {"rhel9cis_level1": True, "rhel9cis_level2": False},
         "cis-l2": {"rhel9cis_level1": True, "rhel9cis_level2": True},
         "stig": {"rhel9cis_level1": True, "rhel9cis_level2": True, "rhel9cis_stig": True},
         "custom": {},
     },
-    "RHEL8-CIS": {
+    "RHEL8_CIS": {
         "cis-l1": {"rhel8cis_level1": True, "rhel8cis_level2": False},
         "cis-l2": {"rhel8cis_level1": True, "rhel8cis_level2": True},
         "stig": {"rhel8cis_level1": True, "rhel8cis_level2": True, "rhel8cis_stig": True},
         "custom": {},
     },
-    "UBUNTU22-CIS": {
+    "UBUNTU22_CIS": {
         "cis-l1": {"ubuntu22cis_level1": True, "ubuntu22cis_level2": False},
         "cis-l2": {"ubuntu22cis_level1": True, "ubuntu22cis_level2": True},
         "stig": {"ubuntu22cis_level1": True, "ubuntu22cis_level2": True},
         "custom": {},
     },
-    "UBUNTU24-CIS": {
+    "UBUNTU24_CIS": {
         "cis-l1": {"ubuntu24cis_level1": True, "ubuntu24cis_level2": False},
         "cis-l2": {"ubuntu24cis_level1": True, "ubuntu24cis_level2": True},
         "stig": {"ubuntu24cis_level1": True, "ubuntu24cis_level2": True},
         "custom": {},
     },
-    "UBUNTU20-04-CIS": {
+    "UBUNTU20_CIS": {
         "cis-l1": {"ubuntu2004cis_level1": True, "ubuntu2004cis_level2": False},
         "cis-l2": {"ubuntu2004cis_level1": True, "ubuntu2004cis_level2": True},
         "stig": {"ubuntu2004cis_level1": True, "ubuntu2004cis_level2": True},
         "custom": {},
     },
-    "DEBIAN12-CIS": {
+    "DEB12_CIS": {
         "cis-l1": {"debian12cis_level1": True, "debian12cis_level2": False},
         "cis-l2": {"debian12cis_level1": True, "debian12cis_level2": True},
         "stig": {"debian12cis_level1": True, "debian12cis_level2": True},
         "custom": {},
     },
-    "DEBIAN11-CIS": {
+    "DEBIAN11_CIS": {
         "cis-l1": {"debian11cis_level1": True, "debian11cis_level2": False},
         "cis-l2": {"debian11cis_level1": True, "debian11cis_level2": True},
         "stig": {"debian11cis_level1": True, "debian11cis_level2": True},
         "custom": {},
     },
-    "AMAZON2023-CIS": {
+    "AMAZON2023_CIS": {
         "cis-l1": {"amazon2023cis_level1": True, "amazon2023cis_level2": False},
         "cis-l2": {"amazon2023cis_level1": True, "amazon2023cis_level2": True},
         "stig": {"amazon2023cis_level1": True, "amazon2023cis_level2": True},
         "custom": {},
     },
-    "AMAZON2-CIS": {
+    "AMAZON2_CIS": {
         "cis-l1": {"amazon2cis_level1": True, "amazon2cis_level2": False},
         "cis-l2": {"amazon2cis_level1": True, "amazon2cis_level2": True},
         "stig": {"amazon2cis_level1": True, "amazon2cis_level2": True},
@@ -146,7 +182,7 @@ def tier_extra_vars(tier: str, role_name: str) -> dict:
 
     Args:
         tier:      Blueprint ``profile_tier`` value, e.g. "cis-l1", "stig".
-        role_name: Galaxy role name, e.g. "ansible-lockdown.RHEL9-CIS".
+        role_name: Galaxy role name, e.g. "ansible-lockdown.rhel9_cis".
 
     Returns:
         Dict of Ansible extra vars to merge into the playbook run.
@@ -264,8 +300,14 @@ def run_remote_cmd(
     command: str,
     timeout: int = 300,
     check: bool = True,
+    port: int = 22,
 ) -> tuple[int, str, str]:
     """Execute *command* on *host* via SSH.
+
+    *port* defaults to 22 (every cloud provider's ephemeral instance gets its
+    own routable IP on the standard port) — the local KVM provider is the one
+    caller that passes a non-default, per-build forwarded port since its guest
+    is only reachable via 127.0.0.1:<forwarded-port>.
 
     Returns:
         (returncode, stdout, stderr)
@@ -275,14 +317,20 @@ def run_remote_cmd(
                       (exit code 2 is allowed — oscap exits 2 when findings exist).
     """
     proc = subprocess.run(
-        ["ssh", "-i", str(key_path), *_SSH_OPTS, f"{user}@{host}", command],
+        ["ssh", "-i", str(key_path), "-p", str(port), *_SSH_OPTS, f"{user}@{host}", command],
         capture_output=True,
         text=True,
         timeout=timeout,
     )
     if check and proc.returncode not in (0, 2):
+        # Many callers redirect the remote command's own stderr into stdout
+        # (`... 2>&1`), so the real diagnostic often lands in stdout, not
+        # proc.stderr (which only captures ssh's own errors) — include both.
         raise RuntimeError(
-            f"Remote command failed (exit {proc.returncode}):\nCMD: {command[:300]}\nSTDERR: {proc.stderr[:800]}"
+            f"Remote command failed (exit {proc.returncode}):\n"
+            f"CMD: {command[:300]}\n"
+            f"STDOUT: {proc.stdout[:800]}\n"
+            f"STDERR: {proc.stderr[:800]}"
         )
     return proc.returncode, proc.stdout, proc.stderr
 
@@ -292,7 +340,7 @@ def run_remote_cmd(
 # ---------------------------------------------------------------------------
 
 
-def install_ansible_on_remote(host: str, user: str, key_path: Path) -> None:
+def install_ansible_on_remote(host: str, user: str, key_path: Path, port: int = 22) -> None:
     """Ensure ``ansible-playbook`` is installed on the remote machine."""
     script = (
         "command -v ansible-playbook >/dev/null 2>&1 && exit 0; "
@@ -307,7 +355,7 @@ def install_ansible_on_remote(host: str, user: str, key_path: Path) -> None:
         "  yum install -y ansible; "
         "fi"
     )
-    run_remote_cmd(host, user, key_path, f"sudo bash -c '{script}'", timeout=300)
+    run_remote_cmd(host, user, key_path, f"sudo bash -c '{script}'", timeout=300, port=port)
     logger.info("Ansible ready on %s", host)
 
 
@@ -317,6 +365,7 @@ def run_prehard_ansible_remote(
     key_path: Path,
     playbook_yaml: str,
     timeout: int = 1800,
+    port: int = 22,
 ) -> None:
     """Upload a pre-hardening playbook to the remote host and run it locally there.
 
@@ -331,6 +380,7 @@ def run_prehard_ansible_remote(
         user,
         key_path,
         f"echo '{b64}' | base64 -d | sudo tee /tmp/stratum-prehard.yml > /dev/null",
+        port=port,
     )
     # Run it locally on the instance
     run_remote_cmd(
@@ -339,6 +389,7 @@ def run_prehard_ansible_remote(
         key_path,
         "sudo ansible-playbook -i 'localhost,' -c local /tmp/stratum-prehard.yml",
         timeout=timeout,
+        port=port,
     )
     logger.info("Pre-hardening playbook complete on %s", host)
 
@@ -351,6 +402,7 @@ def run_hardening_remote(
     hardening_config: dict,
     extra_vars: dict | None = None,
     timeout: int = 3600,
+    port: int = 22,
 ) -> None:
     """Run compliance hardening on the remote host based on the Pluggable Strategy."""
     strategy = hardening_config.get("strategy", "ansible-galaxy")
@@ -363,28 +415,38 @@ def run_hardening_remote(
 
     if strategy == "ansible-galaxy":
         role = hardening_config.get("role", "auto")
+        pinned_version: str | None = None
         if role == "auto":
-            role = lockdown_role_for_os(os_name)
-            role = f"ansible-lockdown.{role}"
+            bare_name = lockdown_role_for_os(os_name)
+            role = f"ansible-lockdown.{bare_name}"
+            pinned_version = _ROLE_PINNED_VERSION.get(bare_name)
 
         # Inject tier variables for this role
         tier_vars = tier_extra_vars(profile_tier, role)
         if tier_vars:
             extra_vars = {**tier_vars, **(extra_vars or {})}
         logger.info(
-            "Installing Galaxy role %s on %s (tier=%s, tier_vars=%s)",
+            "Installing Galaxy role %s%s on %s (tier=%s, tier_vars=%s)",
             role,
+            f" (pinned {pinned_version})" if pinned_version else "",
             host,
             profile_tier,
             list(tier_vars.keys()),
         )
-        # Install role on the remote instance
+        # Install role on the remote instance. A pinned version is required
+        # for roles whose published tags mix formats (e.g. "V1.0.0" alongside
+        # "1.1.0") — installing with no version qualifier asks Galaxy to
+        # compare all tags to find "latest", which then fails outright with
+        # "Unable to compare role versions ... due to incompatible version
+        # formats" (see _ROLE_PINNED_VERSION).
+        install_spec = f"{role},{pinned_version}" if pinned_version else role
         run_remote_cmd(
             host,
             user,
             key_path,
-            f"sudo ansible-galaxy install {role} --force 2>&1",
+            f"sudo ansible-galaxy install {install_spec} --force 2>&1",
             timeout=300,
+            port=port,
         )
 
         # Build a minimal site playbook
@@ -403,6 +465,7 @@ def run_hardening_remote(
             user,
             key_path,
             f"echo '{b64_site}' | base64 -d | sudo tee /tmp/stratum-hardening.yml > /dev/null",
+            port=port,
         )
 
     elif strategy == "git":
@@ -420,6 +483,7 @@ def run_hardening_remote(
             f"command -v git >/dev/null 2>&1 || (sudo apt-get update && sudo apt-get install -y {git_pkg} || sudo dnf install -y {git_pkg} || sudo yum install -y {git_pkg})",
             timeout=300,
             check=False,
+            port=port,
         )
 
         # Clone the repo
@@ -427,7 +491,7 @@ def run_hardening_remote(
             "sudo rm -rf /etc/ansible/stratum_custom_hardening && "
             f"sudo git clone {repo_url} /etc/ansible/stratum_custom_hardening"
         )
-        run_remote_cmd(host, user, key_path, clone_cmd, timeout=300)
+        run_remote_cmd(host, user, key_path, clone_cmd, timeout=300, port=port)
 
         logger.info("Git playbook selected: %s", playbook_file)
         run_remote_cmd(
@@ -435,6 +499,7 @@ def run_hardening_remote(
             user,
             key_path,
             f"sudo cp /etc/ansible/stratum_custom_hardening/{playbook_file} /tmp/stratum-hardening.yml",
+            port=port,
         )
     else:
         raise ValueError(f"Unknown hardening strategy: {strategy}")
@@ -462,10 +527,11 @@ def run_hardening_remote(
             user,
             key_path,
             f"echo '{b64_ev}' | base64 -d | sudo tee /tmp/stratum-extravars.json > /dev/null",
+            port=port,
         )
         cmd += " --extra-vars @/tmp/stratum-extravars.json"
 
-    run_remote_cmd(host, user, key_path, cmd, timeout=timeout)
+    run_remote_cmd(host, user, key_path, cmd, timeout=timeout, port=port)
     logger.info("Compliance hardening complete on %s", host)
 
 
@@ -474,7 +540,7 @@ def run_hardening_remote(
 # ---------------------------------------------------------------------------
 
 
-def cleanup_instance_history_remote(host: str, user: str, key_path: Path) -> None:
+def cleanup_instance_history_remote(host: str, user: str, key_path: Path, port: int = 22) -> None:
     """Clear OS history and logs before snapshot generation."""
     logger.info("Cleaning up instance logs and history before snapshot on %s", host)
     cmds = [
@@ -488,7 +554,7 @@ def cleanup_instance_history_remote(host: str, user: str, key_path: Path) -> Non
     ]
     script = " ; ".join(cmds)
     # Ignore errors during cleanup as different OSs have different paths
-    run_remote_cmd(host, user, key_path, script, check=False)
+    run_remote_cmd(host, user, key_path, script, check=False, port=port)
 
 
 # ---------------------------------------------------------------------------
@@ -496,20 +562,34 @@ def cleanup_instance_history_remote(host: str, user: str, key_path: Path) -> Non
 # ---------------------------------------------------------------------------
 
 
-def install_oscap_on_remote(host: str, user: str, key_path: Path) -> None:
-    """Ensure oscap and the matching SSG content are installed on the remote."""
+def install_oscap_on_remote(host: str, user: str, key_path: Path, port: int = 22) -> None:
+    """Ensure oscap is installed on the remote.
+
+    KNOWN GAP: on Debian-family targets this installs the `oscap` CLI only —
+    it does NOT install SCAP content (the XCCDF datastream files under
+    /usr/share/xml/scap/ssg/content/). `scap-security-guide` (bundled here
+    previously) is the RHEL/Fedora package name and does not exist for
+    Debian/Ubuntu under any name; `ssg-debderived` (also bundled previously)
+    does not exist either. Bundling either into the same `apt-get install`
+    call made the *entire* install fail even where `openscap-scanner` itself
+    is available (Debian 12, Ubuntu 24.04+) — fixed by installing it alone.
+    Ubuntu 22.04 additionally lacks `openscap-scanner` via apt in any channel
+    (first appears in 24.04) — the whole install is a no-op there today.
+    Getting real SCAP content onto a Debian-family target requires a separate
+    fix (e.g. downloading a ComplianceAsCode/content release), tracked as a
+    follow-up rather than solved here.
+    """
     script = (
         "if command -v apt-get >/dev/null 2>&1; then "
         "  export DEBIAN_FRONTEND=noninteractive; "
-        "  apt-get install -y libopenscap8 openscap-scanner ssg-debderived 2>&1 || "
-        "  apt-get install -y openscap-scanner scap-security-guide 2>&1; "
+        "  apt-get install -y openscap-scanner 2>&1; "
         "elif command -v dnf >/dev/null 2>&1; then "
         "  dnf install -y openscap openscap-scanner scap-security-guide 2>&1; "
         "elif command -v yum >/dev/null 2>&1; then "
         "  yum install -y openscap openscap-scanner scap-security-guide 2>&1; "
         "fi"
     )
-    run_remote_cmd(host, user, key_path, f"sudo bash -c '{script}'", timeout=300)
+    run_remote_cmd(host, user, key_path, f"sudo bash -c '{script}'", timeout=300, port=port)
     logger.info("OpenSCAP ready on %s", host)
 
 
@@ -521,6 +601,7 @@ def run_oscap_remote(
     datastream: str,
     results_path: str = "/tmp/stratum-oscap.xml",
     timeout: int = 600,
+    port: int = 22,
 ) -> str:
     """Run ``oscap xccdf eval`` on *host* and return the XCCDF results XML.
 
@@ -535,7 +616,7 @@ def run_oscap_remote(
         f"{datastream}; "  # exit code 2 = findings — allowed
         f"cat {results_path}"
     )
-    _, stdout, stderr = run_remote_cmd(host, user, key_path, cmd, timeout=timeout, check=False)
+    _, stdout, stderr = run_remote_cmd(host, user, key_path, cmd, timeout=timeout, check=False, port=port)
     if not stdout.strip():
         logger.warning("oscap produced no output; stderr: %s", stderr[:500])
     return stdout
@@ -553,6 +634,7 @@ def copy_file_to_remote(
     user: str,
     key_path: Path,
     timeout: int = 120,
+    port: int = 22,
 ) -> None:
     """Copy a local file to *remote_path* on *host* via SCP.
 
@@ -564,6 +646,8 @@ def copy_file_to_remote(
             "scp",
             "-i",
             str(key_path),
+            "-P",
+            str(port),
             *[arg for pair in zip(["-o"] * len(_SSH_OPTS[::2]), _SSH_OPTS[1::2], strict=True) for arg in pair],
             str(local_path),
             f"{user}@{host}:{remote_path}",
@@ -585,6 +669,7 @@ def upload_content_to_remote(
     key_path: Path,
     sudo: bool = True,
     timeout: int = 60,
+    port: int = 22,
 ) -> None:
     """Write *content* to *remote_path* on *host*.
 
@@ -597,11 +682,11 @@ def upload_content_to_remote(
     try:
         # SCP to a world-readable temp location, then move with sudo if needed
         staging = f"/tmp/stratum-upload-{os.path.basename(remote_path)}"
-        copy_file_to_remote(tmp_path, staging, host, user, key_path, timeout=timeout)
+        copy_file_to_remote(tmp_path, staging, host, user, key_path, timeout=timeout, port=port)
         if sudo:
-            run_remote_cmd(host, user, key_path, f"sudo mv {staging} {remote_path}", timeout=30)
+            run_remote_cmd(host, user, key_path, f"sudo mv {staging} {remote_path}", timeout=30, port=port)
         else:
-            run_remote_cmd(host, user, key_path, f"mv {staging} {remote_path}", timeout=30)
+            run_remote_cmd(host, user, key_path, f"mv {staging} {remote_path}", timeout=30, port=port)
     finally:
         os.unlink(tmp_path)
 
@@ -620,6 +705,7 @@ def run_remote_cmd_with_retry(
     retry_delay: float = 15.0,
     timeout: int = 300,
     check: bool = True,
+    port: int = 22,
 ) -> tuple[int, str, str]:
     """Run *command* on *host* via SSH, retrying on transient connection errors.
 
@@ -633,14 +719,27 @@ def run_remote_cmd_with_retry(
     last_exc: Exception | None = None
     for attempt in range(1, retries + 2):
         try:
-            return run_remote_cmd(host, user, key_path, command, timeout=timeout, check=check)
+            return run_remote_cmd(host, user, key_path, command, timeout=timeout, check=check, port=port)
         except subprocess.TimeoutExpired as exc:
             last_exc = exc
             logger.warning("SSH command timed out (attempt %d/%d)", attempt, retries + 1)
         except RuntimeError as exc:
-            # Only retry on connection-level errors, not command failures
+            # Only retry on connection-level errors, not command failures.
+            # "connection reset"/"kex_exchange_identification" covers a common
+            # early-boot race: sshd's TCP listener is up (passing wait_for_ssh)
+            # but sshd itself resets the connection until it's fully ready.
             msg = str(exc).lower()
-            if any(kw in msg for kw in ("connection refused", "broken pipe", "no route", "network")):
+            if any(
+                kw in msg
+                for kw in (
+                    "connection refused",
+                    "connection reset",
+                    "kex_exchange_identification",
+                    "broken pipe",
+                    "no route",
+                    "network",
+                )
+            ):
                 last_exc = exc
                 logger.warning("SSH connection error (attempt %d/%d): %s", attempt, retries + 1, exc)
             else:
@@ -660,6 +759,7 @@ def wait_for_cloud_init(
     user: str,
     key_path: Path,
     timeout: int = 300,
+    port: int = 22,
 ) -> None:
     """Block until cloud-init finishes on *host*.
 
@@ -673,5 +773,6 @@ def wait_for_cloud_init(
         "command -v cloud-init >/dev/null 2>&1 && sudo cloud-init status --wait || true",
         timeout=timeout,
         check=False,
+        port=port,
     )
     logger.info("cloud-init ready on %s (exit %s)", host, rc)

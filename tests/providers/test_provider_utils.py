@@ -82,8 +82,10 @@ class TestLockdownRoleForOs:
         assert "RHEL8" in role.upper()
 
     def test_debian12_returns_debian_role(self):
+        # Ansible Galaxy's real name for this role is the abbreviated
+        # "deb12_cis", not "debian12_cis" — see test_lockdown_role_matches_real_galaxy_name.
         role = utils.lockdown_role_for_os("debian12")
-        assert "DEBIAN" in role.upper()
+        assert "CIS" in role.upper()
 
     def test_amazon_linux_2023_maps_correctly(self):
         role = utils.lockdown_role_for_os("amazon2023")
@@ -97,6 +99,32 @@ class TestLockdownRoleForOs:
         role = utils.lockdown_role_for_os("ubuntu22.04")
         assert "CIS" in role.upper(), "Lockdown role must contain 'CIS'"
 
+    # Regression: these role identifiers must exactly match Ansible Galaxy's
+    # `name` field (verified against
+    # https://galaxy.ansible.com/api/v1/roles/?owner__username=ansible-lockdown),
+    # which frequently differs from the ansible-lockdown GitHub repo name —
+    # `ansible-galaxy install ansible-lockdown.<name>` fails with "role not
+    # found" on any mismatch. This previously used repo-name casing (e.g.
+    # "UBUNTU22-CIS", "DEBIAN12-CIS") which does not exist on Galaxy at all.
+    @pytest.mark.parametrize(
+        ("os_name", "expected_role"),
+        [
+            ("ubuntu22.04", "ubuntu22_cis"),
+            ("ubuntu24.04", "ubuntu24_cis"),
+            ("ubuntu20.04", "ubuntu20_cis"),
+            ("debian12", "deb12_cis"),  # not "debian12_cis" — a real, non-obvious Galaxy quirk
+            ("debian11", "debian11_cis"),
+            ("rocky9", "rhel9_cis"),
+            ("rhel9", "rhel9_cis"),
+            ("rocky8", "rhel8_cis"),
+            ("rhel8", "rhel8_cis"),
+            ("amazon2023", "amazon2023_cis"),
+            ("amazon2", "amazon2_cis"),
+        ],
+    )
+    def test_lockdown_role_matches_real_galaxy_name(self, os_name, expected_role):
+        assert utils.lockdown_role_for_os(os_name) == expected_role
+
 
 # ===========================================================================
 # tier_extra_vars — profile tier → Ansible extra_vars dict
@@ -104,33 +132,37 @@ class TestLockdownRoleForOs:
 
 
 class TestTierExtraVars:
+    """Role name arguments use the real Galaxy name (underscore), e.g.
+    "UBUNTU22_CIS" — NOT the GitHub repo name/casing ("UBUNTU22-CIS"), which
+    ansible-galaxy install actually rejects with "role not found"."""
+
     def test_cis_l1_ubuntu22_level1_true(self):
-        vars_ = utils.tier_extra_vars("cis-l1", "UBUNTU22-CIS")
+        vars_ = utils.tier_extra_vars("cis-l1", "UBUNTU22_CIS")
         assert vars_.get("ubuntu22cis_level1") is True
 
     def test_cis_l1_ubuntu22_level2_false(self):
-        vars_ = utils.tier_extra_vars("cis-l1", "UBUNTU22-CIS")
+        vars_ = utils.tier_extra_vars("cis-l1", "UBUNTU22_CIS")
         assert vars_.get("ubuntu22cis_level2") is False
 
     def test_cis_l2_ubuntu22_both_true(self):
-        vars_ = utils.tier_extra_vars("cis-l2", "UBUNTU22-CIS")
+        vars_ = utils.tier_extra_vars("cis-l2", "UBUNTU22_CIS")
         assert vars_.get("ubuntu22cis_level1") is True
         assert vars_.get("ubuntu22cis_level2") is True
 
     def test_cis_l1_rhel9_vars_correct(self):
-        vars_ = utils.tier_extra_vars("cis-l1", "RHEL9-CIS")
+        vars_ = utils.tier_extra_vars("cis-l1", "RHEL9_CIS")
         assert vars_.get("rhel9cis_level1") is True
         assert vars_.get("rhel9cis_level2") is False
 
     def test_cis_l2_rhel9_both_true(self):
-        vars_ = utils.tier_extra_vars("cis-l2", "RHEL9-CIS")
+        vars_ = utils.tier_extra_vars("cis-l2", "RHEL9_CIS")
         assert vars_.get("rhel9cis_level1") is True
         assert vars_.get("rhel9cis_level2") is True
 
     def test_namespaced_role_stripped(self):
-        """ansible-lockdown.UBUNTU22-CIS should resolve same as UBUNTU22-CIS."""
-        v1 = utils.tier_extra_vars("cis-l1", "ansible-lockdown.UBUNTU22-CIS")
-        v2 = utils.tier_extra_vars("cis-l1", "UBUNTU22-CIS")
+        """ansible-lockdown.UBUNTU22_CIS should resolve same as UBUNTU22_CIS."""
+        v1 = utils.tier_extra_vars("cis-l1", "ansible-lockdown.UBUNTU22_CIS")
+        v2 = utils.tier_extra_vars("cis-l1", "UBUNTU22_CIS")
         assert v1 == v2
 
     def test_unknown_role_falls_back_to_generic(self):
@@ -138,11 +170,11 @@ class TestTierExtraVars:
         assert "cis_level1" in vars_, "Generic fallback must use cis_level1"
 
     def test_custom_tier_returns_empty_dict(self):
-        vars_ = utils.tier_extra_vars("custom", "UBUNTU22-CIS")
+        vars_ = utils.tier_extra_vars("custom", "UBUNTU22_CIS")
         assert vars_ == {}
 
     def test_returns_dict(self):
-        result = utils.tier_extra_vars("cis-l1", "RHEL9-CIS")
+        result = utils.tier_extra_vars("cis-l1", "RHEL9_CIS")
         assert isinstance(result, dict)
 
 
@@ -267,3 +299,87 @@ class TestGenerateSshKeypair:
             pytest.skip("ssh-keygen not available")
         mode = oct(key_path.stat().st_mode)
         assert mode.endswith("600"), f"Private key must be 0600, got {mode}"
+
+
+# ===========================================================================
+# run_hardening_remote — Galaxy install must pin a version, not "latest"
+# ===========================================================================
+#
+# Regression: several ansible-lockdown repos mix git tag formats ("V1.0.0"
+# alongside "1.1.0"), which makes `ansible-galaxy install <role>` (no version)
+# fail outright with "Unable to compare role versions ... due to incompatible
+# version formats" when it tries to resolve "latest". Discovered by actually
+# running a build end-to-end against a local KVM guest.
+
+
+class TestRunHardeningRemoteVersionPinning:
+    def _galaxy_install_cmd(self, mock_run_remote_cmd):
+        """Return the `ansible-galaxy install ...` command string from all
+        calls made to the mocked run_remote_cmd."""
+        for call in mock_run_remote_cmd.call_args_list:
+            cmd = call.args[3] if len(call.args) > 3 else call.kwargs.get("command", "")
+            if "ansible-galaxy install" in cmd:
+                return cmd
+        raise AssertionError("no ansible-galaxy install call found")
+
+    def test_auto_role_install_pins_known_version(self, tmp_path):
+        with patch("_provider_utils.run_remote_cmd") as mock_run:
+            mock_run.return_value = (0, "", "")
+            utils.run_hardening_remote(
+                "127.0.0.1",
+                "ubuntu",
+                tmp_path / "key",
+                "ubuntu22.04",
+                {"strategy": "ansible-galaxy", "role": "auto", "profile_tier": "cis-l1"},
+            )
+        cmd = self._galaxy_install_cmd(mock_run)
+        assert "ansible-lockdown.ubuntu22_cis,3.0.0" in cmd
+
+    def test_explicit_role_override_is_not_auto_pinned(self, tmp_path):
+        """A user-specified role/version string must pass through unchanged —
+        pinning only applies to Stratum's own auto-resolved roles."""
+        with patch("_provider_utils.run_remote_cmd") as mock_run:
+            mock_run.return_value = (0, "", "")
+            utils.run_hardening_remote(
+                "127.0.0.1",
+                "ubuntu",
+                tmp_path / "key",
+                "ubuntu22.04",
+                {"strategy": "ansible-galaxy", "role": "ansible-lockdown.ubuntu22_cis,2.0.0", "profile_tier": "cis-l1"},
+            )
+        cmd = self._galaxy_install_cmd(mock_run)
+        assert "ansible-lockdown.ubuntu22_cis,2.0.0" in cmd
+        assert ",3.0.0" not in cmd
+
+
+# ===========================================================================
+# install_oscap_on_remote — Debian-family install must not bundle
+# nonexistent package names into the same apt-get call
+# ===========================================================================
+#
+# Regression: "ssg-debderived" and "scap-security-guide" (the RHEL/Fedora
+# package name) don't exist for Debian/Ubuntu at all. Bundling either into
+# `apt-get install openscap-scanner <nonexistent>` failed the *entire*
+# install — even on Debian 12 / Ubuntu 24.04+, where openscap-scanner itself
+# is a real, installable package. Discovered by running a build end-to-end
+# against a local KVM guest.
+
+
+class TestInstallOscapOnRemote:
+    def test_debian_family_installs_openscap_scanner_alone(self, tmp_path):
+        with patch("_provider_utils.run_remote_cmd") as mock_run:
+            mock_run.return_value = (0, "", "")
+            utils.install_oscap_on_remote("127.0.0.1", "ubuntu", tmp_path / "key")
+        script = mock_run.call_args[0][3]
+        assert "apt-get install -y openscap-scanner 2>&1;" in script
+        assert "ssg-debderived" not in script
+
+    def test_rhel_family_still_installs_scap_security_guide(self, tmp_path):
+        """scap-security-guide IS the correct real package name for dnf/yum
+        (RHEL/Fedora) — only the Debian-family branch was broken."""
+        with patch("_provider_utils.run_remote_cmd") as mock_run:
+            mock_run.return_value = (0, "", "")
+            utils.install_oscap_on_remote("127.0.0.1", "ec2-user", tmp_path / "key")
+        script = mock_run.call_args[0][3]
+        assert "dnf install -y openscap openscap-scanner scap-security-guide" in script
+        assert "yum install -y openscap openscap-scanner scap-security-guide" in script

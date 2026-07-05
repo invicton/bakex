@@ -342,7 +342,7 @@ class TestFullCISBuild:
             "datastream": "/usr/share/xml/scap/ssg/content/ssg-ubuntu2204-ds.xml",
             "hardening": {
                 "strategy": "ansible-galaxy",
-                "role": "auto",  # resolves to ansible-lockdown.UBUNTU22-CIS
+                "role": "auto",  # resolves to ansible-lockdown.ubuntu22_cis
             },
         }
 

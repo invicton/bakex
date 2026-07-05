@@ -350,7 +350,7 @@ Stratum generates a two-phase Ansible run:
 - Stage FIPS configuration if requested
 
 **Phase 2 — Ansible-Lockdown CIS role**:
-- Stratum pulls `ansible-lockdown.AMAZON2023-CIS` from Ansible Galaxy
+- Stratum pulls `ansible-lockdown.amazon2023_cis` from Ansible Galaxy
 - Generates role variables from the blueprint `controls` section
   - Each disabled rule sets `AMAZON2023CIS_<rule>: false`
   - CIS Level 2 variables are set: `amazon2023cis_level: 2`

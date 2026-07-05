@@ -6,16 +6,13 @@ Stratum uses [Ansible-Lockdown](https://github.com/ansible-lockdown) roles to ap
 
 ```bash
 # Ubuntu 22.04 CIS
-ansible-galaxy install -p ansible/roles ansible-lockdown.UBUNTU22-CIS
+ansible-galaxy install -p ansible/roles ansible-lockdown.ubuntu22_cis
 
-# Rocky Linux 9 CIS
-ansible-galaxy install -p ansible/roles ansible-lockdown.ROCKY9-CIS
-
-# RHEL 9 CIS
-ansible-galaxy install -p ansible/roles ansible-lockdown.RHEL9-CIS
+# Rocky Linux 9 CIS (Rocky and RHEL 9 share the same role)
+ansible-galaxy install -p ansible/roles ansible-lockdown.rhel9_cis
 
 # RHEL 8 STIG
-ansible-galaxy install -p ansible/roles ansible-lockdown.RHEL8-STIG
+ansible-galaxy install -p ansible/roles ansible-lockdown.rhel8_stig
 ```
 
 Or install all at once:
