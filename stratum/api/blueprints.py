@@ -19,6 +19,11 @@ from stratum.core.blueprint import ComplianceProfile, list_profiles, load_profil
 router = APIRouter(prefix="/api/blueprints", tags=["blueprints"])
 templates = Jinja2Templates(directory="stratum/templates")
 
+# Hand-authored blueprint YAML is small; this bounds both plain memory use and,
+# as a cheap first line of defense, the input size available to a YAML-anchor
+# expansion attack (not a complete fix — see docs/security notes).
+_MAX_UPLOAD_BYTES = 512 * 1024
+
 
 def _all_profile_paths() -> list[Path]:
     """Return YAML paths from both the main profiles dir and the user profiles dir."""
@@ -92,9 +97,16 @@ async def download_blueprint(name: str) -> Response:
 
 
 @router.post("/upload", status_code=201)
-async def upload_blueprint(file: UploadFile) -> dict:
+async def upload_blueprint(request: Request, file: UploadFile) -> dict:
     """Upload a ComplianceProfile YAML. Validates schema, then saves to the user profiles dir."""
-    raw = await file.read()
+    content_length = request.headers.get("content-length")
+    if content_length is not None and int(content_length) > _MAX_UPLOAD_BYTES:
+        raise HTTPException(status_code=413, detail=f"Blueprint upload exceeds {_MAX_UPLOAD_BYTES} byte limit")
+
+    raw = await file.read(_MAX_UPLOAD_BYTES + 1)
+    if len(raw) > _MAX_UPLOAD_BYTES:
+        raise HTTPException(status_code=413, detail=f"Blueprint upload exceeds {_MAX_UPLOAD_BYTES} byte limit")
+
     try:
         data = yaml.safe_load(raw)
     except yaml.YAMLError as exc:
@@ -109,6 +121,11 @@ async def upload_blueprint(file: UploadFile) -> dict:
     user_dir.mkdir(parents=True, exist_ok=True)
 
     dest = user_dir / f"{profile.metadata.name}.yaml"
+    # Defense-in-depth: ProfileMetadata.name is already validated against a safe
+    # filename charset, but confirm the resolved path never escapes user_dir
+    # (guards against e.g. a future model_construct() bypassing validators).
+    if dest.resolve().parent != user_dir.resolve():
+        raise HTTPException(status_code=400, detail="Invalid blueprint name")
     if dest.exists():
         raise HTTPException(status_code=409, detail=f"Blueprint '{profile.metadata.name}' already exists")
 

@@ -4,12 +4,17 @@
 
 from __future__ import annotations
 
+import re
 from enum import Enum
 from pathlib import Path
 from typing import Literal
 
 import yaml
 from pydantic import BaseModel, Field, field_validator
+
+# Blueprint names become filenames (`user_profiles_dir / f"{name}.yaml"`), so this
+# must reject path separators and traversal sequences, not just null bytes.
+_SAFE_NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
 
 # ---------------------------------------------------------------------------
 # Core metadata
@@ -26,9 +31,13 @@ class ProfileMetadata(BaseModel):
 
     @field_validator("name", mode="before")
     @classmethod
-    def _strip_null_bytes(cls, v: str) -> str:
-        if "\x00" in v:
-            raise ValueError("null bytes are not permitted in metadata.name")
+    def _validate_name(cls, v: str) -> str:
+        if not isinstance(v, str) or not _SAFE_NAME_RE.match(v):
+            raise ValueError(
+                "metadata.name must be 1-128 characters, start with a letter or digit, "
+                "and contain only letters, digits, '.', '_', or '-' "
+                "(no path separators or '..' — this becomes a filename)"
+            )
         return v
 
 

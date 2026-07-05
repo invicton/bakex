@@ -4,6 +4,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 # All fixtures (client, api_key, profiles_tmp) come from tests/api/conftest.py
 
 
@@ -213,6 +215,25 @@ def test_upload_blueprint_duplicate_name_returns_409(client, user_profiles_tmp):
         files={"file": ("uploaded-test-profile.yaml", _UPLOAD_YAML, "application/yaml")},
     )
     assert resp.status_code == 409
+
+
+def test_upload_blueprint_oversized_returns_413(client, user_profiles_tmp):
+    oversized = _UPLOAD_YAML + "\n# " + "x" * (512 * 1024)
+    resp = client.post(
+        "/api/blueprints/upload",
+        files={"file": ("uploaded-test-profile.yaml", oversized.encode(), "application/yaml")},
+    )
+    assert resp.status_code == 413
+
+
+def test_upload_blueprint_path_traversal_name_rejected(client, user_profiles_tmp):
+    traversal_yaml = _UPLOAD_YAML.replace("uploaded-test-profile", "../../../../tmp/evil-profile")
+    resp = client.post(
+        "/api/blueprints/upload",
+        files={"file": ("evil.yaml", traversal_yaml.encode(), "application/yaml")},
+    )
+    assert resp.status_code == 422
+    assert not Path("/tmp/evil-profile.yaml").exists()
 
 
 # ---------------------------------------------------------------------------

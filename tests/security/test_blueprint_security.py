@@ -97,3 +97,29 @@ def test_null_bytes_in_metadata_name_handled_safely():
     except (ValidationError, ValueError):
         # ValidationError is the preferred outcome — explicit rejection is safest
         pass
+
+
+# ---------------------------------------------------------------------------
+# SEC-11: Path traversal in metadata.name must be rejected — this value is
+# used to build a filesystem path (`user_profiles_dir / f"{name}.yaml"`) in
+# stratum/api/blueprints.py::upload_blueprint.
+# ---------------------------------------------------------------------------
+
+
+def test_path_traversal_in_metadata_name_rejected():
+    for traversal in ("../../../../tmp/evil", "..\\..\\evil", "/etc/cron.d/evil", "a/b", "..", "."):
+        data = _minimal_profile()
+        data["metadata"]["name"] = traversal
+        try:
+            ComplianceProfile.model_validate(data)
+            raise AssertionError(f"expected ValidationError for metadata.name={traversal!r}")
+        except ValidationError:
+            pass
+
+
+def test_normal_metadata_names_still_accepted():
+    for name in ("ubuntu22-cis-l1-aws", "rocky9_cis-l2", "my.profile.v1"):
+        data = _minimal_profile()
+        data["metadata"]["name"] = name
+        profile = ComplianceProfile.model_validate(data)
+        assert profile.metadata.name == name
