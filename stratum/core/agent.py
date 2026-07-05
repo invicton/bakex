@@ -188,7 +188,10 @@ async def _start_build(yaml_text: str, provider: str) -> dict:
         provider_name=provider,
     )
     build_service._jobs[job.id] = job
-    asyncio.create_task(build_service.run_build(profile, Path("data/builds")))
+    # Pass `job` through so run_build updates *this* job instead of creating an
+    # unrelated one under a new id — otherwise the id returned below never
+    # matches the job that actually gets built.
+    asyncio.create_task(build_service.run_build(profile, Path("data/builds"), job))
     return {"job_id": job.id, "status": "pending"}
 
 
@@ -405,6 +408,17 @@ async def _execute_tool(tool_name: str, tool_input: dict) -> Any:
     if tool_name == "enrich_blueprint":
         return _enrich_blueprint(**tool_input)
     if tool_name == "start_build":
+        from stratum.config import settings
+
+        if settings.stratum_agent_require_confirmation:
+            return {
+                "error": (
+                    "start_build is disabled while STRATUM_AGENT_REQUIRE_CONFIRMATION is enabled "
+                    "(default). Show the user the validated blueprint YAML and ask them to copy it "
+                    "into the Builder page to provision manually, or set "
+                    "STRATUM_AGENT_REQUIRE_CONFIRMATION=false to let the agent build directly."
+                )
+            }
         return await _start_build(**tool_input)
     if tool_name == "get_build_status":
         return await _get_build_status(**tool_input)

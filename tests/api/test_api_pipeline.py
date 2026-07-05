@@ -340,6 +340,32 @@ def test_pipeline_build_wait_true_returns_complete(client, api_key):
 
 
 # ---------------------------------------------------------------------------
+# PL-BUILD-04b: POST /api/pipeline/build with a `region` override must not
+# raise (TargetSpec has no `region` field — see stratum/api/pipeline.py).
+# ---------------------------------------------------------------------------
+
+
+def test_pipeline_build_with_region_does_not_raise(client, api_key):
+    from stratum.core.builder import BuildStatus
+    from stratum.plugins.base_provider import ProviderResult
+
+    async def _fake_run(profile, output_dir, job=None):
+        job.status = BuildStatus.COMPLETE
+        job.result = ProviderResult(artifact_id="ami-region-test", artifact_type="ami")
+        return job
+
+    with patch("stratum.api.pipeline.build_service.run_build", side_effect=_fake_run):
+        resp = client.post(
+            "/api/pipeline/build",
+            json={"profile_name": "test-ubuntu22-cis", "region": "eu-west-1", "wait": True},
+            headers={"X-Api-Key": api_key},
+        )
+
+    assert resp.status_code == 200
+    assert resp.json()["status"] == "complete"
+
+
+# ---------------------------------------------------------------------------
 # PL-BUILD-05: POST /api/pipeline/build — wait=false → pending immediately
 # ---------------------------------------------------------------------------
 

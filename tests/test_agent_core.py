@@ -14,7 +14,7 @@ Coverage targets:
 from __future__ import annotations
 
 import json
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 import yaml
@@ -484,6 +484,36 @@ async def test_execute_tool_unknown_tool_returns_error():
     assert "Unknown tool" in result["error"]
 
 
+@pytest.mark.anyio
+async def test_execute_tool_start_build_blocked_by_default(monkeypatch):
+    """With STRATUM_AGENT_REQUIRE_CONFIRMATION at its default (true), the agent
+    must not be able to trigger a real cloud build without a human clicking
+    Build in the UI first."""
+    from stratum.config import settings
+
+    monkeypatch.setattr(settings, "stratum_agent_require_confirmation", True)
+    with patch("stratum.core.agent._start_build", new_callable=AsyncMock) as mock_start:
+        result = await _execute_tool("start_build", {"yaml_text": _VALID_YAML, "provider": "aws"})
+    mock_start.assert_not_called()
+    assert "error" in result
+    assert "STRATUM_AGENT_REQUIRE_CONFIRMATION" in result["error"]
+
+
+@pytest.mark.anyio
+async def test_execute_tool_start_build_allowed_when_confirmation_disabled(monkeypatch):
+    from stratum.config import settings
+
+    monkeypatch.setattr(settings, "stratum_agent_require_confirmation", False)
+    with patch(
+        "stratum.core.agent._start_build",
+        new_callable=AsyncMock,
+        return_value={"job_id": "jb-1", "status": "pending"},
+    ) as mock_start:
+        result = await _execute_tool("start_build", {"yaml_text": _VALID_YAML, "provider": "aws"})
+    mock_start.assert_called_once_with(yaml_text=_VALID_YAML, provider="aws")
+    assert result == {"job_id": "jb-1", "status": "pending"}
+
+
 # ---------------------------------------------------------------------------
 # run_build_agent — mocked LLM backend
 # ---------------------------------------------------------------------------
@@ -672,16 +702,21 @@ async def test_run_build_agent_records_job_id_from_start_build():
 
 
 @pytest.fixture
-def _agent_client():
+def _agent_client(monkeypatch):
     """Minimal TestClient for agent endpoint tests (no profile dir needed)."""
     from unittest.mock import patch
 
     from fastapi.testclient import TestClient
 
+    from stratum.config import settings
+
+    monkeypatch.setattr(settings, "stratum_admin_token", "test-admin-token")
+
     with patch("stratum.core.registry.init_registry"):
         from stratum.main import app
 
         with TestClient(app, raise_server_exceptions=True) as c:
+            c.auth = ("admin", "test-admin-token")
             yield c
 
 

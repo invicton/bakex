@@ -203,12 +203,16 @@ async def pipeline_build(
         profile = _resolve_profile(req.profile_name)
     if req.provider:
         profile.target.provider = req.provider
-    if req.region:
-        profile.target.region = req.region
+    # Note: TargetSpec has no `region` field — the region actually used to
+    # provision comes from the provider's stored credentials (see e.g.
+    # plugins/providers/aws.py's `credentials.get("region", ...)`). `req.region`
+    # is recorded on the job for display/audit purposes only, not as an
+    # override of where the build actually runs.
 
     job = build_service.BuildJob(
         profile_name=profile.metadata.name,
         provider_name=profile.target.provider,
+        region=req.region,
     )
     build_service._jobs[job.id] = job
 
