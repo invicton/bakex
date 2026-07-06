@@ -80,7 +80,7 @@ HardeningBlueprint (YAML)  ──or──  5-Step Guided Wizard
 | [Cloud Onboarding](docs/cloud-onboarding.md) | AWS, Azure, and GCP admin permission model and outputs |
 | [API Reference](docs/api.md) | Core REST endpoints and integration payloads |
 | [Pipeline Guide](docs/pipeline.md) | CI/CD, SARIF export, and Blueprint-as-Code examples |
-| [Blueprint Library Guide](docs/stratum-blueprints-repo-readme.md) | Community blueprint contribution model |
+| [Blueprint Library Guide](blueprints/CONTRIBUTING.md) | Community blueprint contribution model |
 
 ---
 
@@ -202,6 +202,7 @@ Open **http://localhost:8000** in your browser.
 | Ubuntu 24.04 LTS | ✓ | ✓ | — | `UBUNTU2404` |
 | Rocky Linux 9 | ✓ | ✓ | ✓ | `RHEL-9` |
 | RHEL 9 | ✓ | ✓ | ✓ | `RHEL-9` |
+| AlmaLinux 9 | ✓ | ✓ | — | `RHEL-9` |
 | Debian 12 | ✓ | ✓ | — | `DEBIAN12` |
 
 ### Cloud Providers

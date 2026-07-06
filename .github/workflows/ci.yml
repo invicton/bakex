@@ -75,6 +75,72 @@ jobs:
               print(f"\nAll {len(yaml_files) - len(skip)} profiles validated successfully.")
           EOF
 
+  validate-blueprints:
+    name: Validate community blueprints
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.11"
+      - run: uv sync
+      - name: Validate blueprint schemas
+        run: |
+          uv run python - <<'EOF'
+          import sys
+          from pathlib import Path
+          from stratum.core.blueprint import ComplianceProfile
+          import yaml
+
+          errors = []
+          yaml_files = sorted(Path("blueprints").rglob("*.yaml"))
+
+          for p in yaml_files:
+              try:
+                  raw = yaml.safe_load(p.read_text())
+                  if not isinstance(raw, dict):
+                      errors.append(f"  ERROR {p}: top-level is not a mapping")
+                      continue
+                  ComplianceProfile.model_validate(raw)
+                  print(f"  OK    {p}")
+              except Exception as exc:
+                  errors.append(f"  ERROR {p}: {exc}")
+
+          if errors:
+              print("\nBlueprint schema validation failed:")
+              for e in errors:
+                  print(e)
+              sys.exit(1)
+          else:
+              print(f"\nAll {len(yaml_files)} blueprints validated successfully.")
+          EOF
+      - name: Check index.json consistency
+        run: |
+          uv run python - <<'EOF'
+          import json
+          import sys
+          from pathlib import Path
+
+          on_disk = {str(p.relative_to("blueprints")) for p in Path("blueprints").rglob("*.yaml")}
+          indexed = set(json.loads(Path("blueprints/index.json").read_text()))
+
+          missing_from_index = sorted(on_disk - indexed)
+          missing_on_disk = sorted(indexed - on_disk)
+
+          if missing_from_index:
+              print("Files on disk but missing from index.json:")
+              for f in missing_from_index:
+                  print(f"  {f}")
+          if missing_on_disk:
+              print("Entries in index.json with no file on disk:")
+              for f in missing_on_disk:
+                  print(f"  {f}")
+
+          if missing_from_index or missing_on_disk:
+              sys.exit(1)
+          print(f"index.json consistent with {len(on_disk)} blueprint files.")
+          EOF
+
   ansible-syntax:
     name: Ansible syntax check
     runs-on: ubuntu-latest
