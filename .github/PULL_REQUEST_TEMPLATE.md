@@ -15,9 +15,13 @@
       project's TDD conventions)
 - [ ] If this touches a cloud provider: ran against a real provider, or
       explained why that isn't practical for this change
+- [ ] If this adds or changes a blueprint: the "Validate community blueprints"
+      check passes (schema + `blueprints/index.json` consistency)
 
 ## Checklist
 
 - [ ] I've read `CONTRIBUTING.md`
 - [ ] This PR is scoped to one logical change
 - [ ] I've updated `CHANGELOG.md` if this is user-visible
+- [ ] All commits are signed off (`git commit -s`) per the
+      [DCO](https://developercertificate.org/)

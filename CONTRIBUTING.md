@@ -422,6 +422,25 @@ New provider plugins should include at least:
 6. Open a pull request with a clear description of what changed and why
 7. Address review comments promptly
 
+### How PRs get merged
+
+`main` is protected — there are no direct pushes, and every PR must have:
+
+1. **Green CI** — lint, tests, schema validation, and (for blueprint changes)
+   the community-blueprint check. All of these run on fork PRs with no
+   secrets required, so you can iterate entirely from your fork.
+2. **Signed-off commits** — every commit needs a `Signed-off-by` line
+   (`git commit -s`), asserting the
+   [Developer Certificate of Origin](https://developercertificate.org/).
+   No CLA, no paperwork — the sign-off is the whole agreement.
+3. **Maintainer review** — one approval from the maintainer. Pushing new
+   commits dismisses stale approvals, so the reviewed code is always the
+   merged code.
+
+Issues labelled `good first issue` state their acceptance criteria and the
+exact local verification command up front — if that command passes and CI is
+green, review is usually quick.
+
 PRs that add new provider plugins must include:
 - The plugin script in `plugins/providers/<name>.py`
 - All four required RPC methods: `test_connection`, `execute_build`, `execute_audit`, `execute_scan_image`
