@@ -118,4 +118,3 @@ controls:
   xccdf_org.ssgproject.content_rule_sshd_disable_root_login:
     enabled: true
     justification: Root SSH login is prohibited by CIS and organisational security policy.
-# gate-verification touch
