@@ -40,18 +40,21 @@ from playwright.sync_api import Page, expect
 
 BASE_URL = "http://localhost:8001"
 
-pytestmark = pytest.mark.ui
-
-
 # ---------------------------------------------------------------------------
 # Skip guard — tests are opt-in
 # ---------------------------------------------------------------------------
+# Must be a collection-time skipif, not an autouse fixture: pytest-playwright's
+# `browser` fixture is session-scoped, so it is set up before any
+# function-scoped autouse fixture can skip — which errors out on machines
+# (like CI) where Playwright browsers aren't installed.
 
-
-@pytest.fixture(autouse=True)
-def require_ui_env():
-    if not os.environ.get("STRATUM_RUN_UI"):
-        pytest.skip("Set STRATUM_RUN_UI=1 to run Playwright UI tests")
+pytestmark = [
+    pytest.mark.ui,
+    pytest.mark.skipif(
+        not os.environ.get("STRATUM_RUN_UI"),
+        reason="Set STRATUM_RUN_UI=1 to run Playwright UI tests",
+    ),
+]
 
 
 # ---------------------------------------------------------------------------
