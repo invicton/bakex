@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.14-slim
 
 # Install system dependencies required by Stratum
 # - curl/git for downloading things
