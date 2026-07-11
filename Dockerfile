@@ -18,8 +18,13 @@ ENV PATH="/usr/local/bin:$PATH"
 
 WORKDIR /app
 
-# Copy dependency definition files first for layer caching
+# Copy dependency definition files first for layer caching.
+# profiles/templates and plugins/catalog are hatch force-includes, so the
+# build backend requires them present even for this dependency-only layer;
+# they're small and change rarely, so caching is preserved.
 COPY pyproject.toml README.md ./
+COPY profiles/templates ./profiles/templates
+COPY plugins/catalog ./plugins/catalog
 
 # We install all provider plugins (aws, gcp, azure, linode, do, proxmox) by default 
 # to make the Docker container batteries-included.
