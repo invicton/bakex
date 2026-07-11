@@ -8,6 +8,11 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.5.2] — 2026-07-11
+
+First release published to PyPI (`pip install stratumoss`) with a
+container image on GHCR (`ghcr.io/stratumoss/stratum`) and Docker Hub.
+
 ### Added
 
 - `ROADMAP.md` — public milestones (v0.6 launch, v0.7 blueprint depth,
@@ -16,21 +21,6 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Dependabot configuration (pip, GitHub Actions, Docker — weekly) and
   repository security updates enabled.
 - GitHub Discussions enabled.
-
-### Changed
-
-- Dropped the "open-core" label from all public copy (README, repo
-  description, package metadata, CONTRIBUTING). Stratum is straight
-  Apache-2.0; a commercial story, if one ever exists, will be additive
-  rather than a carve-out of the core.
-- Repo hygiene: SECURITY.md supported-versions table now says 0.5.x,
-  CONTRIBUTING line-length matches ruff (120), blueprint
-  `stratum_version` pins normalized, stale `docs/stratum-blueprints-repo-readme.md`
-  stub removed, 0.1.0 changelog date fixed.
-
-## [0.5.2] — 2026-07-11
-
-First release published to PyPI (`pip install stratumoss`).
 
 ### Fixed
 
@@ -55,8 +45,21 @@ First release published to PyPI (`pip install stratumoss`).
   with a collection-time `skipif` marker. This had been failing
   `Tests (pytest)` on `main` silently before branch protection made it
   a hard gate.
+- Docker image build broke after the wheel began bundling data files:
+  the dependency-caching layer installs the project before `profiles/`
+  and `plugins/` are copied, so hatchling's force-include failed.
+  The Dockerfile now copies those two directories into that layer.
 
 ### Changed
+
+- Dropped the "open-core" label from all public copy (README, repo
+  description, package metadata, CONTRIBUTING). Stratum is straight
+  Apache-2.0; a commercial story, if one ever exists, will be additive
+  rather than a carve-out of the core.
+- Repo hygiene: SECURITY.md supported-versions table now says 0.5.x,
+  CONTRIBUTING line-length matches ruff (120), blueprint
+  `stratum_version` pins normalized, stale `docs/stratum-blueprints-repo-readme.md`
+  stub removed, 0.1.0 changelog date fixed.
 
 - Default `registry_url` now points at the real community blueprint
   library (`StratumOSS/Stratum` `blueprints/`) instead of the
