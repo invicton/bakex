@@ -1,6 +1,6 @@
 # Stratum
 
-**Declarative OS hardening — open-core, multi-cloud, and automation-ready.**
+**Declarative OS hardening — Apache-2.0, multi-cloud, and automation-ready.**
 
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue)](https://www.python.org/)
@@ -81,6 +81,7 @@ HardeningBlueprint (YAML)  ──or──  5-Step Guided Wizard
 | [API Reference](docs/api.md) | Core REST endpoints and integration payloads |
 | [Pipeline Guide](docs/pipeline.md) | CI/CD, SARIF export, and Blueprint-as-Code examples |
 | [Blueprint Library Guide](blueprints/CONTRIBUTING.md) | Community blueprint contribution model |
+| [Roadmap](ROADMAP.md) | Where Stratum is headed and how to influence it |
 
 ---
 

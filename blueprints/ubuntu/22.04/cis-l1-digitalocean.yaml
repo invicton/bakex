@@ -3,7 +3,7 @@
 # Set api_token in Stratum integrations then run:
 #   stratum build ubuntu22-cis-l1-digitalocean
 
-stratum_version: "0.3.0"
+stratum_version: "0.5.0"
 kind: HardeningBlueprint
 
 metadata:

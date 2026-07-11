@@ -1,6 +1,6 @@
 # Stratum HardeningBlueprint — Debian 12 CIS Level 1 Server (DigitalOcean)
 
-stratum_version: "0.3.0"
+stratum_version: "0.5.0"
 kind: HardeningBlueprint
 
 metadata:

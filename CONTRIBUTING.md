@@ -3,7 +3,7 @@
 Copyright 2026 Vamshi Krishna Santhapuri
 Licensed under the [Apache License 2.0](LICENSE)
 
-Thank you for your interest in contributing! Stratum is an open-core, multi-cloud
+Thank you for your interest in contributing! Stratum is an Apache-2.0, multi-cloud
 DevSecOps platform for reproducible OS hardening. All contributions — code, blueprint
 templates, bug reports, documentation — are welcome.
 
@@ -31,7 +31,7 @@ opening a public issue.
 
 ```bash
 git clone https://github.com/StratumOSS/Stratum.git
-cd stratum
+cd Stratum
 
 # Install with all provider extras
 pip install uv
@@ -382,7 +382,7 @@ uv pip install -e ".[all-providers]"
 
 - Python 3.11+, type-annotated where practical
 - `from __future__ import annotations` in every module
-- `ruff` for formatting and linting (line length 100)
+- `ruff` for formatting and linting (line length 120)
 - Every file starts with the SPDX header:
   ```python
   # SPDX-License-Identifier: Apache-2.0

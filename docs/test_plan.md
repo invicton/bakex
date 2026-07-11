@@ -2,7 +2,7 @@
 
 **Version:** 0.3.0  
 **Date:** 2026-04-09  
-**Scope:** All testable layers of the Stratum open-core platform
+**Scope:** All testable layers of the Stratum platform
 
 ---
 

@@ -3,7 +3,7 @@
 # AlmaLinux 9 is a RHEL 9 binary-compatible rebuild from the CloudLinux team.
 # Uses the same SCAP datastream as Rocky Linux / RHEL 9.
 
-stratum_version: "0.3.0"
+stratum_version: "0.5.0"
 kind: HardeningBlueprint
 
 metadata:

@@ -179,7 +179,7 @@ cp profiles/templates/amazon-linux-2023-cis-l1-aws.yaml \
 Edit the key fields for Level 2:
 
 ```yaml
-stratum_version: "0.3.0"
+stratum_version: "0.5.0"
 kind: HardeningBlueprint
 
 metadata:

@@ -8,6 +8,26 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- `ROADMAP.md` — public milestones (v0.6 launch, v0.7 blueprint depth,
+  v0.8 AI-agent-friendly surface, v1.0 criteria) and the ecosystem
+  integration track.
+- Dependabot configuration (pip, GitHub Actions, Docker — weekly) and
+  repository security updates enabled.
+- GitHub Discussions enabled.
+
+### Changed
+
+- Dropped the "open-core" label from all public copy (README, repo
+  description, package metadata, CONTRIBUTING). Stratum is straight
+  Apache-2.0; a commercial story, if one ever exists, will be additive
+  rather than a carve-out of the core.
+- Repo hygiene: SECURITY.md supported-versions table now says 0.5.x,
+  CONTRIBUTING line-length matches ruff (120), blueprint
+  `stratum_version` pins normalized, stale `docs/stratum-blueprints-repo-readme.md`
+  stub removed, 0.1.0 changelog date fixed.
+
 ## [0.5.2] — 2026-07-11
 
 First release published to PyPI (`pip install stratumoss`).
@@ -253,7 +273,7 @@ STRATUM_LLM_THINKING=0   # disable extended thinking
 
 ---
 
-## [0.1.0] — 2026-03-XX
+## [0.1.0] — 2026-03-15
 
 Initial open-core release.
 

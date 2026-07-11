@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "stratumoss"
 version = "0.5.2"
-description = "Open-core multi-cloud DevSecOps platform for declarative OS hardening"
+description = "Multi-cloud DevSecOps platform for declarative OS hardening"
 readme = "README.md"
 license = { text = "Apache-2.0" }
 authors = [{ name = "Vamshi Krishna Santhapuri" }]

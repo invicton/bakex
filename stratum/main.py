@@ -93,7 +93,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title=settings.app_name,
     version=__version__,
-    description="Open-core multi-cloud DevSecOps platform",
+    description="Multi-cloud DevSecOps platform for declarative OS hardening",
     lifespan=lifespan,
 )
 

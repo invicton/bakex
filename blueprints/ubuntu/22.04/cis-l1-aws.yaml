@@ -7,7 +7,7 @@
 # to the same base image — the filesystem layout, users, and every CIS control
 # are all declared here and version-controlled with your infrastructure code.
 
-stratum_version: "0.3.0"
+stratum_version: "0.5.0"
 kind: HardeningBlueprint
 
 metadata:

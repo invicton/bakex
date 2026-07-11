@@ -25,8 +25,8 @@ Only the latest released version of Stratum receives security fixes.
 
 | Version | Supported |
 | ------- | --------- |
-| 0.3.x   | ✅        |
-| < 0.3   | ❌        |
+| 0.5.x   | ✅        |
+| < 0.5   | ❌        |
 
 ## Deployment Notes
 
