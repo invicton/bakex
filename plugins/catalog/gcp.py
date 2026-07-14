@@ -449,9 +449,7 @@ def execute_build(params: dict) -> dict:
 
         # OpenSCAP compliance scan through the tunnel
         logger.info("Running OpenSCAP scan via IAP tunnel")
-        oscap_cmd = (
-            f"sudo oscap xccdf eval --profile {profile_id} --results /tmp/invicton-scap-results.xml {datastream} || true"
-        )
+        oscap_cmd = f"sudo oscap xccdf eval --profile {profile_id} --results /tmp/invicton-scap-results.xml {datastream} || true"
         _run_remote_cmd_via_tunnel(local_port, key_path, "invicton_build", oscap_cmd, timeout=600)
 
         # Cleanup history

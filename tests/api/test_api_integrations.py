@@ -70,7 +70,10 @@ def test_import_aws_stack_outputs_saves_cloudformation_outputs(client):
         "Stacks": [
             {
                 "Outputs": [
-                    {"OutputKey": "InvictonRoleArn", "OutputValue": "arn:aws:iam::123456789012:role/InvictonBuilderRole"},
+                    {
+                        "OutputKey": "InvictonRoleArn",
+                        "OutputValue": "arn:aws:iam::123456789012:role/InvictonBuilderRole",
+                    },
                     {"OutputKey": "ExternalId", "OutputValue": "invicton-onboarding"},
                     {"OutputKey": "InstanceProfileName", "OutputValue": "InvictonBuilderInstanceProfile"},
                     {"OutputKey": "RegionHint", "OutputValue": "us-east-1"},
