@@ -40,6 +40,12 @@ class ImageScanRequest(BaseModel):
     instance_type: str = "t3.medium"
 
 
+class ContainerScanRequest(BaseModel):
+    image: str  # local container image name:tag or image ID (on podman/docker)
+    os: str  # OS slug in OS_CATALOG (e.g. "ubuntu22.04", "debian12")
+    tier: str = "cis-l1"  # cis-l1 | cis-l2
+
+
 @router.post("/start")
 async def start_audit(req: AuditRequest, background_tasks: BackgroundTasks) -> dict:
     """Trigger a live audit scan. Returns the job ID immediately."""
@@ -96,6 +102,32 @@ async def start_image_scan(req: ImageScanRequest, background_tasks: BackgroundTa
         content=f'<div hx-redirect="/auditor/scan-image/{job.id}"></div>',
         headers={"HX-Redirect": f"/auditor/scan-image/{job.id}"},
     )
+
+
+@router.post("/scan-container")
+async def start_container_scan(req: ContainerScanRequest, background_tasks: BackgroundTasks) -> dict:
+    """Scan a local container image against its OS CIS datastream via oscap-podman.
+
+    OS-level config compliance of the image contents (not CIS Docker Benchmark, not
+    CVEs). Returns the job id immediately; poll ``/jobs/{id}`` or reuse the badge/
+    report/compare endpoints, which are target-agnostic.
+    """
+    job = audit_service.AuditJob(
+        job_type="container_scan",
+        image_id=req.image,
+        target_host=req.image,
+        profile_name=f"{req.os}-{req.tier}",
+    )
+    audit_service._audit_jobs[job.id] = job
+    background_tasks.add_task(
+        audit_service.run_container_scan_job,
+        job,
+        req.image,
+        req.os,
+        req.tier,
+        _RESULTS_DIR,
+    )
+    return {"job_id": job.id, "status": job.status.value}
 
 
 @router.get("/scan-image/{job_id}/badge.svg")

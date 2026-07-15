@@ -21,7 +21,6 @@ from invicton.openscap import container_scanner as cs
 from invicton.openscap import content as content_mod
 from invicton.openscap.scanner import ScanError
 
-
 # ---------------------------------------------------------------------------
 # CONT-01 — engine selection
 # ---------------------------------------------------------------------------
@@ -158,9 +157,7 @@ def test_ensure_datastream_downloads_when_absent(tmp_path):
         return downloaded
 
     with patch.object(content_mod, "_download_datastream", side_effect=_fake_download):
-        result = content_mod.ensure_datastream(
-            "/usr/share/xml/scap/ssg/content/ssg-ubuntu2204-ds.xml", cache_dir=cache
-        )
+        result = content_mod.ensure_datastream("/usr/share/xml/scap/ssg/content/ssg-ubuntu2204-ds.xml", cache_dir=cache)
     assert result == downloaded
 
 
@@ -168,3 +165,68 @@ def test_ensure_datastream_unavailable_raises(tmp_path):
     with patch.object(content_mod, "_download_datastream", return_value=None):
         with pytest.raises(content_mod.ScanContentError):
             content_mod.ensure_datastream("/nope/ssg-missing-ds.xml", cache_dir=tmp_path)
+
+
+# ---------------------------------------------------------------------------
+# P2 — orchestration + API (CONT-08..12)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.anyio
+async def test_run_container_scan_job_produces_graded_complete_job(tmp_path, monkeypatch):
+    from invicton.core import auditor
+
+    monkeypatch.setattr(auditor, "resolve_scan_spec", lambda os_slug, tier: ("bench", "prof", "/ds.xml"))
+    monkeypatch.setattr(auditor, "ensure_datastream", lambda ds, cache_dir=None: Path(ds))
+    monkeypatch.setattr(auditor, "run_container_scan", lambda **kw: tmp_path / "arf.xml")
+    monkeypatch.setattr(
+        auditor,
+        "parse_arf",
+        lambda p: {"score": 88.0, "rules": [{"id": "r", "result": "fail", "severity": "high"}]},
+    )
+    job = auditor.AuditJob(job_type="container_scan", image_id="ubuntu:22.04")
+    auditor._audit_jobs[job.id] = job
+    try:
+        await auditor.run_container_scan_job(job, "ubuntu:22.04", "ubuntu22.04", "cis-l1", tmp_path)
+        assert job.status == auditor.AuditStatus.COMPLETE
+        assert job.score_pct == 88.0
+        assert job.grade == "B"  # 88 → B
+        assert job.severity_counts.get("high") == 1
+    finally:
+        auditor._audit_jobs.pop(job.id, None)
+
+
+@pytest.mark.anyio
+async def test_run_container_scan_job_scanner_error_fails_job(tmp_path, monkeypatch):
+    from invicton.core import auditor
+    from invicton.openscap.scanner import ScanError
+
+    monkeypatch.setattr(auditor, "resolve_scan_spec", lambda os_slug, tier: ("b", "p", "/ds.xml"))
+    monkeypatch.setattr(auditor, "ensure_datastream", lambda ds, cache_dir=None: Path(ds))
+
+    def _boom(**kw):
+        raise ScanError("oscap-podman missing")
+
+    monkeypatch.setattr(auditor, "run_container_scan", _boom)
+    job = auditor.AuditJob(job_type="container_scan", image_id="ubuntu:22.04")
+    auditor._audit_jobs[job.id] = job
+    try:
+        await auditor.run_container_scan_job(job, "ubuntu:22.04", "ubuntu22.04", "cis-l1", tmp_path)
+        assert job.status == auditor.AuditStatus.FAILED
+        assert "oscap-podman" in (job.error or "")
+    finally:
+        auditor._audit_jobs.pop(job.id, None)
+
+
+@pytest.mark.anyio
+async def test_run_container_scan_job_unknown_os_is_actionable(tmp_path):
+    from invicton.core import auditor
+
+    job = auditor.AuditJob(job_type="container_scan", image_id="weird:latest")
+    auditor._audit_jobs[job.id] = job
+    try:
+        await auditor.run_container_scan_job(job, "weird:latest", "plan9", "cis-l1", tmp_path)
+        assert job.status == auditor.AuditStatus.FAILED
+        assert "plan9" in (job.error or "")  # resolve_scan_spec lists supported OSes
+    finally:
+        auditor._audit_jobs.pop(job.id, None)
