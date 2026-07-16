@@ -79,8 +79,7 @@ def run_container_scan(
 
     if result.returncode not in (_EXIT_PASS, _EXIT_FAIL_WITH_FINDINGS):
         raise ScanError(
-            f"{engine} exited with code {result.returncode} scanning '{image_ref}'.\n"
-            f"stderr: {result.stderr.strip()}"
+            f"{engine} exited with code {result.returncode} scanning '{image_ref}'.\nstderr: {result.stderr.strip()}"
         )
     if result.returncode == _EXIT_FAIL_WITH_FINDINGS:
         logger.warning("Scan of %s completed with policy findings", image_ref)
