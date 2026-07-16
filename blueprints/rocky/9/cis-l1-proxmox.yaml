@@ -1,12 +1,12 @@
-# Statim HardeningBlueprint — Rocky Linux 9 CIS Level 1 Server (Proxmox VE)
+# BakeX HardeningBlueprint — Rocky Linux 9 CIS Level 1 Server (Proxmox VE)
 #
 # Prerequisites:
 #   1. A Rocky Linux 9 cloud-init VM template on your Proxmox node
 #      (set base_image to its VMID, e.g. "9001")
 #   2. qemu-guest-agent installed in the template
-#   3. Proxmox credentials configured in Statim integrations
+#   3. Proxmox credentials configured in BakeX integrations
 
-statim_version: "0.5.0"
+bakex_version: "0.5.0"
 kind: HardeningBlueprint
 
 metadata:
@@ -56,8 +56,8 @@ users:
     lock: true
 
   accounts:
-    - name: statim-admin
-      comment: "Statim-managed admin account"
+    - name: bakex-admin
+      comment: "BakeX-managed admin account"
       groups: [wheel]
       shell: /bin/bash
       ssh_authorized_keys: []

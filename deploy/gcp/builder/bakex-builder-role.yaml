@@ -1,0 +1,35 @@
+title: BakeX Builder
+description: Least-privilege role for BakeX GCP private build VMs, IAP hardening, and custom image capture.
+stage: GA
+includedPermissions:
+  - compute.disks.create
+  - compute.disks.delete
+  - compute.disks.get
+  - compute.firewalls.get
+  - compute.firewalls.list
+  - compute.globalOperations.get
+  - compute.images.create
+  - compute.images.delete
+  - compute.images.get
+  - compute.images.getFromFamily
+  - compute.images.list
+  - compute.instances.create
+  - compute.instances.delete
+  - compute.instances.get
+  - compute.instances.list
+  - compute.instances.setLabels
+  - compute.instances.setMetadata
+  - compute.instances.setServiceAccount
+  - compute.instances.setTags
+  - compute.instances.stop
+  - compute.instances.use
+  - compute.machineTypes.get
+  - compute.networks.get
+  - compute.networks.list
+  - compute.projects.get
+  - compute.regions.list
+  - compute.subnetworks.get
+  - compute.subnetworks.list
+  - compute.subnetworks.use
+  - compute.zoneOperations.get
+  - compute.zones.list

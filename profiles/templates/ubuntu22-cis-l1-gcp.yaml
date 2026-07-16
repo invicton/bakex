@@ -1,11 +1,11 @@
-# Statim HardeningBlueprint — Ubuntu 22.04 LTS CIS Level 1 Server (GCP)
+# BakeX HardeningBlueprint — Ubuntu 22.04 LTS CIS Level 1 Server (GCP)
 #
 # This blueprint is the GCP equivalent of ubuntu22-cis-l1-aws.yaml.
 # The compliance controls, filesystem layout, and users are identical —
 # only the target.provider and target.base_image differ.
-# This cross-provider portability is the core Statim USP.
+# This cross-provider portability is the core BakeX USP.
 
-statim_version: "0.5.0"
+bakex_version: "0.5.0"
 kind: HardeningBlueprint
 
 metadata:
@@ -62,8 +62,8 @@ users:
     lock: true
 
   accounts:
-    - name: statim-admin
-      comment: "Statim-managed admin account"
+    - name: bakex-admin
+      comment: "BakeX-managed admin account"
       groups:
         - sudo
       shell: /bin/bash

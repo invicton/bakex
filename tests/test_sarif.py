@@ -6,8 +6,8 @@ from __future__ import annotations
 
 import pytest
 
-from statim.api.auditor import _to_sarif
-from statim.core.auditor import AuditJob, AuditStatus
+from bakex.api.auditor import _to_sarif
+from bakex.core.auditor import AuditJob, AuditStatus
 
 # ---------------------------------------------------------------------------
 # Helpers

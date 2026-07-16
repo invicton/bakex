@@ -90,7 +90,7 @@ def test_available_plugins_returns_html(client):
 @pytest.fixture
 def isolated_plugins_dir(monkeypatch, tmp_path):
     """Redirect settings.plugins_dir to a temp dir for install/remove tests."""
-    from statim.config import settings
+    from bakex.config import settings
 
     monkeypatch.setattr(settings, "plugins_dir", tmp_path)
     return tmp_path

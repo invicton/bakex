@@ -1,4 +1,4 @@
-# Statim Documentation
+# BakeX Documentation
 
 | Guide | Purpose |
 |---|---|
@@ -20,5 +20,5 @@ Related, outside `docs/`:
 
 Deep-dive references kept alongside: the
 [AL2023 CIS L2 worked example](ux-flow-cis-l2-amazon-linux-2023.md) and the
-annotated [blueprint template](statim-blueprints-template.yaml).
+annotated [blueprint template](bakex-blueprints-template.yaml).
 Internal engineering docs live in [`dev/`](dev/).

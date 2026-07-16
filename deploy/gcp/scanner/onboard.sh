@@ -8,9 +8,9 @@ REGION="${REGION:-us-central1}"
 ZONE="${ZONE:-us-central1-a}"
 NETWORK="${NETWORK:-default}"
 SUBNETWORK="${SUBNETWORK:-}"
-ROLE_ID="${ROLE_ID:-statimScanner}"
-SERVICE_ACCOUNT_ID="${SERVICE_ACCOUNT_ID:-statim-scanner}"
-FIREWALL_RULE="${FIREWALL_RULE:-statim-allow-iap-ssh}"
+ROLE_ID="${ROLE_ID:-bakexScanner}"
+SERVICE_ACCOUNT_ID="${SERVICE_ACCOUNT_ID:-bakex-scanner}"
+FIREWALL_RULE="${FIREWALL_RULE:-bakex-allow-iap-ssh}"
 PRINCIPAL="${PRINCIPAL:-}"
 
 if ! command -v gcloud >/dev/null 2>&1; then
@@ -25,15 +25,15 @@ if [[ -z "${PRINCIPAL}" ]]; then
   if ! gcloud iam service-accounts describe "${SERVICE_ACCOUNT_ID}@${PROJECT_ID}.iam.gserviceaccount.com" --project "${PROJECT_ID}" >/dev/null 2>&1; then
     gcloud iam service-accounts create "${SERVICE_ACCOUNT_ID}" \
       --project "${PROJECT_ID}" \
-      --display-name "Statim scanner service account"
+      --display-name "BakeX scanner service account"
   fi
   PRINCIPAL="serviceAccount:${SERVICE_ACCOUNT_ID}@${PROJECT_ID}.iam.gserviceaccount.com"
 fi
 
 if gcloud iam roles describe "${ROLE_ID}" --project "${PROJECT_ID}" >/dev/null 2>&1; then
-  gcloud iam roles update "${ROLE_ID}" --project "${PROJECT_ID}" --file "${SCRIPT_DIR}/statim-scanner-role.yaml"
+  gcloud iam roles update "${ROLE_ID}" --project "${PROJECT_ID}" --file "${SCRIPT_DIR}/bakex-scanner-role.yaml"
 else
-  gcloud iam roles create "${ROLE_ID}" --project "${PROJECT_ID}" --file "${SCRIPT_DIR}/statim-scanner-role.yaml"
+  gcloud iam roles create "${ROLE_ID}" --project "${PROJECT_ID}" --file "${SCRIPT_DIR}/bakex-scanner-role.yaml"
 fi
 
 gcloud projects add-iam-policy-binding "${PROJECT_ID}" \
@@ -52,19 +52,19 @@ if gcloud compute firewall-rules describe "${FIREWALL_RULE}" --project "${PROJEC
     --network "${NETWORK}" \
     --allow tcp:22 \
     --source-ranges 35.235.240.0/20 \
-    --target-tags statim-build,statim-scan
+    --target-tags bakex-build,bakex-scan
 else
   gcloud compute firewall-rules create "${FIREWALL_RULE}" \
     --project "${PROJECT_ID}" \
     --network "${NETWORK}" \
     --allow tcp:22 \
     --source-ranges 35.235.240.0/20 \
-    --target-tags statim-build,statim-scan \
-    --description "Allow Statim SSH through Google Cloud IAP only."
+    --target-tags bakex-build,bakex-scan \
+    --description "Allow BakeX SSH through Google Cloud IAP only."
 fi
 
 cat <<EOF
-Statim GCP scanner onboarding complete.
+BakeX GCP scanner onboarding complete.
 
 Paste these values into Integrations -> GCP:
   project_id: ${PROJECT_ID}

@@ -3,12 +3,12 @@
 # Copyright 2026 Vamshi Krishna Santhapuri
 """Linode (Akamai Cloud) subprocess provider — speaks JSON-RPC over stdin/stdout.
 
-Run as a standalone script: the core Statim engine never imports this file.
+Run as a standalone script: the core BakeX engine never imports this file.
 Logs go to stderr; only JSON-RPC responses go to stdout.
 
-Requires the [linode] optional extra: pip install statim[linode]
+Requires the [linode] optional extra: pip install bakex[linode]
 
-Credential fields (stored via Statim integrations UI):
+Credential fields (stored via BakeX integrations UI):
     api_token   — Linode personal access token (required)
     region      — Linode region ID, e.g. "us-east" (default: us-east)
 """
@@ -53,7 +53,7 @@ def _get_client(token: str):
     try:
         from linode_api4 import LinodeClient
     except ImportError as exc:
-        raise RuntimeError("linode-api4 is not installed. Install with: pip install statim[linode]") from exc
+        raise RuntimeError("linode-api4 is not installed. Install with: pip install bakex[linode]") from exc
     return LinodeClient(token)
 
 
@@ -140,7 +140,7 @@ def execute_build(params: dict) -> dict:
     client = _get_client(token)
     linode_id: int | None = None
 
-    with tempfile.TemporaryDirectory(prefix="statim-linode-") as tmpdir:
+    with tempfile.TemporaryDirectory(prefix="bakex-linode-") as tmpdir:
         tmp = Path(tmpdir)
         key_path, pub_key = utils.generate_ssh_keypair(tmp)
 
@@ -154,10 +154,10 @@ def execute_build(params: dict) -> dict:
                 linode_type=linode_type,
                 region=region,
                 image=base_image,
-                label=f"statim-build-{profile_name[:20]}",
+                label=f"bakex-build-{profile_name[:20]}",
                 root_pass=root_pass,
                 authorized_keys=[pub_key],
-                tags=["statim", "hardening-build"],
+                tags=["bakex", "hardening-build"],
                 booted=True,
             )
             linode_id = instance.id
@@ -218,12 +218,12 @@ def execute_build(params: dict) -> dict:
             if not disks:
                 raise RuntimeError(f"Linode {linode_id} has no disks")
             primary_disk = disks[0]
-            image_label = f"statim-{profile_name[:30]}-{profile_version}"
+            image_label = f"bakex-{profile_name[:30]}-{profile_version}"
             logger.info("Creating Linode image from disk %s: %s", primary_disk.id, image_label)
             image = client.images.create(
                 disk=primary_disk,
                 label=image_label,
-                description=f"Statim hardened image: {profile_name} v{profile_version}",
+                description=f"BakeX hardened image: {profile_name} v{profile_version}",
             )
             logger.info("Image %s creation in progress…", image.id)
 
@@ -283,7 +283,7 @@ def execute_audit(params: dict) -> dict:
     if not ssh_key_pem:
         raise ValueError("execute_audit requires 'ssh_key' (private key PEM)")
 
-    with tempfile.TemporaryDirectory(prefix="statim-linode-audit-") as tmpdir:
+    with tempfile.TemporaryDirectory(prefix="bakex-linode-audit-") as tmpdir:
         key_path = Path(tmpdir) / "audit_key"
         key_path.write_text(ssh_key_pem)
         key_path.chmod(0o600)
@@ -324,7 +324,7 @@ def execute_scan_image(params: dict) -> dict:
     client = _get_client(token)
     linode_id: int | None = None
 
-    with tempfile.TemporaryDirectory(prefix="statim-linode-scan-") as tmpdir:
+    with tempfile.TemporaryDirectory(prefix="bakex-linode-scan-") as tmpdir:
         tmp = Path(tmpdir)
         key_path, pub_key = utils.generate_ssh_keypair(tmp)
         try:
@@ -333,10 +333,10 @@ def execute_scan_image(params: dict) -> dict:
                 linode_type=linode_type,
                 region=region,
                 image=image_id,
-                label=f"statim-scan-{int(time.time())}",
+                label=f"bakex-scan-{int(time.time())}",
                 root_pass=root_pass,
                 authorized_keys=[pub_key],
-                tags=["statim", "image-scan"],
+                tags=["bakex", "image-scan"],
                 booted=True,
             )
             linode_id = instance.id

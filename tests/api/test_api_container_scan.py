@@ -9,7 +9,7 @@ from unittest.mock import AsyncMock, patch
 
 def test_scan_container_endpoint_backgrounds_job(client):
     # Patch the orchestration so the endpoint test does no real scan / network I/O.
-    with patch("statim.api.auditor.audit_service.run_container_scan_job", new=AsyncMock()) as mock_job:
+    with patch("bakex.api.auditor.audit_service.run_container_scan_job", new=AsyncMock()) as mock_job:
         resp = client.post(
             "/api/auditor/scan-container",
             json={"image": "ubuntu:22.04", "os": "ubuntu22.04", "tier": "cis-l1"},
@@ -18,7 +18,7 @@ def test_scan_container_endpoint_backgrounds_job(client):
     body = resp.json()
     assert "job_id" in body and body["status"] == "pending"
 
-    from statim.core import auditor
+    from bakex.core import auditor
 
     job = auditor._audit_jobs.get(body["job_id"])
     assert job is not None

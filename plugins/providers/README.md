@@ -1,12 +1,12 @@
 # Drop-in Provider Guide
 
-Drop any `.py` file in this directory and Statim will load it automatically on startup — no pip install required.
+Drop any `.py` file in this directory and BakeX will load it automatically on startup — no pip install required.
 
 ## Minimal Provider
 
 ```python
-from statim.plugins.base_provider import BaseProvider, ProviderResult
-from statim.core.blueprint import ComplianceProfile
+from bakex.plugins.base_provider import BaseProvider, ProviderResult
+from bakex.core.blueprint import ComplianceProfile
 
 class MyProvider(BaseProvider):
     name = "myprovider"        # must be unique
@@ -35,7 +35,7 @@ class MyProvider(BaseProvider):
 Register your package's provider in `pyproject.toml`:
 
 ```toml
-[project.entry-points."statim.providers"]
+[project.entry-points."bakex.providers"]
 myprovider = "mypackage.provider:MyProvider"
 ```
 

@@ -1,13 +1,13 @@
-# Statim HardeningBlueprint — Ubuntu 22.04 LTS CIS Level 1 Server (AWS)
+# BakeX HardeningBlueprint — Ubuntu 22.04 LTS CIS Level 1 Server (AWS)
 #
 # Download this file, fill in your base_image AMI ID, and run:
-#   statim build ubuntu22-cis-l1-aws
+#   bakex build ubuntu22-cis-l1-aws
 #
 # This blueprint produces an identical hardened AMI every time it is applied
 # to the same base image — the filesystem layout, users, and every CIS control
 # are all declared here and version-controlled with your infrastructure code.
 
-statim_version: "0.5.0"
+bakex_version: "0.5.0"
 kind: HardeningBlueprint
 
 metadata:
@@ -80,8 +80,8 @@ users:
   accounts:
     # Replace ssh_authorized_keys with your team's public key(s).
     # This account will have sudo access on every image built from this blueprint.
-    - name: statim-admin
-      comment: "Statim-managed admin account"
+    - name: bakex-admin
+      comment: "BakeX-managed admin account"
       groups:
         - sudo
       shell: /bin/bash

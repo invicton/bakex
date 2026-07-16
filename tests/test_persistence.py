@@ -18,8 +18,8 @@ from unittest.mock import patch
 
 import pytest
 
-import statim.core.api_keys as ak_mod
-import statim.core.notifications as notif_mod
+import bakex.core.api_keys as ak_mod
+import bakex.core.notifications as notif_mod
 
 # ---------------------------------------------------------------------------
 # api_keys — _persist failure (lines 24-25)
@@ -33,7 +33,7 @@ def test_persist_api_keys_logs_warning_on_write_error(tmp_path, caplog):
 
     # Make mkdir raise PermissionError
     with patch("pathlib.Path.mkdir", side_effect=PermissionError("denied")):
-        with caplog.at_level(logging.WARNING, logger="statim.core.api_keys"):
+        with caplog.at_level(logging.WARNING, logger="bakex.core.api_keys"):
             ak_mod._persist()
 
     ak_mod._KEYS_FILE = orig_file
@@ -53,7 +53,7 @@ def test_load_keys_logs_warning_on_corrupt_json(tmp_path, caplog):
     orig_file = ak_mod._KEYS_FILE
     ak_mod._KEYS_FILE = keys_file
 
-    with caplog.at_level(logging.WARNING, logger="statim.core.api_keys"):
+    with caplog.at_level(logging.WARNING, logger="bakex.core.api_keys"):
         ak_mod.load_keys()
 
     ak_mod._KEYS_FILE = orig_file
@@ -100,7 +100,7 @@ def test_persist_webhooks_logs_warning_on_write_error(tmp_path, caplog):
     notif_mod._WEBHOOKS_FILE = tmp_path / "no_dir" / "webhooks.json"
 
     with patch("pathlib.Path.mkdir", side_effect=PermissionError("denied")):
-        with caplog.at_level(logging.WARNING, logger="statim.core.notifications"):
+        with caplog.at_level(logging.WARNING, logger="bakex.core.notifications"):
             notif_mod._persist()
 
     notif_mod._WEBHOOKS_FILE = orig_file
@@ -120,7 +120,7 @@ def test_load_webhooks_logs_warning_on_corrupt_json(tmp_path, caplog):
     orig_file = notif_mod._WEBHOOKS_FILE
     notif_mod._WEBHOOKS_FILE = hooks_file
 
-    with caplog.at_level(logging.WARNING, logger="statim.core.notifications"):
+    with caplog.at_level(logging.WARNING, logger="bakex.core.notifications"):
         notif_mod.load_webhooks()
 
     notif_mod._WEBHOOKS_FILE = orig_file
@@ -170,7 +170,7 @@ async def test_fire_webhook_logs_warning_when_httpx_none(caplog):
     notif_mod.register_webhook("https://example.com/hook", ["scan.complete"])
 
     with patch.object(notif_mod, "httpx", None):
-        with caplog.at_level(logging.WARNING, logger="statim.core.notifications"):
+        with caplog.at_level(logging.WARNING, logger="bakex.core.notifications"):
             await notif_mod.fire_webhook("scan.complete", {"job_id": "test"})
 
     notif_mod._webhooks.clear()

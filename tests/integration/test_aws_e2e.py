@@ -59,7 +59,7 @@ class TestCredentialValidation:
 
     def test_connection_account_matches_expected(self, aws_credentials, expected_account):
         if not expected_account:
-            pytest.skip("STATIM_EXPECTED_ACCOUNT not set — skipping account ID assertion")
+            pytest.skip("BAKEX_EXPECTED_ACCOUNT not set — skipping account ID assertion")
         result = call_aws_rpc("test_connection", {"credentials": aws_credentials})
         assert result["account"] == expected_account, (
             f"Account mismatch: got {result['account']!r}, expected {expected_account!r}"
@@ -219,7 +219,7 @@ class TestSmokeBuild:
             "base_image": "",  # trigger runtime AMI resolution
             "instance_type": "t3.micro",
             "root_volume_size_gb": 20,
-            "profile_name": "statim-smoke-test",
+            "profile_name": "bakex-smoke-test",
             "profile_version": "0.0.1",
             "profile": "",  # no SCAP profile — oscap skipped gracefully
             "datastream": "",
@@ -423,7 +423,7 @@ class TestFullCISBuild:
         )
 
     def test_full_build_ami_visible_in_list_images(self, aws_credentials):
-        """Built AMI must appear in list_images with the correct statim- name prefix."""
+        """Built AMI must appear in list_images with the correct bakex- name prefix."""
         if not TestFullCISBuild._built_ami:
             pytest.skip("No AMI from full build")
         result = call_aws_rpc("list_images", {"credentials": aws_credentials})

@@ -6,7 +6,7 @@ the naming/layout convention.
 
 ## Before you start: is the OS ready?
 
-Not every OS Statim could theoretically support is actually ready for a blueprint yet. A
+Not every OS BakeX could theoretically support is actually ready for a blueprint yet. A
 blueprint needs **both** halves working:
 
 1. A real SCAP/OpenSCAP CIS profile from ComplianceAsCode (for scanning/scoring), and
@@ -21,14 +21,14 @@ As of this writing, these are **not ready** — don't start a blueprint for them
 | Ubuntu 26.04 | CIS hasn't published an official benchmark for it yet, so there's no SCAP profile to target at all |
 
 If you want to help unblock one of these, the highest-leverage contribution is upstream —
-either a ComplianceAsCode/content profile PR or a new `ansible-lockdown` role — not a Statim
+either a ComplianceAsCode/content profile PR or a new `ansible-lockdown` role — not a BakeX
 blueprint that can't actually remediate anything yet.
 
 ## Step 1 — Fork and clone
 
 ```bash
-git clone https://github.com/<your-handle>/Statim.git
-cd Statim
+git clone https://github.com/<your-handle>/BakeX.git
+cd BakeX
 ```
 
 ## Step 2 — Install dependencies
@@ -79,7 +79,7 @@ Key things to get right:
 ```bash
 uv run python - <<'PY'
 import yaml
-from statim.core.blueprint import ComplianceProfile
+from bakex.core.blueprint import ComplianceProfile
 
 path = "blueprints/rocky/9/cis-l2-aws.yaml"
 with open(path) as f:
@@ -105,7 +105,7 @@ git push origin rocky/9/cis-l2-aws
 ```
 
 PR checklist:
-- [ ] Blueprint validates against the Statim schema
+- [ ] Blueprint validates against the BakeX schema
 - [ ] `index.json` is updated and sorted
 - [ ] Every control override has a non-empty justification
 - [ ] `target.base_image` has a source comment
@@ -118,8 +118,8 @@ PR checklist:
 A fully commented walk-through of every field.
 
 ```yaml
-# statim_version: The Statim schema version this blueprint targets.
-statim_version: "0.5.1"
+# bakex_version: The BakeX schema version this blueprint targets.
+bakex_version: "0.5.1"
 
 # kind: Must be "HardeningBlueprint". ("ComplianceProfile" is a legacy alias.)
 kind: HardeningBlueprint
@@ -143,7 +143,7 @@ metadata:
   tags: [rocky, rocky9, cis, level2, server, aws, selinux]
 
 target:
-  # os: Statim OS identifier. Must match a key in statim/core/os_catalog.py's OS_CATALOG.
+  # os: BakeX OS identifier. Must match a key in bakex/core/os_catalog.py's OS_CATALOG.
   os: rocky9
   arch: x86_64
   # provider: aws | gcp | azure | digitalocean | linode | proxmox | kvm
@@ -174,7 +174,7 @@ users:
   root:
     lock: true  # Required by CIS. Disables direct root login and SSH as root.
   accounts:
-    - name: statim-admin
+    - name: bakex-admin
       groups: [wheel]  # RHEL-family: wheel. Ubuntu/Debian: sudo.
       shell: /bin/bash
       # Leave ssh_authorized_keys empty; inject at launch time, never bake into the image.

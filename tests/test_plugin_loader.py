@@ -8,9 +8,9 @@ from pathlib import Path
 
 import pytest
 
-from statim.plugins.base_provider import BaseProvider, ProviderResult
-from statim.plugins.loader import _is_valid_provider, _validate_provider, load_providers
-from statim.plugins.registry import ProviderRegistry
+from bakex.plugins.base_provider import BaseProvider, ProviderResult
+from bakex.plugins.loader import _is_valid_provider, _validate_provider, load_providers
+from bakex.plugins.registry import ProviderRegistry
 
 
 class _ConcreteProvider(BaseProvider):
@@ -54,7 +54,7 @@ def test_load_providers_from_nonexistent_dir(tmp_path):
 
 def test_load_providers_drop_in(tmp_path):
     plugin_src = """\
-from statim.plugins.base_provider import BaseProvider, ProviderResult
+from bakex.plugins.base_provider import BaseProvider, ProviderResult
 
 class DropInProvider(BaseProvider):
     name = "dropin"
@@ -103,7 +103,7 @@ def test_registry_get_missing_raises():
 
 def test_registry_load_and_get(tmp_path):
     plugin_src = """\
-from statim.plugins.base_provider import BaseProvider, ProviderResult
+from bakex.plugins.base_provider import BaseProvider, ProviderResult
 
 class RegTestProvider(BaseProvider):
     name = "regtest"
@@ -143,7 +143,7 @@ def test_non_strict_mode_skips_broken_plugin(tmp_path):
 def test_abstract_method_not_implemented_strict(tmp_path):
     """A drop-in that doesn't implement all abstract methods raises in strict mode."""
     plugin_src = """\
-from statim.plugins.base_provider import BaseProvider, ProviderResult
+from bakex.plugins.base_provider import BaseProvider, ProviderResult
 
 class IncompleteProvider(BaseProvider):
     name = "incomplete"
@@ -159,7 +159,7 @@ class IncompleteProvider(BaseProvider):
 def test_name_collision_emits_warning(tmp_path):
     """When two drop-ins share the same provider name, a warning is returned."""
     good_src = """\
-from statim.plugins.base_provider import BaseProvider, ProviderResult
+from bakex.plugins.base_provider import BaseProvider, ProviderResult
 
 class ProviderA(BaseProvider):
     name = "dupe"
@@ -170,7 +170,7 @@ class ProviderA(BaseProvider):
     def teardown(self, instance_id): pass
 """
     override_src = """\
-from statim.plugins.base_provider import BaseProvider, ProviderResult
+from bakex.plugins.base_provider import BaseProvider, ProviderResult
 
 class ProviderB(BaseProvider):
     name = "dupe"
@@ -209,7 +209,7 @@ def test_validate_provider_rejects_missing_name():
 def test_registry_load_returns_warnings(tmp_path):
     """registry.load() should pass through collision warnings."""
     src = """\
-from statim.plugins.base_provider import BaseProvider, ProviderResult
+from bakex.plugins.base_provider import BaseProvider, ProviderResult
 
 class P(BaseProvider):
     name = "coltest"

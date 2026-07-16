@@ -3,10 +3,10 @@
 """Extended tests for LLM backends and factory.
 
 Covers the previously uncovered paths in:
-  - statim/core/llm/anthropic_backend.py  (was 28%)
-  - statim/core/llm/openai_backend.py     (was 35%)
-  - statim/core/llm/bedrock_backend.py    (was 43%)
-  - statim/core/llm/factory.py            (was 97%)
+  - bakex/core/llm/anthropic_backend.py  (was 28%)
+  - bakex/core/llm/openai_backend.py     (was 35%)
+  - bakex/core/llm/bedrock_backend.py    (was 43%)
+  - bakex/core/llm/factory.py            (was 97%)
 """
 
 from __future__ import annotations
@@ -15,13 +15,13 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from statim.core.llm.base import TextBlock, ToolUseBlock
-from statim.core.llm.bedrock_backend import (
+from bakex.core.llm.base import TextBlock, ToolUseBlock
+from bakex.core.llm.bedrock_backend import (
     BedrockBackend,
     _messages_to_bedrock,
     _tools_to_bedrock,
 )
-from statim.core.llm.openai_backend import (
+from bakex.core.llm.openai_backend import (
     OpenAICompatBackend,
     _messages_to_openai,
     _messages_to_openai_clean,
@@ -426,7 +426,7 @@ def _make_mock_anthropic(mock_client):
 class TestAnthropicBackendAgentTurn:
     @pytest.mark.anyio
     async def test_text_response(self):
-        from statim.core.llm.anthropic_backend import AnthropicBackend
+        from bakex.core.llm.anthropic_backend import AnthropicBackend
 
         backend = AnthropicBackend(model="claude-3-5-sonnet-20241022")
 
@@ -476,7 +476,7 @@ class TestAnthropicBackendAgentTurn:
 
     @pytest.mark.anyio
     async def test_tool_use_response(self):
-        from statim.core.llm.anthropic_backend import AnthropicBackend
+        from bakex.core.llm.anthropic_backend import AnthropicBackend
 
         backend = AnthropicBackend(model="claude-3-5-sonnet-20241022")
 
@@ -524,7 +524,7 @@ class TestAnthropicBackendAgentTurn:
 
     @pytest.mark.anyio
     async def test_api_status_error_raises_runtime_error(self):
-        from statim.core.llm.anthropic_backend import AnthropicBackend
+        from bakex.core.llm.anthropic_backend import AnthropicBackend
 
         backend = AnthropicBackend(model="claude-3-5-sonnet-20241022")
 
@@ -562,7 +562,7 @@ class TestAnthropicBackendAgentTurn:
 
     @pytest.mark.anyio
     async def test_thinking_disabled_does_not_pass_thinking_kwarg(self):
-        from statim.core.llm.anthropic_backend import AnthropicBackend
+        from bakex.core.llm.anthropic_backend import AnthropicBackend
 
         backend = AnthropicBackend(model="claude-3-5-sonnet-20241022")
         backend.use_thinking = False
@@ -617,8 +617,8 @@ class TestAnthropicBackendAgentTurn:
 class TestFactory:
     def test_provider_status_anthropic_no_key(self, monkeypatch):
         monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
-        monkeypatch.setenv("STATIM_LLM_PROVIDER", "anthropic")
-        from statim.core.llm.factory import provider_status
+        monkeypatch.setenv("BAKEX_LLM_PROVIDER", "anthropic")
+        from bakex.core.llm.factory import provider_status
 
         status = provider_status()
         assert status["provider"] == "anthropic"
@@ -626,101 +626,101 @@ class TestFactory:
 
     def test_provider_status_anthropic_with_key(self, monkeypatch):
         monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-test")
-        monkeypatch.setenv("STATIM_LLM_PROVIDER", "anthropic")
-        from statim.core.llm.factory import provider_status
+        monkeypatch.setenv("BAKEX_LLM_PROVIDER", "anthropic")
+        from bakex.core.llm.factory import provider_status
 
         status = provider_status()
         assert status["available"] is True
 
     def test_provider_status_openai_no_key(self, monkeypatch):
-        monkeypatch.delenv("STATIM_LLM_API_KEY", raising=False)
+        monkeypatch.delenv("BAKEX_LLM_API_KEY", raising=False)
         monkeypatch.delenv("OPENAI_API_KEY", raising=False)
-        monkeypatch.setenv("STATIM_LLM_PROVIDER", "openai")
-        from statim.core.llm.factory import provider_status
+        monkeypatch.setenv("BAKEX_LLM_PROVIDER", "openai")
+        from bakex.core.llm.factory import provider_status
 
         status = provider_status()
         assert status["provider"] == "openai"
         assert status["available"] is False
 
     def test_provider_status_openai_with_key(self, monkeypatch):
-        monkeypatch.setenv("STATIM_LLM_API_KEY", "sk-test")
-        monkeypatch.setenv("STATIM_LLM_PROVIDER", "openai")
-        from statim.core.llm.factory import provider_status
+        monkeypatch.setenv("BAKEX_LLM_API_KEY", "sk-test")
+        monkeypatch.setenv("BAKEX_LLM_PROVIDER", "openai")
+        from bakex.core.llm.factory import provider_status
 
         status = provider_status()
         assert status["available"] is True
 
     def test_provider_status_ollama_always_available(self, monkeypatch):
-        monkeypatch.setenv("STATIM_LLM_PROVIDER", "ollama")
-        from statim.core.llm.factory import provider_status
+        monkeypatch.setenv("BAKEX_LLM_PROVIDER", "ollama")
+        from bakex.core.llm.factory import provider_status
 
         status = provider_status()
         assert status["provider"] == "ollama"
         assert status["available"] is True
 
     def test_provider_status_bedrock_with_key(self, monkeypatch):
-        monkeypatch.setenv("STATIM_LLM_PROVIDER", "bedrock")
+        monkeypatch.setenv("BAKEX_LLM_PROVIDER", "bedrock")
         monkeypatch.setenv("AWS_ACCESS_KEY_ID", "AKIA000")
-        from statim.core.llm.factory import provider_status
+        from bakex.core.llm.factory import provider_status
 
         status = provider_status()
         assert status["provider"] == "bedrock"
         assert status["available"] is True
 
     def test_provider_status_bedrock_no_creds(self, monkeypatch):
-        monkeypatch.setenv("STATIM_LLM_PROVIDER", "bedrock")
+        monkeypatch.setenv("BAKEX_LLM_PROVIDER", "bedrock")
         monkeypatch.delenv("AWS_ACCESS_KEY_ID", raising=False)
         monkeypatch.delenv("AWS_PROFILE", raising=False)
         monkeypatch.delenv("AWS_CONTAINER_CREDENTIALS_RELATIVE_URI", raising=False)
         monkeypatch.delenv("AWS_WEB_IDENTITY_TOKEN_FILE", raising=False)
-        from statim.core.llm.factory import provider_status
+        from bakex.core.llm.factory import provider_status
 
         status = provider_status()
         assert status["available"] is False
 
     def test_provider_status_unknown_provider(self, monkeypatch):
-        monkeypatch.setenv("STATIM_LLM_PROVIDER", "groq")
-        from statim.core.llm.factory import provider_status
+        monkeypatch.setenv("BAKEX_LLM_PROVIDER", "groq")
+        from bakex.core.llm.factory import provider_status
 
         status = provider_status()
         assert status["available"] is False
         assert "groq" in status["message"].lower() or "unknown" in status["message"].lower()
 
     def test_get_backend_anthropic(self, monkeypatch):
-        monkeypatch.setenv("STATIM_LLM_PROVIDER", "anthropic")
-        from statim.core.llm.anthropic_backend import AnthropicBackend
-        from statim.core.llm.factory import get_backend
+        monkeypatch.setenv("BAKEX_LLM_PROVIDER", "anthropic")
+        from bakex.core.llm.anthropic_backend import AnthropicBackend
+        from bakex.core.llm.factory import get_backend
 
         backend = get_backend()
         assert isinstance(backend, AnthropicBackend)
 
     def test_get_backend_openai(self, monkeypatch):
-        monkeypatch.setenv("STATIM_LLM_PROVIDER", "openai")
-        from statim.core.llm.factory import get_backend
-        from statim.core.llm.openai_backend import OpenAICompatBackend
+        monkeypatch.setenv("BAKEX_LLM_PROVIDER", "openai")
+        from bakex.core.llm.factory import get_backend
+        from bakex.core.llm.openai_backend import OpenAICompatBackend
 
         backend = get_backend()
         assert isinstance(backend, OpenAICompatBackend)
 
     def test_get_backend_ollama(self, monkeypatch):
-        monkeypatch.setenv("STATIM_LLM_PROVIDER", "ollama")
-        from statim.core.llm.factory import get_backend
-        from statim.core.llm.openai_backend import OpenAICompatBackend
+        monkeypatch.setenv("BAKEX_LLM_PROVIDER", "ollama")
+        from bakex.core.llm.factory import get_backend
+        from bakex.core.llm.openai_backend import OpenAICompatBackend
 
         backend = get_backend()
         assert isinstance(backend, OpenAICompatBackend)
 
     def test_get_backend_bedrock(self, monkeypatch):
-        monkeypatch.setenv("STATIM_LLM_PROVIDER", "bedrock")
-        from statim.core.llm.bedrock_backend import BedrockBackend
-        from statim.core.llm.factory import get_backend
+        monkeypatch.setenv("BAKEX_LLM_PROVIDER", "bedrock")
+        from bakex.core.llm.bedrock_backend import BedrockBackend
+        from bakex.core.llm.factory import get_backend
 
         backend = get_backend()
         assert isinstance(backend, BedrockBackend)
 
     def test_get_backend_unknown_raises(self, monkeypatch):
-        monkeypatch.setenv("STATIM_LLM_PROVIDER", "invalid_provider")
-        from statim.core.llm.factory import get_backend
+        monkeypatch.setenv("BAKEX_LLM_PROVIDER", "invalid_provider")
+        from bakex.core.llm.factory import get_backend
 
-        with pytest.raises(ValueError, match="Unknown STATIM_LLM_PROVIDER"):
+        with pytest.raises(ValueError, match="Unknown BAKEX_LLM_PROVIDER"):
             get_backend()

@@ -32,13 +32,13 @@ import pytest
 class TestReportGaps:
     def test_score_to_grade_none_returns_f(self):
         """_score_to_grade(None) returns 'F'."""
-        from statim.core.report import _score_to_grade
+        from bakex.core.report import _score_to_grade
 
         assert _score_to_grade(None) == "F"
 
     def test_risk_score_none_returns_100(self):
         """_risk_score(None) returns 100.0 (maximum risk)."""
-        from statim.core.report import _risk_score
+        from bakex.core.report import _risk_score
 
         assert _risk_score(None) == 100.0
 
@@ -46,10 +46,10 @@ class TestReportGaps:
         """generate_delta_report with None scores produces trend='stable', pct_change=0."""
         from pathlib import Path
 
-        from statim.core.report import generate_delta_report
+        from bakex.core.report import generate_delta_report
 
         none_scan = {"score": None, "rules": []}
-        with patch("statim.core.report.parse_arf", return_value=none_scan):
+        with patch("bakex.core.report.parse_arf", return_value=none_scan):
             result = generate_delta_report(Path("/fake/a.xml"), Path("/fake/b.xml"))
         assert result["trend"] == "stable"
         assert result["pct_change"] == 0.0
@@ -58,7 +58,7 @@ class TestReportGaps:
         """generate_delta_report with baseline score=0 does not divide by zero."""
         from pathlib import Path
 
-        from statim.core.report import generate_delta_report
+        from bakex.core.report import generate_delta_report
 
         call_count = {"n": 0}
 
@@ -66,13 +66,13 @@ class TestReportGaps:
             call_count["n"] += 1
             return {"score": 0.0 if call_count["n"] == 1 else 50.0, "rules": []}
 
-        with patch("statim.core.report.parse_arf", side_effect=_fake_parse):
+        with patch("bakex.core.report.parse_arf", side_effect=_fake_parse):
             result = generate_delta_report(Path("/fake/a.xml"), Path("/fake/b.xml"))
         assert result["pct_change"] == 0.0
 
     def test_register_formatter_non_subclass_raises_type_error(self):
         """register_formatter raises TypeError for non-ReportFormatter subclass."""
-        from statim.core.report import register_formatter
+        from bakex.core.report import register_formatter
 
         with pytest.raises(TypeError, match="must be a subclass of ReportFormatter"):
             register_formatter("badformat", str)
@@ -81,7 +81,7 @@ class TestReportGaps:
         """generate_summary returns a dict with score, grade, and findings."""
         from pathlib import Path
 
-        from statim.core.report import generate_summary
+        from bakex.core.report import generate_summary
 
         fake_data = {
             "score": 70.0,
@@ -95,7 +95,7 @@ class TestReportGaps:
                 {"id": "rule_2", "result": "pass", "severity": "medium"},
             ],
         }
-        with patch("statim.core.report.parse_arf", return_value=fake_data):
+        with patch("bakex.core.report.parse_arf", return_value=fake_data):
             result = generate_summary(Path("/fake/result.xml"))
         assert result["score"] == 70.0
         assert result["grade"] in ("A", "B", "C", "D", "F")
@@ -114,7 +114,7 @@ class TestOpenSCAPParserGaps:
 
     def test_parse_arf_no_test_result_raises(self, tmp_path):
         """parse_arf raises ValueError when no TestResult element is found."""
-        from statim.openscap.parser import parse_arf
+        from bakex.openscap.parser import parse_arf
 
         xml_no_result = textwrap.dedent("""\
             <?xml version="1.0"?>
@@ -128,7 +128,7 @@ class TestOpenSCAPParserGaps:
 
     def test_find_test_result_fallback_to_xccdf_root(self, tmp_path):
         """_find_test_result returns TestResult when root IS the XCCDF benchmark."""
-        from statim.openscap.parser import parse_arf
+        from bakex.openscap.parser import parse_arf
 
         xccdf_xml = textwrap.dedent("""\
             <?xml version="1.0"?>
@@ -151,8 +151,8 @@ class TestOpenSCAPParserGaps:
 class TestPluginsRegistry:
     def test_registry_all_returns_dict_copy(self):
         """registry.all() returns a dict copy of registered providers."""
-        from statim.plugins.base_provider import BaseProvider, ProviderResult
-        from statim.plugins.registry import ProviderRegistry
+        from bakex.plugins.base_provider import BaseProvider, ProviderResult
+        from bakex.plugins.registry import ProviderRegistry
 
         class TmpProvider(BaseProvider):
             name = "tmp_all_test"
@@ -189,7 +189,7 @@ class TestPluginsRegistry:
 
 class TestAgentCoreGaps:
     _VALID_YAML = """\
-statim_version: "0.1.0"
+bakex_version: "0.1.0"
 kind: ComplianceProfile
 metadata:
   name: gap-agent-profile
@@ -206,16 +206,16 @@ compliance:
 
     def test_enrich_blueprint_validation_failure_returns_error(self):
         """_enrich_blueprint returns error when enriched YAML fails Pydantic validation."""
-        from statim.core.agent import _enrich_blueprint
+        from bakex.core.agent import _enrich_blueprint
 
         # Minimal YAML that parses fine but fails ComplianceProfile.model_validate
-        bad_yaml = "statim_version: '0.1.0'\nkind: ComplianceProfile\nmetadata:\n  name: bad\n"
+        bad_yaml = "bakex_version: '0.1.0'\nkind: ComplianceProfile\nmetadata:\n  name: bad\n"
         result = _enrich_blueprint(bad_yaml, provider="aws")
         assert "error" in result
 
     def test_retry_build_yaml_invalid_yaml_returns_fallback(self):
         """_retry_build_yaml returns original yaml when modifications can't be applied."""
-        from statim.core.agent import _retry_build_yaml
+        from bakex.core.agent import _retry_build_yaml
 
         result = _retry_build_yaml(self._VALID_YAML, "{{invalid yaml{{{{")
         # Should return the original yaml with a 'applied' message about failure
@@ -224,7 +224,7 @@ compliance:
 
     def test_retry_build_yaml_valid_but_invalid_schema_returns_fallback(self):
         """_retry_build_yaml falls back when YAML parses but fails schema validation."""
-        from statim.core.agent import _retry_build_yaml
+        from bakex.core.agent import _retry_build_yaml
 
         # Valid YAML dict but missing required fields → model_validate fails → fallback
         modifications = "just_a_string_not_a_dict: true"
@@ -234,14 +234,14 @@ compliance:
     @pytest.mark.anyio
     async def test_execute_tool_start_build(self):
         """_execute_tool dispatches 'start_build' to _start_build (line 393)."""
-        from statim.core.agent import _execute_tool
+        from bakex.core.agent import _execute_tool
 
         def _close_coro(coro, *a, **kw):
             if hasattr(coro, "close"):
                 coro.close()
             return MagicMock()
 
-        with patch("statim.core.builder.run_build", new_callable=AsyncMock):
+        with patch("bakex.core.builder.run_build", new_callable=AsyncMock):
             with patch("asyncio.create_task", side_effect=_close_coro):
                 result = await _execute_tool(
                     "start_build",
@@ -255,16 +255,16 @@ compliance:
     @pytest.mark.anyio
     async def test_execute_tool_get_scan_report(self):
         """_execute_tool dispatches 'get_scan_report' to _get_scan_report (line 397)."""
-        from statim.core.agent import _execute_tool
+        from bakex.core.agent import _execute_tool
 
-        with patch("statim.core.builder.get_job", return_value=None):
+        with patch("bakex.core.builder.get_job", return_value=None):
             result = await _execute_tool("get_scan_report", {"job_id": "nonexistent-000"})
         assert "error" in result
 
     @pytest.mark.anyio
     async def test_execute_tool_enrich_blueprint(self):
         """_execute_tool dispatches 'enrich_blueprint' to _enrich_blueprint."""
-        from statim.core.agent import _execute_tool
+        from bakex.core.agent import _execute_tool
 
         result = await _execute_tool(
             "enrich_blueprint",
@@ -281,7 +281,7 @@ compliance:
         """_execute_tool dispatches 'analyze_findings' to _analyze_findings."""
         import json
 
-        from statim.core.agent import _execute_tool
+        from bakex.core.agent import _execute_tool
 
         findings = [{"id": "sshd_rule", "title": "SSH root login", "severity": "high"}]
         result = await _execute_tool(
@@ -296,8 +296,8 @@ compliance:
     @pytest.mark.anyio
     async def test_run_build_agent_agent_turn_exception_returns_result_with_error(self):
         """When agent_turn raises, run_build_agent catches it and returns result.error."""
-        from statim.core.agent import run_build_agent
-        from statim.core.llm.base import LLMBackend
+        from bakex.core.agent import run_build_agent
+        from bakex.core.llm.base import LLMBackend
 
         class FailingBackend(LLMBackend):
             async def agent_turn(self, messages, tools, system, max_tokens, on_token):
@@ -308,7 +308,7 @@ compliance:
         async def on_token(t):
             tokens.append(t)
 
-        with patch("statim.core.llm.get_backend", return_value=FailingBackend()):
+        with patch("bakex.core.llm.get_backend", return_value=FailingBackend()):
             result = await run_build_agent(
                 blueprint_yaml=self._VALID_YAML,
                 provider="aws",
@@ -323,8 +323,8 @@ compliance:
     @pytest.mark.anyio
     async def test_run_build_agent_tool_call_emits_on_token(self):
         """Tool calls in run_build_agent emit a '*[Calling ...]* token via on_token."""
-        from statim.core.agent import run_build_agent
-        from statim.core.llm.base import AgentTurnResult, TextBlock, ToolUseBlock
+        from bakex.core.agent import run_build_agent
+        from bakex.core.llm.base import AgentTurnResult, TextBlock, ToolUseBlock
 
         # Turn 1: tool_use → validate_blueprint
         # Turn 2: end_turn with artifact/grade in text
@@ -362,7 +362,7 @@ compliance:
         async def on_token(t):
             tokens.append(t)
 
-        with patch("statim.core.llm.get_backend", return_value=MockBackend()):
+        with patch("bakex.core.llm.get_backend", return_value=MockBackend()):
             await run_build_agent(
                 blueprint_yaml=_yaml,
                 provider="aws",
@@ -383,12 +383,12 @@ class TestAuditorWebhookExcept:
     async def test_run_audit_webhook_create_task_raises(self):
         """run_audit swallows exception when asyncio.create_task raises (lines 214-215)."""
 
-        from statim.core.auditor import AuditStatus, run_audit
-        from statim.core.blueprint import ComplianceProfile
+        from bakex.core.auditor import AuditStatus, run_audit
+        from bakex.core.blueprint import ComplianceProfile
 
         profile = ComplianceProfile.model_validate(
             {
-                "statim_version": "0.1.0",
+                "bakex_version": "0.1.0",
                 "kind": "ComplianceProfile",
                 "metadata": {"name": "webhook-exc-test", "version": "1.0.0"},
                 "target": {"os": "ubuntu22.04", "provider": "aws", "base_image": "ami-00"},
@@ -405,7 +405,7 @@ class TestAuditorWebhookExcept:
                 coro.close()
             raise RuntimeError("no loop")
 
-        with patch("statim.core.auditor._persist_jobs"):
+        with patch("bakex.core.auditor._persist_jobs"):
             with patch("asyncio.create_task", side_effect=_close_and_raise):
                 job = await run_audit(
                     profile=profile,
@@ -428,12 +428,12 @@ class TestAuditorRunImageScanException:
         """run_image_scan sets job status to FAILED when provider raises inside the try block."""
         from unittest.mock import MagicMock
 
-        from statim.core.auditor import AuditStatus, run_image_scan
-        from statim.core.blueprint import ComplianceProfile
+        from bakex.core.auditor import AuditStatus, run_image_scan
+        from bakex.core.blueprint import ComplianceProfile
 
         profile = ComplianceProfile.model_validate(
             {
-                "statim_version": "0.1.0",
+                "bakex_version": "0.1.0",
                 "kind": "ComplianceProfile",
                 "metadata": {"name": "auditor-exc-test", "version": "1.0.0"},
                 "target": {"os": "ubuntu22.04", "provider": "aws", "base_image": "ami-00"},
@@ -451,7 +451,7 @@ class TestAuditorRunImageScanException:
         fake_cls = MagicMock(return_value=fake_instance)
         fake_cls.handles_full_lifecycle = True
 
-        with patch("statim.core.auditor.registry") as mock_reg:
+        with patch("bakex.core.auditor.registry") as mock_reg:
             mock_reg.get.return_value = fake_cls
             job = await run_image_scan(
                 image_id="ami-exc-001",

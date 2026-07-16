@@ -1,6 +1,6 @@
-# Statim Roadmap
+# BakeX Roadmap
 
-Statim's goal: **the layer that makes Ansible-Lockdown + OpenSCAP + every major
+BakeX's goal: **the layer that makes Ansible-Lockdown + OpenSCAP + every major
 cloud reliable and reviewable as code.** We integrate with the mainstream
 hardening ecosystem — we don't compete with it. That means absorbing its rough
 edges (Galaxy naming gotchas, SCAP profile-ID surprises, missing distro
@@ -32,11 +32,11 @@ The community blueprint library (`blueprints/`) is the main contribution
 surface. Depth targets:
 
 - [ ] CIS Level 2 coverage for every OS that supports it
-      ([#1](https://github.com/invicton/statim/issues/1),
-      [#2](https://github.com/invicton/statim/issues/2),
-      [#3](https://github.com/invicton/statim/issues/3))
-- [ ] Ubuntu 24.04 blueprints ([#4](https://github.com/invicton/statim/issues/4))
-- [ ] First STIG blueprints ([#7](https://github.com/invicton/statim/issues/7))
+      ([#1](https://github.com/invicton/bakex/issues/1),
+      [#2](https://github.com/invicton/bakex/issues/2),
+      [#3](https://github.com/invicton/bakex/issues/3))
+- [ ] Ubuntu 24.04 blueprints ([#4](https://github.com/invicton/bakex/issues/4))
+- [ ] First STIG blueprints ([#7](https://github.com/invicton/bakex/issues/7))
 - [ ] New OS support as upstream unblocks: RHEL 10 / Debian 13 / Ubuntu 26.04
       are all currently blocked on missing Ansible-Lockdown roles or CIS
       benchmarks — tracked, re-checked periodically, not promised
@@ -46,7 +46,7 @@ surface. Depth targets:
 ## v0.8 — AI-agent-friendly surface
 
 Hardening pipelines are increasingly driven by AI agents, not just humans and
-CI. Statim should be the OS-hardening tool an agent can operate correctly:
+CI. BakeX should be the OS-hardening tool an agent can operate correctly:
 
 - [ ] **MCP server** — validate blueprints, list templates, start builds,
       poll status, fetch compliance reports/grades from any MCP client
@@ -55,7 +55,7 @@ CI. Statim should be the OS-hardening tool an agent can operate correctly:
 - [ ] Published OpenAPI reference (replaces the hand-written API doc)
 - [ ] `llms.txt` — a machine-oriented map of the project
 - [ ] `AGENTS.md` — conventions and gotchas for AI coding agents contributing
-      to Statim itself
+      to BakeX itself
 - [ ] Error-message audit: every API error specific and machine-actionable
       (house style already; make it a checked standard)
 
@@ -66,7 +66,7 @@ CI. Statim should be the OS-hardening tool an agent can operate correctly:
 - [ ] GitHub Action for blueprint validation / build triggering in CI
 - [ ] `pre-commit` hook for blueprint validation
 - [ ] Helm chart for cluster deployment
-- [ ] Interop guides: Statim with Packer, Statim + Ansible-Lockdown,
+- [ ] Interop guides: BakeX with Packer, BakeX + Ansible-Lockdown,
       complementing scanners (Wazuh, Lynis)
 
 ## v1.0 criteria
@@ -81,8 +81,8 @@ Cut only when all of these are true:
 
 ## How to influence this roadmap
 
-Open a [Discussion](https://github.com/invicton/statim/discussions) or an
+Open a [Discussion](https://github.com/invicton/bakex/discussions) or an
 issue. Good first contributions are labeled
-[`good first issue`](https://github.com/invicton/statim/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
+[`good first issue`](https://github.com/invicton/bakex/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
 — most are pure-YAML blueprint work with acceptance criteria and a local verify
 command included.

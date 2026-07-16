@@ -33,20 +33,20 @@ class TestPluginsCatalogHelpers:
     def test_load_catalog_missing_index_returns_empty(self, client):
         """_load_catalog returns [] when index.json does not exist."""
 
-        with patch("statim.api.plugins._load_catalog", return_value=[]):
+        with patch("bakex.api.plugins._load_catalog", return_value=[]):
             resp = client.get("/api/plugins/catalog")
         assert resp.status_code == 200
         assert resp.json() == []
 
     def test_load_catalog_parse_error_returns_empty(self, tmp_path):
         """_load_catalog returns [] and logs error on malformed JSON."""
-        from statim.api.plugins import _load_catalog
+        from bakex.api.plugins import _load_catalog
 
         catalog_dir = tmp_path / "catalog"
         catalog_dir.mkdir()
         index = catalog_dir / "index.json"
         index.write_text("{bad json{{{")
-        mock_settings = patch("statim.api.plugins.settings")
+        mock_settings = patch("bakex.api.plugins.settings")
         with mock_settings as s:
             s.catalog_dir_absolute = catalog_dir
             result = _load_catalog()
@@ -54,24 +54,24 @@ class TestPluginsCatalogHelpers:
 
     def test_load_catalog_returns_empty_when_no_index(self, tmp_path):
         """_load_catalog returns [] when no index.json exists."""
-        from statim.api.plugins import _load_catalog
+        from bakex.api.plugins import _load_catalog
 
-        with patch("statim.api.plugins.settings") as mock_settings:
+        with patch("bakex.api.plugins.settings") as mock_settings:
             mock_settings.catalog_dir_absolute = tmp_path / "nonexistent"
             result = _load_catalog()
         assert result == []
 
     def test_download_provider_script_not_in_catalog_returns_404(self, client):
         """download_provider_script returns 404 when provider_id is not in catalog."""
-        with patch("statim.api.plugins._load_catalog", return_value=[]):
+        with patch("bakex.api.plugins._load_catalog", return_value=[]):
             resp = client.get("/api/plugins/catalog/nonexistent-provider/download")
         assert resp.status_code == 404
 
     def test_download_provider_script_missing_file_returns_404(self, client, tmp_path):
         """download_provider_script returns 404 when the script file is missing."""
         catalog = [{"id": "mycloud", "name": "MyCloud", "script": "mycloud.py"}]
-        with patch("statim.api.plugins._load_catalog", return_value=catalog):
-            with patch("statim.api.plugins.settings") as mock_settings:
+        with patch("bakex.api.plugins._load_catalog", return_value=catalog):
+            with patch("bakex.api.plugins.settings") as mock_settings:
                 mock_settings.catalog_dir_absolute = tmp_path  # mycloud.py doesn't exist here
                 resp = client.get("/api/plugins/catalog/mycloud/download")
         assert resp.status_code == 404
@@ -82,8 +82,8 @@ class TestPluginsCatalogHelpers:
         script.write_text("PROVIDER_NAME = 'myprov'\n")
         catalog = [{"id": "myprov", "name": "MyProv", "script": "myprov.py"}]
 
-        with patch("statim.api.plugins._load_catalog", return_value=catalog):
-            with patch("statim.api.plugins.settings") as mock_settings:
+        with patch("bakex.api.plugins._load_catalog", return_value=catalog):
+            with patch("bakex.api.plugins.settings") as mock_settings:
                 mock_settings.catalog_dir_absolute = tmp_path
                 mock_settings.plugins_dir_absolute = tmp_path / "plugins_ro"
                 with patch("pathlib.Path.write_bytes", side_effect=PermissionError("denied")):
@@ -98,8 +98,8 @@ class TestPluginsCatalogHelpers:
         (plugins_dir / "myprov2.py").write_text("x = 1")
         catalog = [{"id": "myprov2", "name": "MyProv2", "script": "myprov2.py"}]
 
-        with patch("statim.api.plugins._load_catalog", return_value=catalog):
-            with patch("statim.api.plugins.settings") as mock_settings:
+        with patch("bakex.api.plugins._load_catalog", return_value=catalog):
+            with patch("bakex.api.plugins.settings") as mock_settings:
                 mock_settings.plugins_dir_absolute = plugins_dir
                 with patch("pathlib.Path.unlink", side_effect=OSError("locked")):
                     resp = client.post("/api/plugins/myprov2/remove")
@@ -115,7 +115,7 @@ class TestPluginsCatalogHelpers:
 class TestAuditorEndpoints:
     def test_start_image_scan_creates_job_and_returns_htmx_redirect(self, client):
         """POST /auditor/scan-image creates a job and returns an HTMX redirect header."""
-        with patch("statim.api.auditor.audit_service.run_image_scan", new_callable=AsyncMock):
+        with patch("bakex.api.auditor.audit_service.run_image_scan", new_callable=AsyncMock):
             resp = client.post(
                 "/api/auditor/scan-image",
                 json={
@@ -137,8 +137,8 @@ class TestAuditorEndpoints:
 
     def test_export_scan_report_not_complete_returns_400(self, client):
         """export_scan_report returns 400 when the scan job is not complete."""
-        import statim.core.auditor as audit_mod
-        from statim.core.auditor import AuditJob
+        import bakex.core.auditor as audit_mod
+        from bakex.core.auditor import AuditJob
 
         job = AuditJob(
             job_type="image_scan",
@@ -155,8 +155,8 @@ class TestAuditorEndpoints:
 
     def test_export_scan_report_json_format(self, client):
         """export_scan_report with ?fmt=json returns JSON content."""
-        import statim.core.auditor as audit_mod
-        from statim.core.auditor import AuditJob, AuditStatus
+        import bakex.core.auditor as audit_mod
+        from bakex.core.auditor import AuditJob, AuditStatus
 
         job = AuditJob(
             job_type="image_scan",
@@ -179,8 +179,8 @@ class TestAuditorEndpoints:
 
     def test_export_scan_report_sarif_format(self, client):
         """export_scan_report with ?fmt=sarif returns SARIF JSON."""
-        import statim.core.auditor as audit_mod
-        from statim.core.auditor import AuditJob, AuditStatus
+        import bakex.core.auditor as audit_mod
+        from bakex.core.auditor import AuditJob, AuditStatus
 
         job = AuditJob(
             job_type="image_scan",
@@ -260,7 +260,7 @@ class TestPipelineEndpoints:
         """pipeline_build applies provider override from request to the profile."""
         from unittest.mock import AsyncMock, patch
 
-        with patch("statim.api.pipeline.build_service.run_build", new_callable=AsyncMock):
+        with patch("bakex.api.pipeline.build_service.run_build", new_callable=AsyncMock):
             resp = client.post(
                 "/api/pipeline/build",
                 json={

@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from cryptography.fernet import Fernet, InvalidToken
 
-from statim.api.integrations import CredentialStore
+from bakex.api.integrations import CredentialStore
 
 # ---------------------------------------------------------------------------
 # Construction — key resolution paths
@@ -21,12 +21,12 @@ def test_credential_store_creates_data_dir(tmp_path):
 
 def test_credential_store_generates_key_file(tmp_path):
     CredentialStore(tmp_path)
-    assert (tmp_path / ".statim_key").exists()
+    assert (tmp_path / ".bakex_key").exists()
 
 
 def test_credential_store_key_file_permissions(tmp_path):
     CredentialStore(tmp_path)
-    key_file = tmp_path / ".statim_key"
+    key_file = tmp_path / ".bakex_key"
     import stat
 
     mode = key_file.stat().st_mode
@@ -161,8 +161,8 @@ def test_pbkdf2_salt_is_random_per_data_dir(tmp_path):
     store_a = CredentialStore(dir_a, secret_key="same-passphrase")
     store_b = CredentialStore(dir_b, secret_key="same-passphrase")
 
-    salt_a = (dir_a / ".statim_salt").read_bytes()
-    salt_b = (dir_b / ".statim_salt").read_bytes()
+    salt_a = (dir_a / ".bakex_salt").read_bytes()
+    salt_b = (dir_b / ".bakex_salt").read_bytes()
     assert salt_a != salt_b
 
     store_a.set("aws", {"region": "us-east-1"})
@@ -182,16 +182,16 @@ def test_legacy_fixed_salt_credentials_migrate_on_load(tmp_path):
     """Credentials encrypted under the old fixed salt (pre-fix installs) must
     still load, and get transparently re-encrypted under the new per-install
     random salt so the legacy salt is no longer relied on afterwards."""
-    from statim.api import integrations as integrations_mod
+    from bakex.api import integrations as integrations_mod
 
     secret_key = "existing-install-passphrase"
 
     # Simulate a pre-fix install: encrypt directly with the legacy fixed salt,
-    # no .statim_salt file involved.
+    # no .bakex_salt file involved.
     legacy_store = CredentialStore(tmp_path, secret_key=secret_key)
     legacy_fernet = Fernet(legacy_store._derive_key(secret_key, integrations_mod._LEGACY_KDF_SALT))
     (tmp_path / "credentials.enc").write_bytes(legacy_fernet.encrypt(b'{"aws": {"region": "us-east-1"}}'))
-    (tmp_path / ".statim_salt").unlink()  # pre-fix installs never had this file
+    (tmp_path / ".bakex_salt").unlink()  # pre-fix installs never had this file
 
     # New store (post-fix code) using the same passphrase should migrate on load.
     store = CredentialStore(tmp_path, secret_key=secret_key)

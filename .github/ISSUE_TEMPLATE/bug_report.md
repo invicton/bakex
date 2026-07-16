@@ -1,6 +1,6 @@
 ---
 name: Bug report
-about: Something in Statim isn't working as expected
+about: Something in BakeX isn't working as expected
 title: ""
 labels: bug
 assignees: ""
@@ -25,7 +25,7 @@ What actually happened — include the full error message / stack trace / API
 response if there is one.
 
 **Environment**
-- Statim version (`pyproject.toml` version or commit hash):
+- BakeX version (`pyproject.toml` version or commit hash):
 - Deployment: Docker Compose / local `uv run` / other:
 - Cloud provider(s) involved, if any:
 - OS/target image:

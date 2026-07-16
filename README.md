@@ -1,24 +1,24 @@
-# Statim
+# BakeX
 
-**Describe your hardened OS in a YAML blueprint; Statim builds the CIS/STIG-benchmarked golden image on any cloud — or locally on KVM — and hands you the compliance evidence.**
+**Describe your hardened OS in a YAML blueprint; BakeX builds the CIS/STIG-benchmarked golden image on any cloud — or locally on KVM — and hands you the compliance evidence.**
 
-[![PyPI](https://img.shields.io/pypi/v/statim?color=brightgreen)](https://pypi.org/project/statim/)
+[![PyPI](https://img.shields.io/pypi/v/bakex?color=brightgreen)](https://pypi.org/project/bakex/)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue)](https://www.python.org/)
-[![CI](https://github.com/invicton/statim/actions/workflows/ci.yml/badge.svg)](https://github.com/invicton/statim/actions/workflows/ci.yml)
-[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/invicton/statim/badge)](https://scorecard.dev/viewer/?uri=github.com/invicton/statim)
-[![Release](https://img.shields.io/github/v/release/statim/Statim)](https://github.com/invicton/statim/releases)
+[![CI](https://github.com/invicton/bakex/actions/workflows/ci.yml/badge.svg)](https://github.com/invicton/bakex/actions/workflows/ci.yml)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/invicton/bakex/badge)](https://scorecard.dev/viewer/?uri=github.com/invicton/bakex)
+[![Release](https://img.shields.io/github/v/release/bakex/BakeX)](https://github.com/invicton/bakex/releases)
 
 <p align="center">
-  <img src="docs/assets/statim-dashboard.svg" alt="Statim dashboard preview" width="900">
+  <img src="docs/assets/bakex-dashboard.svg" alt="BakeX dashboard preview" width="900">
 </p>
 
-## Why Statim
+## Why BakeX
 
 Hardened image builds are usually manual, non-reproducible, and audited in a
 scramble: someone runs a checklist against a VM, someone else screenshots the
 scanner output, and six months later nobody can say why a rule was disabled.
-Statim collapses that into one version-controlled YAML file — the blueprint —
+BakeX collapses that into one version-controlled YAML file — the blueprint —
 and gives every build the same pipeline: provision, harden with
 [Ansible-Lockdown](https://github.com/ansible-lockdown), scan with OpenSCAP,
 snapshot, tear down. Your security team gets an A–F grade and a SARIF report;
@@ -31,7 +31,7 @@ HardeningBlueprint (YAML)  ──or──  5-Step Guided Wizard
         │
         ▼
   ┌─────────────────────────────────────────────────────┐
-  │  Statim Engine                                      │
+  │  BakeX Engine                                      │
   │                                                      │
   │  1. Provision  →  Spin up a temporary VM             │
   │  2. Harden     →  Apply Ansible-Lockdown CIS/STIG    │
@@ -58,14 +58,14 @@ HardeningBlueprint (YAML)  ──or──  5-Step Guided Wizard
 ### Docker Compose (recommended — everything preinstalled)
 
 ```bash
-git clone https://github.com/invicton/statim.git
-cd Statim
+git clone https://github.com/invicton/bakex.git
+cd BakeX
 docker compose up
 ```
 
 Open **http://localhost:8001**. Log in with any username and your admin token
 as the password — it's auto-generated on first start and saved to
-`data/.admin_token` (set `STATIM_ADMIN_TOKEN` and `STATIM_SECRET_KEY` in
+`data/.admin_token` (set `BAKEX_ADMIN_TOKEN` and `BAKEX_SECRET_KEY` in
 `docker-compose.yml` for stable logins and credentials that survive rebuilds).
 
 Compose mounts `~/.aws`, `~/.config/gcloud`, and `~/.ssh` read paths plus
@@ -74,15 +74,17 @@ persistent `./data`, `./profiles`, and `./plugins/providers` automatically.
 ### Published image
 
 ```bash
-docker run -p 8000:8000 rrskris/statim:latest
+docker run -p 8000:8000 rrskris/bakex:latest
 ```
 
 ### PyPI
 
 ```bash
-pip install "statim[all-providers]"   # or pick extras: aws, gcp, azure, linode, digitalocean, proxmox
-uvicorn statim.main:app --port 8000
+pip install "bakex[all-providers]"   # or pick extras: aws, gcp, azure, linode, digitalocean, proxmox
+bakex serve --port 8000              # or: uvicorn bakex.main:app --port 8000
 ```
+
+`bakex version` prints the build; `bakex serve --help` lists options.
 
 Built-in blueprint templates and the provider catalog ship inside the package,
 so this works from any directory; runtime state (`data/`, `profiles/user/`) is
@@ -92,10 +94,10 @@ builds — see [Configuration](docs/configuration.md).
 ### From source (contributors)
 
 ```bash
-git clone https://github.com/invicton/statim.git && cd Statim
+git clone https://github.com/invicton/bakex.git && cd BakeX
 uv sync --extra all-providers --group dev
 cp .env.example .env
-uv run uvicorn statim.main:app --reload --port 8000
+uv run uvicorn bakex.main:app --reload --port 8000
 ```
 
 **No cloud account?** The `kvm` provider builds hardened qcow2/raw images
@@ -146,7 +148,7 @@ first-run walkthrough: [Getting Started](docs/getting-started.md).
 | DigitalOcean | Snapshot | API token |
 | Linode | Private Image | API token |
 | Proxmox | VM Template | API token or username/password |
-| KVM (local) | qcow2 / raw | none — runs on the Statim host |
+| KVM (local) | qcow2 / raw | none — runs on the BakeX host |
 
 Cloud onboarding uses reviewable least-privilege templates
 (CloudFormation / ARM / `gcloud` scripts) — see
@@ -173,13 +175,13 @@ Cloud onboarding uses reviewable least-privilege templates
 | [Plugin Guide](docs/plugin-guide.md) | Writing and distributing provider plugins |
 | [Architecture](docs/architecture.md) | Pipeline state machine, source tree, design decisions |
 | [Blueprint Library Guide](blueprints/CONTRIBUTING.md) | Contributing community blueprints |
-| [Roadmap](ROADMAP.md) | Where Statim is headed and how to influence it |
+| [Roadmap](ROADMAP.md) | Where BakeX is headed and how to influence it |
 
 ## Contributing
 
 Bug reports, feature requests, and PRs are welcome — see
 [CONTRIBUTING.md](CONTRIBUTING.md) for the dev workflow and
-[`good first issue`](https://github.com/invicton/statim/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
+[`good first issue`](https://github.com/invicton/bakex/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
 for curated starting points (most are pure-YAML blueprint work with acceptance
 criteria and a local verify command included). Please follow the
 [Code of Conduct](CODE_OF_CONDUCT.md). Found a security issue? See

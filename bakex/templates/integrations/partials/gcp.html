@@ -1,0 +1,106 @@
+<div class="h-full flex flex-col pt-4">
+  <div class="px-8 pb-4 border-b border-slate-800/50 flex justify-between items-center">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-lg bg-slate-800 border border-slate-700/50 flex items-center justify-center">
+        <span class="text-xs font-bold text-slate-300 uppercase tracking-wider">GCP</span>
+      </div>
+      <div>
+        <h2 class="text-xl font-bold text-white capitalize">GCP Configuration</h2>
+        <p class="text-sm text-slate-400">Manage Google Cloud access for private image builds.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="flex-1 overflow-y-auto p-8">
+    <div class="mb-6 rounded-lg border border-emerald-900/40 bg-emerald-950/10 p-4">
+      <div class="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+        <div>
+          <h3 class="text-sm font-semibold text-emerald-300">Onboard GCP with gcloud</h3>
+          <p class="mt-1 text-xs text-slate-400">
+            A GCP admin must run the script or manually grant the reviewed permission set before BakeX can create private build resources.
+          </p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <a href="https://github.com/invicton/bakex/tree/main/deploy/gcp/scanner"
+             target="_blank"
+             rel="noopener noreferrer"
+             class="inline-flex items-center justify-center rounded-lg border border-emerald-700/60 bg-emerald-600/15 px-3 py-2 text-xs font-semibold text-emerald-200 hover:bg-emerald-600/25">
+            Scanner Script
+          </a>
+          <a href="https://github.com/invicton/bakex/tree/main/deploy/gcp/builder"
+             target="_blank"
+             rel="noopener noreferrer"
+             class="inline-flex items-center justify-center rounded-lg border border-amber-700/60 bg-amber-600/15 px-3 py-2 text-xs font-semibold text-amber-200 hover:bg-amber-600/25">
+            Builder Script
+          </a>
+          <a href="https://github.com/invicton/bakex/tree/main/deploy/gcp"
+             target="_blank"
+             rel="noopener noreferrer"
+             class="inline-flex items-center justify-center rounded-lg border border-slate-700 bg-slate-800/70 px-3 py-2 text-xs font-semibold text-slate-200 hover:bg-slate-700">
+            Review Permissions
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <form
+      hx-post="/api/integrations/gcp"
+      hx-target="#gcp-status"
+      hx-swap="innerHTML"
+      class="space-y-5"
+    >
+      <div class="grid grid-cols-2 gap-5">
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">GCP Project ID <span class="text-rose-400">*</span></label>
+          <input type="text" name="project_id" value="{{ creds.project_id if creds else '' }}"
+            class="w-full bg-slate-900/50 border border-slate-700/80 rounded-lg px-4 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-all font-mono" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Zone <span class="text-rose-400">*</span></label>
+          <input type="text" name="zone" value="{{ creds.zone if creds else 'us-central1-a' }}"
+            class="w-full bg-slate-900/50 border border-slate-700/80 rounded-lg px-4 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-all font-mono" />
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-5">
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Machine Type</label>
+          <input type="text" name="machine_type" value="{{ creds.machine_type if creds else 'n2-standard-2' }}"
+            class="w-full bg-slate-900/50 border border-slate-700/80 rounded-lg px-4 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-all font-mono" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Service Account Email</label>
+          <input type="text" name="service_account_email" value="{{ creds.service_account_email if creds else '' }}"
+            class="w-full bg-slate-900/50 border border-slate-700/80 rounded-lg px-4 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-all font-mono" />
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-5">
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">VPC Network</label>
+          <input type="text" name="network" value="{{ creds.network if creds else 'default' }}"
+            class="w-full bg-slate-900/50 border border-slate-700/80 rounded-lg px-4 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-all font-mono" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Subnetwork</label>
+          <input type="text" name="subnetwork" value="{{ creds.subnetwork if creds else '' }}"
+            class="w-full bg-slate-900/50 border border-slate-700/80 rounded-lg px-4 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-all font-mono" />
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Service Account JSON Key <span class="text-slate-600 normal-case font-normal">optional; ADC preferred</span></label>
+        <textarea name="service_account_json" rows="5"
+          class="w-full bg-slate-900/50 border border-slate-700/80 rounded-lg px-4 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-all font-mono">{{ creds.service_account_json if creds else '' }}</textarea>
+      </div>
+
+      <div class="pt-4 flex flex-col gap-4 border-t border-slate-800/50">
+        <div class="flex items-start justify-between">
+          <div class="flex items-center gap-3">
+            <button type="submit" class="px-5 py-2.5 bg-brand-600 hover:bg-brand-500 text-white text-sm font-semibold rounded-lg transition-all shadow-[0_0_15px_rgba(6,182,212,0.3)] min-w-[120px]">Update Config</button>
+            <button type="button" hx-post="/api/integrations/gcp/test" hx-include="closest form" hx-target="#gcp-status" hx-swap="innerHTML"
+              class="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 hover:border-slate-500 text-sm font-semibold rounded-lg transition-all">Test Connectivity</button>
+          </div>
+        </div>
+        <div id="gcp-status" class="w-full"></div>
+      </div>
+    </form>
+  </div>
+</div>

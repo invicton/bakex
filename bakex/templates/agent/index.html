@@ -1,0 +1,366 @@
+{% extends "base.html" %}
+
+{% block title %}AI Builder — {{ app_name }}{% endblock %}
+
+{% block breadcrumbs %}
+<div class="flex items-center text-sm gap-2">
+  <span class="text-slate-300 font-semibold">AI Builder</span>
+  <span class="ml-2 px-2 py-0.5 bg-brand-900/30 border border-brand-800/50 rounded text-[10px] font-bold text-brand-400 uppercase tracking-wider">Powered by Claude</span>
+</div>
+{% endblock %}
+
+{% block head %}
+<style>
+  #agent-terminal {
+    font-family: 'JetBrains Mono', 'Courier New', monospace;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .terminal-cursor {
+    display: inline-block;
+    width: 8px;
+    height: 1em;
+    background: #22d3ee;
+    animation: blink 1s step-end infinite;
+    vertical-align: text-bottom;
+    margin-left: 2px;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  .grade-a { color: #34d399; }
+  .grade-b { color: #4ade80; }
+  .grade-c { color: #facc15; }
+  .grade-d { color: #fb923c; }
+  .grade-f { color: #f87171; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-full mx-auto h-full flex flex-col space-y-4">
+
+  <!-- Header -->
+  <div class="flex items-end justify-between shrink-0">
+    <div>
+      <h1 class="text-3xl font-bold text-white tracking-tight">AI Builder</h1>
+      <p class="text-slate-400 mt-1 text-sm">Hand Claude a blueprint + provider. Get a production-grade hardened image.</p>
+    </div>
+    <div id="api-status-badge" class="text-xs font-mono px-3 py-1.5 rounded-lg border border-slate-700 text-slate-500">
+      checking…
+    </div>
+  </div>
+
+  <!-- Split pane: YAML editor (left) + Agent terminal (right) -->
+  <div class="flex gap-6 flex-1 min-h-0" style="min-height: 600px;">
+
+    <!-- LEFT: Blueprint editor + controls -->
+    <div class="w-[42%] shrink-0 flex flex-col gap-4">
+
+      <!-- Provider selector -->
+      <div class="bg-slate-900/40 border border-slate-800/60 rounded-xl p-4">
+        <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Target Provider</label>
+        <select id="provider-select"
+                class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-brand-500/50 transition">
+          {% for p in providers %}
+          <option value="{{ p }}">{{ p | title }}</option>
+          {% endfor %}
+          {% if not providers %}
+          <option value="aws">AWS</option>
+          <option value="gcp">GCP</option>
+          <option value="azure">Azure</option>
+          <option value="digitalocean">DigitalOcean</option>
+          <option value="linode">Linode</option>
+          {% endif %}
+        </select>
+      </div>
+
+      <!-- Blueprint selector (quick-load) -->
+      {% if profiles %}
+      <div class="bg-slate-900/40 border border-slate-800/60 rounded-xl p-4">
+        <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Load a Blueprint</label>
+        <select id="profile-select" onchange="loadProfile(this.value)"
+                class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-brand-500/50 transition">
+          <option value="">— select a profile to pre-fill —</option>
+          {% for profile in profiles %}
+          <option value="{{ profile.metadata.name }}">{{ profile.metadata.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      {% endif %}
+
+      <!-- YAML editor -->
+      <div class="flex-1 flex flex-col min-h-0 bg-[#0d1117] border border-slate-800/60 rounded-xl overflow-hidden">
+        <div class="px-4 py-2.5 border-b border-slate-800/80 bg-[#161b22] flex items-center justify-between shrink-0">
+          <div class="flex items-center gap-2">
+            <div class="flex gap-1.5">
+              <div class="w-2.5 h-2.5 rounded-full bg-slate-700"></div>
+              <div class="w-2.5 h-2.5 rounded-full bg-slate-700"></div>
+              <div class="w-2.5 h-2.5 rounded-full bg-slate-700"></div>
+            </div>
+            <span class="text-xs font-mono text-slate-400 ml-2">blueprint.yaml</span>
+          </div>
+          <button onclick="clearEditor()" class="text-[10px] text-slate-600 hover:text-slate-400 transition">clear</button>
+        </div>
+        <textarea
+          id="blueprint-editor"
+          spellcheck="false"
+          placeholder="# Paste or type your blueprint YAML here...
+# Or select a profile above to pre-fill.
+
+metadata:
+  name: my-rocky9-cis
+  version: 1.0.0
+target:
+  os: rocky9
+  provider: aws
+compliance:
+  benchmark: CIS
+  profile: xccdf_org.ssgproject.content_profile_cis
+  datastream: auto
+hardening:
+  strategy: ansible-galaxy
+  profile_tier: cis-l1
+"
+          class="flex-1 bg-transparent text-slate-300 text-xs font-mono p-4 resize-none focus:outline-none w-full leading-relaxed"
+          style="min-height: 320px;"
+        ></textarea>
+      </div>
+
+      <!-- Build button -->
+      <button
+        id="build-btn"
+        onclick="startAgentBuild()"
+        class="w-full py-3.5 bg-brand-600 hover:bg-brand-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold text-sm rounded-xl shadow-[0_0_20px_rgba(6,182,212,0.35)] hover:shadow-[0_0_25px_rgba(6,182,212,0.5)] transition-all flex items-center justify-center gap-2"
+      >
+        <span id="build-btn-icon"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg></span>
+        <span id="build-btn-label">Start AI Build</span>
+      </button>
+
+    </div>
+
+    <!-- RIGHT: Agent terminal output -->
+    <div class="flex-1 flex flex-col min-h-0 bg-slate-950 border border-slate-800/60 rounded-xl overflow-hidden">
+
+      <!-- Terminal header -->
+      <div class="px-4 py-2.5 border-b border-slate-800/80 bg-[#0a0f1a] flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-3">
+          <div class="flex gap-1.5">
+            <div class="w-2.5 h-2.5 rounded-full bg-slate-700"></div>
+            <div class="w-2.5 h-2.5 rounded-full bg-slate-700"></div>
+            <div class="w-2.5 h-2.5 rounded-full bg-slate-700"></div>
+          </div>
+          <span class="text-xs font-mono text-slate-500">bakex-agent</span>
+          <span id="agent-state-badge" class="hidden text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded bg-brand-900/40 text-brand-400 border border-brand-800/40">
+            running
+          </span>
+        </div>
+        <button onclick="clearTerminal()" class="text-[10px] text-slate-600 hover:text-slate-400 transition">clear</button>
+      </div>
+
+      <!-- Terminal body -->
+      <div id="terminal-scroll" class="flex-1 overflow-y-auto p-5">
+        <div id="agent-terminal" class="text-slate-300 text-xs leading-relaxed">
+          <span class="text-slate-600">Waiting for build instructions…
+
+Configure a blueprint on the left and click Start AI Build.
+The agent will validate, enrich, build, and report in real time.
+</span>
+        </div>
+        <span id="terminal-cursor" class="terminal-cursor hidden"></span>
+      </div>
+
+      <!-- Result card (shown when done) -->
+      <div id="result-card" class="hidden shrink-0 border-t border-slate-800/60 p-5 bg-slate-900/50">
+        <div class="flex items-center gap-6">
+          <div id="result-grade-box" class="w-16 h-16 rounded-xl border flex items-center justify-center shrink-0 bg-slate-800 border-slate-700">
+            <span id="result-grade-letter" class="text-3xl font-black text-slate-400">?</span>
+          </div>
+          <div class="flex-1 space-y-1">
+            <div class="flex items-center gap-3 flex-wrap">
+              <span id="result-score" class="text-2xl font-bold text-white">—</span>
+              <span class="text-sm text-slate-400">compliance score</span>
+            </div>
+            <div class="text-xs font-mono text-slate-500">
+              Artifact: <span id="result-artifact" class="text-slate-300">—</span>
+            </div>
+          </div>
+          <div class="flex gap-2">
+            <button onclick="copyArtifact()" class="px-3 py-1.5 text-xs bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 rounded-lg transition">
+              Copy ID
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<script>
+// Profile YAML store populated server-side
+const profileYamls = {
+  {% for profile in profiles %}
+  {{ profile.metadata.name | tojson }}: {{ profile | toyaml | tojson }},
+  {% endfor %}
+};
+
+function loadProfile(name) {
+  if (!name || !profileYamls[name]) return;
+  document.getElementById('blueprint-editor').value = profileYamls[name];
+}
+
+function clearEditor() {
+  document.getElementById('blueprint-editor').value = '';
+}
+
+function clearTerminal() {
+  document.getElementById('agent-terminal').textContent = '';
+}
+
+// Check API key availability
+fetch('/api/agent/status')
+  .then(r => r.json())
+  .then(data => {
+    const badge = document.getElementById('api-status-badge');
+    if (data.available) {
+      badge.textContent = '● API Key Ready';
+      badge.className = 'text-xs font-mono px-3 py-1.5 rounded-lg border border-emerald-800/50 bg-emerald-900/20 text-emerald-400';
+    } else {
+      badge.textContent = '✗ No API Key';
+      badge.className = 'text-xs font-mono px-3 py-1.5 rounded-lg border border-red-800/50 bg-red-900/20 text-red-400';
+      badge.title = data.message;
+    }
+  })
+  .catch(() => {});
+
+// Markdown-lite renderer: bold, headings, inline code, lists
+function renderMd(text) {
+  return text
+    .replace(/^## (.+)$/gm, '<span class="text-brand-400 font-bold text-[11px] uppercase tracking-wide">$1</span>')
+    .replace(/^# (.+)$/gm, '<span class="text-white font-bold">$1</span>')
+    .replace(/\*\*(.+?)\*\*/g, '<span class="text-white font-bold">$1</span>')
+    .replace(/\*\[(.+?)\]\*/g, '<span class="text-slate-500 italic">[$1]</span>')
+    .replace(/`([^`]+)`/g, '<code class="text-brand-300 bg-slate-800/60 px-1 rounded text-[10px]">$1</code>');
+}
+
+let currentArtifactId = '';
+
+async function startAgentBuild() {
+  const yaml = document.getElementById('blueprint-editor').value.trim();
+  const provider = document.getElementById('provider-select').value;
+
+  if (!yaml) {
+    alert('Please enter a blueprint YAML.');
+    return;
+  }
+
+  // UI: building state
+  const btn = document.getElementById('build-btn');
+  const btnLabel = document.getElementById('build-btn-label');
+  const btnIcon = document.getElementById('build-btn-icon');
+  btn.disabled = true;
+  btnLabel.textContent = 'Agent Running…';
+  btnIcon.innerHTML = '<svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>';
+
+  document.getElementById('agent-state-badge').classList.remove('hidden');
+  document.getElementById('terminal-cursor').classList.remove('hidden');
+  document.getElementById('result-card').classList.add('hidden');
+
+  const terminal = document.getElementById('agent-terminal');
+  const scrollEl = document.getElementById('terminal-scroll');
+  terminal.innerHTML = '<span class="text-brand-400 font-bold">BakeXBuildAgent</span> <span class="text-slate-500">initialising…\n\n</span>';
+
+  function appendText(text) {
+    // Convert markdown-lite and append as HTML
+    const span = document.createElement('span');
+    span.innerHTML = renderMd(text);
+    terminal.appendChild(span);
+    scrollEl.scrollTop = scrollEl.scrollHeight;
+  }
+
+  try {
+    const response = await fetch('/api/agent/build', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ blueprint_yaml: yaml, provider }),
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({ detail: response.statusText }));
+      appendText(`\n\nERROR ${response.status}: ${err.detail || response.statusText}\n`);
+      return;
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop(); // keep incomplete line in buffer
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        try {
+          const event = JSON.parse(line.slice(6));
+          if (event.type === 'narration') {
+            appendText(event.text);
+          } else if (event.type === 'result') {
+            showResult(event.data);
+          } else if (event.type === 'error') {
+            appendText(`\n\nERROR: ${event.message}\n`);
+          }
+        } catch (_) {}
+      }
+    }
+
+  } catch (err) {
+    appendText(`\n\nConnection error: ${err.message}\n`);
+  } finally {
+    btn.disabled = false;
+    btnLabel.textContent = 'Start AI Build';
+    btnIcon.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>';
+    document.getElementById('agent-state-badge').classList.add('hidden');
+    document.getElementById('terminal-cursor').classList.add('hidden');
+  }
+}
+
+function showResult(data) {
+  const card = document.getElementById('result-card');
+  const gradeLetter = document.getElementById('result-grade-letter');
+  const gradeBox = document.getElementById('result-grade-box');
+  const scoreEl = document.getElementById('result-score');
+  const artifactEl = document.getElementById('result-artifact');
+
+  const grade = data.grade || (data.success ? 'B' : 'F');
+  currentArtifactId = data.artifact_id || '';
+
+  gradeLetter.textContent = grade;
+  gradeLetter.className = `text-3xl font-black grade-${grade.toLowerCase()}`;
+
+  const boxColors = {
+    A: 'bg-emerald-950/50 border-emerald-800/40',
+    B: 'bg-green-950/50 border-green-800/40',
+    C: 'bg-yellow-950/50 border-yellow-800/40',
+    D: 'bg-orange-950/50 border-orange-800/40',
+    F: 'bg-red-950/50 border-red-800/40',
+  };
+  gradeBox.className = `w-16 h-16 rounded-xl border flex items-center justify-center shrink-0 ${boxColors[grade] || 'bg-slate-800 border-slate-700'}`;
+
+  scoreEl.textContent = data.score_pct != null ? `${data.score_pct.toFixed(1)}%` : (data.success ? 'Complete' : 'Failed');
+  artifactEl.textContent = currentArtifactId || data.job_id || '—';
+
+  card.classList.remove('hidden');
+}
+
+function copyArtifact() {
+  if (currentArtifactId) {
+    navigator.clipboard.writeText(currentArtifactId);
+  }
+}
+</script>
+{% endblock %}

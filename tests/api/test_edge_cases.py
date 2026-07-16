@@ -26,14 +26,14 @@ from unittest.mock import AsyncMock, patch
 import pytest
 import yaml
 
-import statim.core.notifications as notif_mod
+import bakex.core.notifications as notif_mod
 
 # ---------------------------------------------------------------------------
 # Shared YAML fixtures
 # ---------------------------------------------------------------------------
 
 _VALID_BLUEPRINT_YAML = """\
-statim_version: "0.1.0"
+bakex_version: "0.1.0"
 kind: ComplianceProfile
 metadata:
   name: ec-valid-profile
@@ -50,7 +50,7 @@ compliance:
 """
 
 _MISSING_COMPLIANCE_YAML = """\
-statim_version: "0.1.0"
+bakex_version: "0.1.0"
 kind: ComplianceProfile
 metadata:
   name: ec-missing-compliance
@@ -62,7 +62,7 @@ target:
 """
 
 _CONTROLS_NULL_YAML = """\
-statim_version: "0.1.0"
+bakex_version: "0.1.0"
 kind: ComplianceProfile
 metadata:
   name: ec-null-controls
@@ -88,12 +88,12 @@ def test_blueprint_listing_survives_corrupt_file(client, tmp_path, monkeypatch):
     """A corrupt YAML in the profiles dir must produce an error object in the
     list, but must not cause a 500 — the remaining valid profiles still appear.
     """
-    from statim.config import settings
+    from bakex.config import settings
 
     # Write one valid + one corrupt profile file into a fresh tmp dir
     valid_data = yaml.dump(
         {
-            "statim_version": "0.1.0",
+            "bakex_version": "0.1.0",
             "kind": "ComplianceProfile",
             "metadata": {"name": "ec-good-profile", "version": "1.0.0"},
             "target": {"os": "ubuntu22.04", "provider": "aws", "base_image": "ami-00"},
@@ -129,11 +129,11 @@ def test_blueprint_listing_survives_schema_invalid_file(client, tmp_path, monkey
     """A YAML file that parses but fails Pydantic validation must return an
     error object for that file, not propagate a 500.
     """
-    from statim.config import settings
+    from bakex.config import settings
 
     valid_data = yaml.dump(
         {
-            "statim_version": "0.1.0",
+            "bakex_version": "0.1.0",
             "kind": "ComplianceProfile",
             "metadata": {"name": "ec-good-2", "version": "1.0.0"},
             "target": {"os": "ubuntu22.04", "provider": "aws", "base_image": "ami-00"},
@@ -147,7 +147,7 @@ def test_blueprint_listing_survives_schema_invalid_file(client, tmp_path, monkey
     (tmp_path / "good2.yaml").write_text(valid_data)
     # Valid YAML but missing 'compliance' → Pydantic ValidationError
     (tmp_path / "bad_schema.yaml").write_text(
-        "statim_version: '0.1.0'\nkind: ComplianceProfile\nmetadata:\n  name: bad\n  version: '1.0.0'\n"
+        "bakex_version: '0.1.0'\nkind: ComplianceProfile\nmetadata:\n  name: bad\n  version: '1.0.0'\n"
         "target:\n  os: ubuntu22.04\n  provider: aws\n  base_image: ami-00\n"
     )
 
@@ -227,7 +227,7 @@ async def test_fire_webhook_never_raises_on_exception():
     mock_client.__aexit__ = AsyncMock(return_value=False)
     mock_client.post = AsyncMock(side_effect=httpx.ConnectError("Connection refused"))
 
-    with patch("statim.core.notifications.httpx") as mock_httpx:
+    with patch("bakex.core.notifications.httpx") as mock_httpx:
         mock_httpx.AsyncClient.return_value = mock_client
         mock_httpx.ConnectError = httpx.ConnectError
         # Must complete without raising
@@ -253,7 +253,7 @@ async def test_fire_webhook_never_raises_on_timeout():
     mock_client.__aexit__ = AsyncMock(return_value=False)
     mock_client.post = AsyncMock(side_effect=httpx.TimeoutException("Timeout"))
 
-    with patch("statim.core.notifications.httpx") as mock_httpx:
+    with patch("bakex.core.notifications.httpx") as mock_httpx:
         mock_httpx.AsyncClient.return_value = mock_client
         mock_httpx.TimeoutException = httpx.TimeoutException
         await notif_mod.fire_webhook("build.complete", {"job_id": "ec-07"})

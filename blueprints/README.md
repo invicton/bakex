@@ -1,8 +1,8 @@
-# Statim Community Blueprints
+# BakeX Community Blueprints
 
 This folder is the public contribution library for `HardeningBlueprint` YAML files.
 
-Statim keeps built-in runtime templates in `profiles/templates/`. Community contributions
+BakeX keeps built-in runtime templates in `profiles/templates/`. Community contributions
 start here in `blueprints/`, where each file is organized by operating system, OS version,
 framework, level, and provider.
 
@@ -51,7 +51,7 @@ naming convention, and SCAP profile reference table.
 ## Contribution Checklist
 
 - Start from an existing blueprint for the closest OS/provider.
-- Keep `statim_version` and `kind: HardeningBlueprint`.
+- Keep `bakex_version` and `kind: HardeningBlueprint`.
 - Use a unique `metadata.name` and accurate `metadata.tags`.
 - Set the correct provider-specific `target.base_image`, `instance_type`, and region assumptions.
 - Point `compliance.datastream` and `compliance.profile` to a valid OpenSCAP/SSG profile for that OS
@@ -70,7 +70,7 @@ uv sync --extra all-providers --group dev
 uv run python - <<'PY'
 from pathlib import Path
 import yaml
-from statim.core.blueprint import ComplianceProfile
+from bakex.core.blueprint import ComplianceProfile
 
 for path in sorted(Path("blueprints").rglob("*.yaml")):
     raw = yaml.safe_load(path.read_text())
@@ -86,9 +86,9 @@ CI runs this automatically on every PR — see the `validate-blueprints` job in 
 Concrete, scoped gaps — pick one and go:
 
 - **CIS L2 for existing OSes.** Rocky 9, RHEL 9, Amazon Linux 2023, and Debian 12 all have CIS L2
-  support in Statim's `OS_CATALOG` already (SCAP profile + Ansible-Lockdown role variables both
+  support in BakeX's `OS_CATALOG` already (SCAP profile + Ansible-Lockdown role variables both
   exist) — there just isn't a blueprint file for it yet in this library.
-- **RHEL 9** blueprint (the OS is fully supported by Statim; no blueprint file exists here yet).
+- **RHEL 9** blueprint (the OS is fully supported by BakeX; no blueprint file exists here yet).
 - **More providers per OS** — e.g. AlmaLinux 9 or Amazon Linux 2023 on Azure/GCP, Debian 12 on
   Azure/Linode/Proxmox.
 - Add metadata tags and documented control overrides for common workload types.

@@ -31,7 +31,7 @@ class TestAnthropicImportError:
     @pytest.mark.anyio
     async def test_agent_turn_raises_runtime_error_when_anthropic_missing(self):
         """Lines 36-37: RuntimeError raised when 'anthropic' is not importable."""
-        from statim.core.llm.anthropic_backend import AnthropicBackend
+        from bakex.core.llm.anthropic_backend import AnthropicBackend
 
         backend = AnthropicBackend()
         with patch.dict(sys.modules, {"anthropic": None}):
@@ -47,8 +47,8 @@ class TestAnthropicImportError:
 class TestPlaybookGenLvmNoVg:
     def test_lvm_tasks_skips_entry_with_no_vg(self):
         """Line 167: entry with mount_type=lvm but empty lvm_vg is skipped."""
-        from statim.core.blueprint import MountEntry
-        from statim.core.playbook_gen import _lvm_tasks
+        from bakex.core.blueprint import MountEntry
+        from bakex.core.playbook_gen import _lvm_tasks
 
         mounts = [
             MountEntry(
@@ -71,7 +71,7 @@ class TestPlaybookGenLvmNoVg:
 class TestRegistryS3SkipsNonYaml:
     def test_sync_s3_skips_non_yaml_keys(self):
         """Line 163: object keys without .yaml/.yml extension are skipped."""
-        from statim.core.registry import ProfileRegistry, RegistrySource
+        from bakex.core.registry import ProfileRegistry, RegistrySource
 
         source = RegistrySource("s3", "my-bucket", "Private")
         registry = ProfileRegistry()
@@ -98,7 +98,7 @@ class TestRegistryS3SkipsNonYaml:
 # ===========================================================================
 
 _PROFILE_YAML = {
-    "statim_version": "0.1.0",
+    "bakex_version": "0.1.0",
     "kind": "ComplianceProfile",
     "metadata": {"name": "builder-gap-test", "version": "1.0.0"},
     "target": {"os": "ubuntu22.04", "provider": "mock", "base_image": "ami-00"},
@@ -128,8 +128,8 @@ class TestBuilderGaps:
     @pytest.mark.anyio
     async def test_run_build_fail_on_findings_raises(self):
         """Line 136: RuntimeError raised when scan has failures and fail_on_findings=True."""
-        from statim.core.blueprint import ComplianceProfile
-        from statim.core.builder import run_build
+        from bakex.core.blueprint import ComplianceProfile
+        from bakex.core.builder import run_build
 
         profile = ComplianceProfile.model_validate(_PROFILE_YAML)
 
@@ -140,12 +140,12 @@ class TestBuilderGaps:
                 coro.close()
             return MagicMock()
 
-        with patch("statim.core.builder.registry") as mock_reg:
+        with patch("bakex.core.builder.registry") as mock_reg:
             mock_reg.get.return_value = mock_cls
-            with patch("statim.core.builder.generate_prehard_playbook", return_value=None):
-                with patch("statim.core.builder.oscap_scanner.run_scan", return_value=Path("/tmp/scan.xml")):
-                    with patch("statim.openscap.parser.parse_arf", return_value={"rules": [{"result": "fail"}]}):
-                        with patch("statim.openscap.parser.RESULT_FAIL", "fail"):
+            with patch("bakex.core.builder.generate_prehard_playbook", return_value=None):
+                with patch("bakex.core.builder.oscap_scanner.run_scan", return_value=Path("/tmp/scan.xml")):
+                    with patch("bakex.openscap.parser.parse_arf", return_value={"rules": [{"result": "fail"}]}):
+                        with patch("bakex.openscap.parser.RESULT_FAIL", "fail"):
                             with patch("asyncio.create_task", side_effect=_close_coro):
                                 job = await run_build(profile, Path("/tmp"))
 
@@ -155,8 +155,8 @@ class TestBuilderGaps:
     @pytest.mark.anyio
     async def test_run_build_teardown_exception_logged(self):
         """Lines 169-170: teardown exception is logged but does not propagate."""
-        from statim.core.blueprint import ComplianceProfile
-        from statim.core.builder import run_build
+        from bakex.core.blueprint import ComplianceProfile
+        from bakex.core.builder import run_build
 
         profile = ComplianceProfile.model_validate(
             {**_PROFILE_YAML, "compliance": {**_PROFILE_YAML["compliance"], "fail_on_findings": False}}
@@ -171,9 +171,9 @@ class TestBuilderGaps:
                 coro.close()
             return MagicMock()
 
-        with patch("statim.core.builder.registry") as mock_reg:
+        with patch("bakex.core.builder.registry") as mock_reg:
             mock_reg.get.return_value = mock_cls
-            with patch("statim.core.builder.generate_prehard_playbook", return_value=None):
+            with patch("bakex.core.builder.generate_prehard_playbook", return_value=None):
                 with patch("asyncio.create_task", side_effect=_close_coro):
                     job = await run_build(profile, Path("/tmp"))
 
@@ -190,22 +190,22 @@ class TestMainStartup:
     @pytest.mark.anyio
     async def test_startup_logs_plugin_warnings(self):
         """Line 52: plugin warnings from registry.load are logged."""
-        from statim.main import app, lifespan
+        from bakex.main import app, lifespan
 
-        with patch("statim.main.registry.load", return_value=["PluginX: missing dependency"]):
-            with patch("statim.main.credential_store.load"):
-                with patch("statim.core.auditor.load_jobs"):
-                    with patch("statim.core.api_keys.load_keys"):
-                        with patch("statim.core.notifications.load_webhooks"):
-                            with patch("statim.main.init_registry"):
+        with patch("bakex.main.registry.load", return_value=["PluginX: missing dependency"]):
+            with patch("bakex.main.credential_store.load"):
+                with patch("bakex.core.auditor.load_jobs"):
+                    with patch("bakex.core.api_keys.load_keys"):
+                        with patch("bakex.core.notifications.load_webhooks"):
+                            with patch("bakex.main.init_registry"):
                                 async with lifespan(app):
                                     pass
 
     @pytest.mark.anyio
     async def test_startup_with_s3_bucket_adds_source(self):
         """Line 62: S3 RegistrySource is inserted when blueprint_store_s3_bucket is set."""
-        from statim.config import settings
-        from statim.main import app, lifespan
+        from bakex.config import settings
+        from bakex.main import app, lifespan
 
         sources_seen = []
 
@@ -213,12 +213,12 @@ class TestMainStartup:
             sources_seen.extend(sources)
 
         with patch.object(settings, "blueprint_store_s3_bucket", "my-private-bucket"):
-            with patch("statim.main.registry.load", return_value=[]):
-                with patch("statim.main.credential_store.load"):
-                    with patch("statim.core.auditor.load_jobs"):
-                        with patch("statim.core.api_keys.load_keys"):
-                            with patch("statim.core.notifications.load_webhooks"):
-                                with patch("statim.main.init_registry", side_effect=capture_sources):
+            with patch("bakex.main.registry.load", return_value=[]):
+                with patch("bakex.main.credential_store.load"):
+                    with patch("bakex.core.auditor.load_jobs"):
+                        with patch("bakex.core.api_keys.load_keys"):
+                            with patch("bakex.core.notifications.load_webhooks"):
+                                with patch("bakex.main.init_registry", side_effect=capture_sources):
                                     async with lifespan(app):
                                         pass
 
@@ -235,7 +235,7 @@ class TestMainStartup:
 class TestBaseProviderRepr:
     def test_repr_returns_provider_name(self):
         """Line 52: __repr__ returns '<Provider name=...>' string."""
-        from statim.plugins.subprocess_provider import SubprocessProvider
+        from bakex.plugins.subprocess_provider import SubprocessProvider
 
         class MockProvider(SubprocessProvider):
             name = "mock-repr-test"
@@ -255,7 +255,7 @@ class TestBaseProviderRepr:
 class TestCredentialStoreChmod:
     def test_persist_swallows_chmod_oserror(self, tmp_path):
         """Lines 87-88: OSError from chmod(0o600) on credentials file is silently ignored."""
-        from statim.api.integrations import CredentialStore
+        from bakex.api.integrations import CredentialStore
 
         store = CredentialStore(tmp_path)
         store._store = {"aws": {"access_key": "AKID"}}
