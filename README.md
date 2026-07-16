@@ -8,6 +8,7 @@
 [![CI](https://github.com/invicton/Invicton/actions/workflows/ci.yml/badge.svg)](https://github.com/invicton/Invicton/actions/workflows/ci.yml)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/invicton/Invicton/badge)](https://scorecard.dev/viewer/?uri=github.com/invicton/Invicton)
 [![Release](https://img.shields.io/github/v/release/invicton/Invicton)](https://github.com/invicton/Invicton/releases)
+[![Invigil doctrine grade](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/invigil/invigil/main/badges/invicton.json)](https://github.com/invigil/invigil)
 
 <p align="center">
   <img src="docs/assets/invicton-dashboard.svg" alt="Invicton dashboard preview" width="900">

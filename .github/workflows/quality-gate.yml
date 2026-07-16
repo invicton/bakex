@@ -1,0 +1,26 @@
+name: Quality gate (Invigil)
+
+# Grades this repo against the product-quality doctrine (QUALITY-PLAYBOOK Gates
+# G1-G7) and posts the scorecard as a PR comment. Report-only: it never blocks a
+# merge yet. Flip `enforce: "true"` (or project.enforce in .invigil.yml) once the
+# grade is stable. Config lives in .invigil.yml.
+
+on:
+  pull_request:
+  push:
+    branches: ["main"]
+
+permissions:
+  contents: read
+  pull-requests: write   # to post/update the scorecard comment
+
+jobs:
+  invigil:
+    name: Doctrine scorecard
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7
+      # TODO: pin to the release SHA once invigil v1 is published to the Marketplace.
+      - uses: invigil/invigil@v1
+        with:
+          enforce: "false"   # report-only
