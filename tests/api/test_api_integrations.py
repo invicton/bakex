@@ -52,7 +52,7 @@ def test_get_credentials_returns_saved(client):
 
 
 def test_download_aws_template_serves_bundled_cloudformation(client):
-    resp = client.get("/api/integrations/aws/templates/invicton-scanner-role.yaml")
+    resp = client.get("/api/integrations/aws/templates/statim-scanner-role.yaml")
     assert resp.status_code == 200
     assert "application/x-yaml" in resp.headers.get("content-type", "")
     assert "TrustedPrincipalArn" in resp.text
@@ -71,11 +71,11 @@ def test_import_aws_stack_outputs_saves_cloudformation_outputs(client):
             {
                 "Outputs": [
                     {
-                        "OutputKey": "InvictonRoleArn",
-                        "OutputValue": "arn:aws:iam::123456789012:role/InvictonBuilderRole",
+                        "OutputKey": "StatimRoleArn",
+                        "OutputValue": "arn:aws:iam::123456789012:role/StatimBuilderRole",
                     },
-                    {"OutputKey": "ExternalId", "OutputValue": "invicton-onboarding"},
-                    {"OutputKey": "InstanceProfileName", "OutputValue": "InvictonBuilderInstanceProfile"},
+                    {"OutputKey": "ExternalId", "OutputValue": "statim-onboarding"},
+                    {"OutputKey": "InstanceProfileName", "OutputValue": "StatimBuilderInstanceProfile"},
                     {"OutputKey": "RegionHint", "OutputValue": "us-east-1"},
                 ]
             }
@@ -90,7 +90,7 @@ def test_import_aws_stack_outputs_saves_cloudformation_outputs(client):
         resp = client.post(
             "/api/integrations/aws/import-stack",
             data={
-                "cloudformation_stack_name": "invicton-builder",
+                "cloudformation_stack_name": "statim-builder",
                 "aws_access_key_id": "AKIA123",
                 "aws_secret_access_key": "secret",
                 "region": "us-east-1",
@@ -99,11 +99,11 @@ def test_import_aws_stack_outputs_saves_cloudformation_outputs(client):
 
     assert resp.status_code == 200
     assert "imported and saved" in resp.text
-    mock_cfn.describe_stacks.assert_called_once_with(StackName="invicton-builder")
+    mock_cfn.describe_stacks.assert_called_once_with(StackName="statim-builder")
     saved = client.get("/api/integrations/aws").json()
-    assert saved["role_arn"] == "arn:aws:iam::123456789012:role/InvictonBuilderRole"
-    assert saved["external_id"] == "invicton-onboarding"
-    assert saved["iam_profile_name"] == "InvictonBuilderInstanceProfile"
+    assert saved["role_arn"] == "arn:aws:iam::123456789012:role/StatimBuilderRole"
+    assert saved["external_id"] == "statim-onboarding"
+    assert saved["iam_profile_name"] == "StatimBuilderInstanceProfile"
 
 
 def test_import_aws_stack_outputs_requires_stack_name(client):
@@ -132,7 +132,7 @@ def test_test_credentials_aws_success(client):
     mock_sts = MagicMock()
     mock_sts.get_caller_identity.return_value = {
         "Account": "123456789012",
-        "Arn": "arn:aws:iam::123456789012:user/invicton",
+        "Arn": "arn:aws:iam::123456789012:user/statim",
     }
     mock_ec2 = MagicMock()
     mock_ec2.describe_security_groups.return_value = {"SecurityGroups": []}
@@ -142,7 +142,7 @@ def test_test_credentials_aws_success(client):
 
     with patch.dict("sys.modules", {"boto3": mock_boto3, "botocore": MagicMock(), "botocore.exceptions": MagicMock()}):
         # Patch boto3 directly in the module's namespace for this call
-        with patch("invicton.api.integrations.boto3", mock_boto3, create=True):
+        with patch("statim.api.integrations.boto3", mock_boto3, create=True):
             resp = client.post(
                 "/api/integrations/aws/test",
                 data={"region": "us-east-1", "aws_access_key_id": "AKIA123", "aws_secret_access_key": "secret"},
@@ -174,7 +174,7 @@ def test_test_credentials_aws_client_error_returns_error_html(client):
     mock_boto3.Session.side_effect = FakeClientError("AccessDenied: token invalid")
 
     with patch.dict("sys.modules", {"boto3": mock_boto3, "botocore": MagicMock(), "botocore.exceptions": mock_exc_mod}):
-        with patch("invicton.api.integrations.boto3", mock_boto3, create=True):
+        with patch("statim.api.integrations.boto3", mock_boto3, create=True):
             resp = client.post(
                 "/api/integrations/aws/test",
                 data={"region": "us-east-1"},
@@ -208,14 +208,14 @@ def test_test_credentials_aws_assume_role_access_denied_returns_actionable_hint(
     mock_boto3.Session.return_value = mock_session
 
     with patch.dict("sys.modules", {"boto3": mock_boto3, "botocore": MagicMock(), "botocore.exceptions": mock_exc_mod}):
-        with patch("invicton.api.integrations.boto3", mock_boto3, create=True):
+        with patch("statim.api.integrations.boto3", mock_boto3, create=True):
             resp = client.post(
                 "/api/integrations/aws/test",
                 data={
                     "region": "us-east-1",
                     "aws_access_key_id": "AKIA123",
                     "aws_secret_access_key": "secret",
-                    "role_arn": "arn:aws:iam::123456789012:role/InvictonBuilderRole",
+                    "role_arn": "arn:aws:iam::123456789012:role/StatimBuilderRole",
                 },
             )
 
@@ -231,7 +231,7 @@ def test_test_credentials_aws_assume_role_access_denied_returns_actionable_hint(
 
 def test_err_html_escapes_special_chars(client):
     """Ensure HTML injection in error messages is escaped."""
-    from invicton.api.integrations import _err_html
+    from statim.api.integrations import _err_html
 
     result = _err_html('<script>alert("xss")</script>')
     assert "<script>" not in result
@@ -239,7 +239,7 @@ def test_err_html_escapes_special_chars(client):
 
 
 def test_ok_html_contains_message(client):
-    from invicton.api.integrations import _ok_html
+    from statim.api.integrations import _ok_html
 
     result = _ok_html("Connected to project my-proj")
     assert "Connected to project my-proj" in result
@@ -288,7 +288,7 @@ def test_test_credentials_gcp_success(client):
             "google.oauth2.service_account": MagicMock(),
         },
     ):
-        with patch("invicton.api.integrations.compute_v1", mock_compute, create=True):
+        with patch("statim.api.integrations.compute_v1", mock_compute, create=True):
             resp = client.post(
                 "/api/integrations/gcp/test",
                 data={"project_id": "my-proj"},
@@ -300,7 +300,7 @@ def test_test_credentials_gcp_exception(client):
     async def _fail(creds):
         return '<div class="text-rose-400">Connection failed</div>'
 
-    with patch("invicton.api.integrations._test_gcp", side_effect=_fail):
+    with patch("statim.api.integrations._test_gcp", side_effect=_fail):
         resp = client.post(
             "/api/integrations/gcp/test",
             data={"project_id": "my-proj"},
@@ -362,7 +362,7 @@ def test_test_credentials_azure_success(client):
             "azure.mgmt.resource": mock_mgmt,
         },
     ):
-        with patch("invicton.api.integrations._test_azure") as mock_fn:
+        with patch("statim.api.integrations._test_azure") as mock_fn:
 
             async def _ok(creds):
                 return (
@@ -400,7 +400,7 @@ def test_test_credentials_digitalocean_success(client):
     mock_requests = MagicMock()
     mock_requests.get.return_value = mock_resp
 
-    with patch("invicton.api.integrations._test_digitalocean") as mock_fn:
+    with patch("statim.api.integrations._test_digitalocean") as mock_fn:
 
         async def _ok(creds):
             return '<span class="text-emerald-400">Connected as <strong>ops@example.com</strong></span>'
@@ -414,7 +414,7 @@ def test_test_credentials_digitalocean_success(client):
 
 
 def test_test_credentials_digitalocean_exception(client):
-    with patch("invicton.api.integrations._test_digitalocean") as mock_fn:
+    with patch("statim.api.integrations._test_digitalocean") as mock_fn:
 
         async def _err(creds):
             return '<div class="text-rose-400">Connection failed</div>'
@@ -439,7 +439,7 @@ def test_test_credentials_linode_missing_token(client):
 
 
 def test_test_credentials_linode_success(client):
-    with patch("invicton.api.integrations._test_linode") as mock_fn:
+    with patch("statim.api.integrations._test_linode") as mock_fn:
 
         async def _ok(creds):
             return '<span class="text-emerald-400">Connected as <strong>ops@example.com</strong></span>'
@@ -467,7 +467,7 @@ def test_test_credentials_proxmox_missing_fields(client):
 
 
 def test_test_credentials_proxmox_success(client):
-    with patch("invicton.api.integrations._test_proxmox") as mock_fn:
+    with patch("statim.api.integrations._test_proxmox") as mock_fn:
 
         async def _ok(creds):
             return '<span class="text-emerald-400">Connected to Proxmox VE <strong>8.1</strong></span>'
@@ -478,7 +478,7 @@ def test_test_credentials_proxmox_success(client):
             data={
                 "host": "pve.example.com",
                 "user": "root@pam",
-                "token_name": "invicton",
+                "token_name": "statim",
                 "token_value": "tok-123",
             },
         )
@@ -496,7 +496,7 @@ def test_credential_store_delete(client):
     resp_before = client.get("/api/integrations/aws")
     assert resp_before.json().get("region") == "us-west-2"
 
-    from invicton.api.integrations import credential_store
+    from statim.api.integrations import credential_store
 
     credential_store.delete("aws")
     resp_after = client.get("/api/integrations/aws")
@@ -505,7 +505,7 @@ def test_credential_store_delete(client):
 
 def test_credential_store_load_invalid_token(tmp_path):
     """InvalidToken on load should not crash — resets to empty store."""
-    from invicton.api.integrations import CredentialStore
+    from statim.api.integrations import CredentialStore
 
     store = CredentialStore(data_dir=tmp_path)
     # Write garbage to the credentials file
@@ -516,7 +516,7 @@ def test_credential_store_load_invalid_token(tmp_path):
 
 def test_credential_store_persist_oserror(tmp_path):
     """OSError on chmod should be silently swallowed."""
-    from invicton.api.integrations import CredentialStore
+    from statim.api.integrations import CredentialStore
 
     store = CredentialStore(data_dir=tmp_path)
     store.set("test_provider", {"key": "val"})
@@ -526,7 +526,7 @@ def test_credential_store_persist_oserror(tmp_path):
 
 def test_credential_store_secret_key_derivation(tmp_path):
     """PBKDF2 key derivation path should produce a working store."""
-    from invicton.api.integrations import CredentialStore
+    from statim.api.integrations import CredentialStore
 
     store = CredentialStore(data_dir=tmp_path, secret_key="my-secret-passphrase")
     store.set("provider_x", {"token": "abc"})
@@ -535,7 +535,7 @@ def test_credential_store_secret_key_derivation(tmp_path):
 
 def test_credential_store_load_from_disk(tmp_path):
     """Data persisted to disk should survive across store instances."""
-    from invicton.api.integrations import CredentialStore
+    from statim.api.integrations import CredentialStore
 
     store1 = CredentialStore(data_dir=tmp_path, secret_key="pass")
     store1.set("aws", {"region": "eu-west-1"})
@@ -565,7 +565,7 @@ def test_test_credentials_aws_with_profile(client):
     mock_boto3 = MagicMock()
     mock_boto3.Session.return_value = mock_session
 
-    with patch("invicton.api.integrations.boto3", mock_boto3, create=True):
+    with patch("statim.api.integrations.boto3", mock_boto3, create=True):
         resp = client.post(
             "/api/integrations/aws/test",
             data={"region": "us-east-1", "aws_profile": "my-profile"},
@@ -575,8 +575,8 @@ def test_test_credentials_aws_with_profile(client):
 
 def test_test_credentials_aws_with_role_external_id(client):
     """role_arn branch passes ExternalId through to sts:AssumeRole."""
-    role_arn = "arn:aws:iam::123456789012:role/InvictonBuilderRole"
-    external_id = "invicton-test-external-id"
+    role_arn = "arn:aws:iam::123456789012:role/StatimBuilderRole"
+    external_id = "statim-test-external-id"
 
     base_session = MagicMock()
     assumed_session = MagicMock()
@@ -611,7 +611,7 @@ def test_test_credentials_aws_with_role_external_id(client):
             "botocore.exceptions": MagicMock(),
         },
     ):
-        with patch("invicton.api.integrations.boto3", mock_boto3, create=True):
+        with patch("statim.api.integrations.boto3", mock_boto3, create=True):
             resp = client.post(
                 "/api/integrations/aws/test",
                 data={
@@ -624,7 +624,7 @@ def test_test_credentials_aws_with_role_external_id(client):
     assert resp.status_code == 200
     base_sts.assume_role.assert_called_once_with(
         RoleArn=role_arn,
-        RoleSessionName="InvictonConnectionTest",
+        RoleSessionName="StatimConnectionTest",
         ExternalId=external_id,
     )
 
@@ -636,7 +636,7 @@ def test_test_credentials_aws_with_role_external_id(client):
 
 
 async def test_gcp_helper_missing_project_id():
-    from invicton.api.integrations import _test_gcp
+    from statim.api.integrations import _test_gcp
 
     result = await _test_gcp({})
     assert "project_id" in result.lower() or "required" in result.lower()
@@ -645,7 +645,7 @@ async def test_gcp_helper_missing_project_id():
 async def test_gcp_helper_import_error():
     import sys
 
-    from invicton.api.integrations import _test_gcp
+    from statim.api.integrations import _test_gcp
 
     with patch.dict(sys.modules, {"google.cloud": None, "google.cloud.compute_v1": None, "google": MagicMock()}):
         result = await _test_gcp({"project_id": "my-proj"})
@@ -653,7 +653,7 @@ async def test_gcp_helper_import_error():
 
 
 async def test_gcp_helper_success_adc():
-    from invicton.api.integrations import _test_gcp
+    from statim.api.integrations import _test_gcp
 
     mock_regions_client = MagicMock()
     mock_regions_client.list.return_value = [MagicMock(), MagicMock(), MagicMock()]
@@ -672,7 +672,7 @@ async def test_gcp_helper_success_adc():
 
 
 async def test_gcp_helper_exception():
-    from invicton.api.integrations import _test_gcp
+    from statim.api.integrations import _test_gcp
 
     mock_compute = MagicMock()
     mock_compute.RegionsClient.side_effect = Exception("auth error")
@@ -688,14 +688,14 @@ async def test_gcp_helper_exception():
 
 
 async def test_azure_helper_missing_tenant():
-    from invicton.api.integrations import _test_azure
+    from statim.api.integrations import _test_azure
 
     result = await _test_azure({"client_id": "c", "client_secret": "s", "subscription_id": "sub"})
     assert "tenant_id" in result.lower() or "required" in result.lower()
 
 
 async def test_azure_helper_missing_client_id():
-    from invicton.api.integrations import _test_azure
+    from statim.api.integrations import _test_azure
 
     result = await _test_azure({"tenant_id": "t", "client_secret": "s", "subscription_id": "sub"})
     assert "client_id" in result.lower() or "required" in result.lower()
@@ -704,7 +704,7 @@ async def test_azure_helper_missing_client_id():
 async def test_azure_helper_import_error():
     import sys
 
-    from invicton.api.integrations import _test_azure
+    from statim.api.integrations import _test_azure
 
     with patch.dict(
         sys.modules,
@@ -715,7 +715,7 @@ async def test_azure_helper_import_error():
 
 
 async def test_azure_helper_success():
-    from invicton.api.integrations import _test_azure
+    from statim.api.integrations import _test_azure
 
     mock_sub = MagicMock()
     mock_sub.display_name = "Prod Subscription"
@@ -745,7 +745,7 @@ async def test_azure_helper_success():
 
 
 async def test_azure_helper_exception():
-    from invicton.api.integrations import _test_azure
+    from statim.api.integrations import _test_azure
 
     mock_identity = MagicMock()
     mock_identity.ClientSecretCredential.side_effect = Exception("token invalid")
@@ -767,7 +767,7 @@ async def test_azure_helper_exception():
 
 
 async def test_digitalocean_helper_missing_token():
-    from invicton.api.integrations import _test_digitalocean
+    from statim.api.integrations import _test_digitalocean
 
     result = await _test_digitalocean({})
     assert "api_token" in result.lower() or "required" in result.lower()
@@ -776,7 +776,7 @@ async def test_digitalocean_helper_missing_token():
 async def test_digitalocean_helper_import_error():
     import sys
 
-    from invicton.api.integrations import _test_digitalocean
+    from statim.api.integrations import _test_digitalocean
 
     with patch.dict(sys.modules, {"requests": None}):
         result = await _test_digitalocean({"api_token": "tok"})
@@ -784,7 +784,7 @@ async def test_digitalocean_helper_import_error():
 
 
 async def test_digitalocean_helper_success():
-    from invicton.api.integrations import _test_digitalocean
+    from statim.api.integrations import _test_digitalocean
 
     mock_resp = MagicMock()
     mock_resp.json.return_value = {"account": {"email": "ops@example.com", "status": "active"}}
@@ -800,7 +800,7 @@ async def test_digitalocean_helper_success():
 
 
 async def test_digitalocean_helper_exception():
-    from invicton.api.integrations import _test_digitalocean
+    from statim.api.integrations import _test_digitalocean
 
     mock_requests = MagicMock()
     mock_requests.get.side_effect = Exception("network timeout")
@@ -813,7 +813,7 @@ async def test_digitalocean_helper_exception():
 
 
 async def test_linode_helper_missing_token():
-    from invicton.api.integrations import _test_linode
+    from statim.api.integrations import _test_linode
 
     result = await _test_linode({})
     assert "api_token" in result.lower() or "required" in result.lower()
@@ -822,7 +822,7 @@ async def test_linode_helper_missing_token():
 async def test_linode_helper_import_error():
     import sys
 
-    from invicton.api.integrations import _test_linode
+    from statim.api.integrations import _test_linode
 
     with patch.dict(sys.modules, {"requests": None}):
         result = await _test_linode({"api_token": "tok"})
@@ -830,7 +830,7 @@ async def test_linode_helper_import_error():
 
 
 async def test_linode_helper_success():
-    from invicton.api.integrations import _test_linode
+    from statim.api.integrations import _test_linode
 
     mock_resp = MagicMock()
     mock_resp.json.return_value = {"email": "devops@example.com", "company": "Acme Corp"}
@@ -846,7 +846,7 @@ async def test_linode_helper_success():
 
 
 async def test_linode_helper_exception():
-    from invicton.api.integrations import _test_linode
+    from statim.api.integrations import _test_linode
 
     mock_requests = MagicMock()
     mock_requests.get.side_effect = Exception("timeout")
@@ -859,7 +859,7 @@ async def test_linode_helper_exception():
 
 
 async def test_proxmox_helper_missing_host():
-    from invicton.api.integrations import _test_proxmox
+    from statim.api.integrations import _test_proxmox
 
     result = await _test_proxmox({"user": "root@pam", "token_name": "t", "token_value": "v"})
     assert "host" in result.lower() or "required" in result.lower()
@@ -868,14 +868,14 @@ async def test_proxmox_helper_missing_host():
 async def test_proxmox_helper_import_error():
     import sys
 
-    from invicton.api.integrations import _test_proxmox
+    from statim.api.integrations import _test_proxmox
 
     with patch.dict(sys.modules, {"proxmoxer": None}):
         result = await _test_proxmox(
             {
                 "host": "pve.example.com",
                 "user": "root@pam",
-                "token_name": "invicton",
+                "token_name": "statim",
                 "token_value": "tok-123",
             }
         )
@@ -883,7 +883,7 @@ async def test_proxmox_helper_import_error():
 
 
 async def test_proxmox_helper_success():
-    from invicton.api.integrations import _test_proxmox
+    from statim.api.integrations import _test_proxmox
 
     mock_proxmox = MagicMock()
     mock_proxmox.version.get.return_value = {"version": "8.1", "release": "1"}
@@ -897,7 +897,7 @@ async def test_proxmox_helper_success():
             {
                 "host": "pve.example.com",
                 "user": "root@pam",
-                "token_name": "invicton",
+                "token_name": "statim",
                 "token_value": "tok-123",
             }
         )
@@ -905,7 +905,7 @@ async def test_proxmox_helper_success():
 
 
 async def test_proxmox_helper_exception():
-    from invicton.api.integrations import _test_proxmox
+    from statim.api.integrations import _test_proxmox
 
     mock_proxmoxer = MagicMock()
     mock_proxmoxer.ProxmoxAPI.side_effect = Exception("SSL error")
@@ -917,7 +917,7 @@ async def test_proxmox_helper_exception():
             {
                 "host": "pve.example.com",
                 "user": "root@pam",
-                "token_name": "invicton",
+                "token_name": "statim",
                 "token_value": "tok-123",
             }
         )
@@ -936,7 +936,7 @@ async def test_proxmox_helper_exception():
     ],
 )
 async def test_proxmox_helper_verify_ssl_coercion(stored_value, expected):
-    from invicton.api.integrations import _test_proxmox
+    from statim.api.integrations import _test_proxmox
 
     mock_proxmox = MagicMock()
     mock_proxmox.version.get.return_value = {"version": "8.1", "release": "1"}
@@ -950,7 +950,7 @@ async def test_proxmox_helper_verify_ssl_coercion(stored_value, expected):
             {
                 "host": "pve.example.com",
                 "user": "root@pam",
-                "token_name": "invicton",
+                "token_name": "statim",
                 "token_value": "tok-123",
                 "verify_ssl": stored_value,
             }

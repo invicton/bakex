@@ -9,9 +9,9 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-import invicton.core.builder as builder_mod
-from invicton.core.builder import BuildJob, BuildStatus, get_job, list_jobs, run_build
-from invicton.plugins.base_provider import ProviderResult
+import statim.core.builder as builder_mod
+from statim.core.builder import BuildJob, BuildStatus, get_job, list_jobs, run_build
+from statim.plugins.base_provider import ProviderResult
 
 
 @pytest.fixture(autouse=True)
@@ -22,11 +22,11 @@ def _clean_jobs():
 
 
 def _make_profile(provider="aws", os_="ubuntu22.04"):
-    from invicton.core.blueprint import ComplianceProfile
+    from statim.core.blueprint import ComplianceProfile
 
     return ComplianceProfile.model_validate(
         {
-            "invicton_version": "0.1.0",
+            "statim_version": "0.1.0",
             "kind": "ComplianceProfile",
             "metadata": {"name": "build-test", "version": "1.0"},
             "target": {"os": os_, "provider": provider, "base_image": "ami-00000000"},
@@ -187,9 +187,9 @@ async def test_run_build_local_complete(tmp_path):
     fake_arf.write_text("<arf/>")
 
     with patch.object(builder_mod.registry, "get", return_value=cls):
-        with patch("invicton.core.builder.generate_prehard_playbook", return_value=None):
-            with patch("invicton.core.builder.oscap_scanner.run_scan", return_value=fake_arf):
-                with patch("invicton.openscap.parser.parse_arf", return_value={"rules": []}):
+        with patch("statim.core.builder.generate_prehard_playbook", return_value=None):
+            with patch("statim.core.builder.oscap_scanner.run_scan", return_value=fake_arf):
+                with patch("statim.openscap.parser.parse_arf", return_value={"rules": []}):
                     job = await run_build(profile, tmp_path)
 
     assert job.status == BuildStatus.COMPLETE
@@ -211,10 +211,10 @@ async def test_run_build_local_runs_prehard_playbook(tmp_path):
     fake_playbook.write_text("---")
 
     with patch.object(builder_mod.registry, "get", return_value=cls):
-        with patch("invicton.core.builder.generate_prehard_playbook", return_value=fake_playbook):
-            with patch("invicton.core.builder.oscap_scanner.run_scan", return_value=fake_arf):
-                with patch("invicton.core.builder._run_prehard_ansible") as mock_prehard:
-                    with patch("invicton.openscap.parser.parse_arf", return_value={"rules": []}):
+        with patch("statim.core.builder.generate_prehard_playbook", return_value=fake_playbook):
+            with patch("statim.core.builder.oscap_scanner.run_scan", return_value=fake_arf):
+                with patch("statim.core.builder._run_prehard_ansible") as mock_prehard:
+                    with patch("statim.openscap.parser.parse_arf", return_value={"rules": []}):
                         job = await run_build(profile, tmp_path)
 
     mock_prehard.assert_called_once_with(fake_playbook, "local-vm-1")
@@ -228,7 +228,7 @@ async def test_run_build_local_provision_failure_marks_failed(tmp_path):
     provider.provision.side_effect = RuntimeError("provisioning failed")
 
     with patch.object(builder_mod.registry, "get", return_value=cls):
-        with patch("invicton.core.builder.generate_prehard_playbook", return_value=None):
+        with patch("statim.core.builder.generate_prehard_playbook", return_value=None):
             job = await run_build(profile, tmp_path)
 
     assert job.status == BuildStatus.FAILED
@@ -245,7 +245,7 @@ async def test_run_build_local_ansible_failure_marks_failed(tmp_path):
     fake_arf.write_text("<arf/>")
 
     with patch.object(builder_mod.registry, "get", return_value=cls):
-        with patch("invicton.core.builder.generate_prehard_playbook", return_value=None):
+        with patch("statim.core.builder.generate_prehard_playbook", return_value=None):
             job = await run_build(profile, tmp_path)
 
     assert job.status == BuildStatus.FAILED

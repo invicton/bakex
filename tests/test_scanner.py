@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Vamshi Krishna Santhapuri
-"""Unit tests for invicton/openscap/scanner.py."""
+"""Unit tests for statim/openscap/scanner.py."""
 
 from __future__ import annotations
 
@@ -8,15 +8,15 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from invicton.openscap.scanner import ScanError, _build_command, run_scan
+from statim.openscap.scanner import ScanError, _build_command, run_scan
 
 
 def _make_profile(target_host=None):
-    from invicton.core.blueprint import ComplianceProfile
+    from statim.core.blueprint import ComplianceProfile
 
     return ComplianceProfile.model_validate(
         {
-            "invicton_version": "0.1.0",
+            "statim_version": "0.1.0",
             "kind": "ComplianceProfile",
             "metadata": {"name": "scan-test", "version": "1.0"},
             "target": {"os": "ubuntu22.04", "provider": "aws", "base_image": "ami-0"},
@@ -123,7 +123,7 @@ def test_run_scan_no_output_dir_creates_temp():
     mock_result.stderr = ""
     with patch("subprocess.run", return_value=mock_result):
         arf = run_scan(profile, output_dir=None)
-    assert "invicton-scan-" in str(arf.parent)
+    assert "statim-scan-" in str(arf.parent)
 
 
 def test_run_scan_remote_host_passes_to_command(tmp_path):

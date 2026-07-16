@@ -1,6 +1,6 @@
 # End-to-End User Flow: CIS Level 2 Hardened Amazon Linux 2023 AMI on AWS
 
-This document walks through the complete journey — from a fresh Invicton install to a published, CIS Benchmark Level 2 hardened Amazon Linux 2023 AMI in your AWS account.
+This document walks through the complete journey — from a fresh Statim install to a published, CIS Benchmark Level 2 hardened Amazon Linux 2023 AMI in your AWS account.
 
 ---
 
@@ -17,18 +17,18 @@ Before you start, confirm the following:
 
 ---
 
-## Step 0 — Install and Start Invicton
+## Step 0 — Install and Start Statim
 
 ```bash
-git clone https://github.com/invicton/Invicton.git
-cd Invicton
+git clone https://github.com/invicton/statim.git
+cd Statim
 ```
 
 Edit `docker-compose.yml` and set your secret key:
 
 ```yaml
 environment:
-  INVICTON_SECRET_KEY: "your-strong-passphrase-here"
+  STATIM_SECRET_KEY: "your-strong-passphrase-here"
   ANTHROPIC_API_KEY: "sk-ant-..."          # optional — only for AI Builder
 ```
 
@@ -40,20 +40,20 @@ docker compose up -d
 
 Open **http://localhost:8001** in your browser.
 
-The Invicton home page confirms the engine is running and lists available providers and loaded blueprints.
+The Statim home page confirms the engine is running and lists available providers and loaded blueprints.
 
 ---
 
 ## Step 1 — Add Your AWS Credentials
 
-Invicton mounts `~/.aws` read-only by default. If your credentials are already configured on the host, Invicton picks them up automatically.
+Statim mounts `~/.aws` read-only by default. If your credentials are already configured on the host, Statim picks them up automatically.
 
 To verify or add credentials from the UI:
 
 1. Click **Settings → Integrations** in the top navigation
 2. Select the **AWS** provider
 3. Enter your `Access Key ID`, `Secret Access Key`, and default `Region` (e.g. `us-east-1`)
-4. Click **Save** — Invicton encrypts and stores credentials with AES-128 Fernet
+4. Click **Save** — Statim encrypts and stores credentials with AES-128 Fernet
 
 You will see a green **Connected** badge next to the AWS provider once credentials are valid.
 
@@ -61,7 +61,7 @@ You will see a green **Connected** badge next to the AWS provider once credentia
 
 ## Step 2 — Choose Your Path: Wizard, Blueprint, or AI Builder
 
-Invicton offers three entry points. All three produce the same result: a build job driven by a `HardeningBlueprint`.
+Statim offers three entry points. All three produce the same result: a build job driven by a `HardeningBlueprint`.
 
 | Path | Best for |
 |---|---|
@@ -82,7 +82,7 @@ This guide covers all three, starting with the wizard.
    - **Operating System:** `Amazon Linux 2023`
    - **Cloud Provider:** `AWS`
    - **Region:** `us-east-1`
-   - **Base Image:** Invicton resolves the current AL2023 minimal AMI from SSM Parameter Store automatically. The resolved AMI ID is shown in the preview panel.
+   - **Base Image:** Statim resolves the current AL2023 minimal AMI from SSM Parameter Store automatically. The resolved AMI ID is shown in the preview panel.
 3. Click **Next**
 
 ### Wizard Step 2: Storage
@@ -112,7 +112,7 @@ Click **Next**
 **Users:**
 
 - **Root account:** `Lock` (checked) — direct root login disabled
-- **Admin user:** `invicton-admin`
+- **Admin user:** `statim-admin`
   - Groups: `wheel`
   - Shell: `/bin/bash`
   - SSH keys: paste your public key, or leave empty to use AWS key pair
@@ -179,7 +179,7 @@ cp profiles/templates/amazon-linux-2023-cis-l1-aws.yaml \
 Edit the key fields for Level 2:
 
 ```yaml
-invicton_version: "0.5.0"
+statim_version: "0.5.0"
 kind: HardeningBlueprint
 
 metadata:
@@ -247,8 +247,8 @@ users:
   root:
     lock: true
   accounts:
-    - name: invicton-admin
-      comment: "Invicton-managed admin account"
+    - name: statim-admin
+      comment: "Statim-managed admin account"
       groups: [wheel]
       shell: /bin/bash
       ssh_authorized_keys: []
@@ -275,7 +275,7 @@ controls:
     justification: "Root SSH login prohibited by CIS L2 and organisational policy."
 ```
 
-In the UI, go to **Blueprints → Upload** and load the file. Invicton validates the schema on upload and shows any errors inline.
+In the UI, go to **Blueprints → Upload** and load the file. Statim validates the schema on upload and shows any errors inline.
 
 Click **Build** next to the blueprint to launch.
 
@@ -291,7 +291,7 @@ The fastest path for exploration or rapid iteration.
    ```
    Amazon Linux 2023 on AWS, CIS Level 2 server profile, us-east-1, t3.medium.
    Separate partitions for /var, /var/tmp, /home, and /tmp.
-   Lock root, create invicton-admin user in wheel group.
+   Lock root, create statim-admin user in wheel group.
    Enable AIDE. SELinux enforcing.
    Fail the build on any medium or higher finding.
    ```
@@ -301,9 +301,9 @@ The fastest path for exploration or rapid iteration.
 The agent streams its reasoning to the UI:
 
 ```
-[Invicton AI] Generating HardeningBlueprint for Amazon Linux 2023 CIS L2...
-[Invicton AI] Blueprint validated. Selecting base image: ami-0230bd60aa48260c6 (us-east-1).
-[Invicton AI] Launching build pipeline...
+[Statim AI] Generating HardeningBlueprint for Amazon Linux 2023 CIS L2...
+[Statim AI] Blueprint validated. Selecting base image: ami-0230bd60aa48260c6 (us-east-1).
+[Statim AI] Launching build pipeline...
 ```
 
 From this point the pipeline is fully autonomous. The agent monitors every stage and retries if the compliance grade falls below B.
@@ -318,7 +318,7 @@ Regardless of the entry path, the build now runs through five stages. Monitor pr
 
 **What happens:**
 
-- Invicton calls the AWS provider to create a t3.medium EC2 instance from the base AMI
+- Statim calls the AWS provider to create a t3.medium EC2 instance from the base AMI
 - Attaches the extra EBS volumes defined in the blueprint
 - Configures SSM Session Manager access (no inbound SSH port required)
 - Returns the instance ID to the engine
@@ -340,17 +340,17 @@ Regardless of the entry path, the build now runs through five stages. Monitor pr
 
 **What happens:**
 
-Invicton generates a two-phase Ansible run:
+Statim generates a two-phase Ansible run:
 
 **Phase 1 — Pre-hardening playbook** (generated by `playbook_gen.py`):
 - Partition and format the extra EBS volumes as xfs
 - Configure `/etc/fstab` entries with CIS-required mount options
-- Create the `invicton-admin` user account
+- Create the `statim-admin` user account
 - Set SELinux to enforcing mode
 - Stage FIPS configuration if requested
 
 **Phase 2 — Ansible-Lockdown CIS role**:
-- Invicton pulls `ansible-lockdown.amazon2023_cis` from Ansible Galaxy
+- Statim pulls `ansible-lockdown.amazon2023_cis` from Ansible Galaxy
 - Generates role variables from the blueprint `controls` section
   - Each disabled rule sets `AMAZON2023CIS_<rule>: false`
   - CIS Level 2 variables are set: `amazon2023cis_level: 2`
@@ -387,7 +387,7 @@ Invicton generates a two-phase Ansible run:
 
 **What happens:**
 
-Invicton runs OpenSCAP against the hardened instance:
+Statim runs OpenSCAP against the hardened instance:
 
 ```bash
 oscap xccdf eval \
@@ -429,16 +429,16 @@ If the scan fails, the UI shows the findings table and you can review, adjust co
 
 **What happens:**
 
-- Invicton creates an AMI from the hardened instance
+- Statim creates an AMI from the hardened instance
 - Tags it with compliance metadata:
   ```
-  invicton:profile     = cis_server_l2
-  invicton:os          = amazon-linux-2023
-  invicton:grade       = A
-  invicton:score       = 94.6
-  invicton:built-by    = invicton
-  invicton:blueprint   = amzn2023-cis-l2-aws
-  invicton:build-date  = 2026-04-21
+  statim:profile     = cis_server_l2
+  statim:os          = amazon-linux-2023
+  statim:grade       = A
+  statim:score       = 94.6
+  statim:built-by    = statim
+  statim:blueprint   = amzn2023-cis-l2-aws
+  statim:build-date  = 2026-04-21
   ```
 - Returns the AMI ID to the engine
 
@@ -590,14 +590,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Trigger Invicton build
+      - name: Trigger Statim build
         id: build
         run: |
           RESP=$(curl -sf \
-            -H "X-API-Key: ${{ secrets.INVICTON_API_KEY }}" \
+            -H "X-API-Key: ${{ secrets.STATIM_API_KEY }}" \
             -H "Content-Type: application/json" \
             -d @profiles/user/amazon-linux-2023-cis-l2-aws.yaml \
-            "${{ vars.INVICTON_URL }}/api/builder/build")
+            "${{ vars.STATIM_URL }}/api/builder/build")
           echo "job_id=$(echo $RESP | jq -r '.job_id')" >> $GITHUB_OUTPUT
 
       - name: Wait for build to complete
@@ -605,8 +605,8 @@ jobs:
           JOB_ID=${{ steps.build.outputs.job_id }}
           for i in $(seq 1 40); do
             STATUS=$(curl -sf \
-              -H "X-API-Key: ${{ secrets.INVICTON_API_KEY }}" \
-              "${{ vars.INVICTON_URL }}/api/builder/build/$JOB_ID" \
+              -H "X-API-Key: ${{ secrets.STATIM_API_KEY }}" \
+              "${{ vars.STATIM_URL }}/api/builder/build/$JOB_ID" \
               | jq -r '.status')
             echo "Build status: $STATUS"
             [[ "$STATUS" == "COMPLETE" || "$STATUS" == "FAILED" ]] && break
@@ -616,8 +616,8 @@ jobs:
       - name: Gate on compliance grade
         run: |
           RESULT=$(curl -sf \
-            -H "X-API-Key: ${{ secrets.INVICTON_API_KEY }}" \
-            "${{ vars.INVICTON_URL }}/api/builder/build/${{ steps.build.outputs.job_id }}")
+            -H "X-API-Key: ${{ secrets.STATIM_API_KEY }}" \
+            "${{ vars.STATIM_URL }}/api/builder/build/${{ steps.build.outputs.job_id }}")
           GRADE=$(echo "$RESULT" | jq -r '.grade')
           AMI=$(echo "$RESULT" | jq -r '.artifact_id')
           echo "AMI: $AMI — Grade: $GRADE"
@@ -641,17 +641,17 @@ Or via API (cron example, runs daily at 02:00):
 ```bash
 # trigger-scan.sh
 curl -sf \
-  -H "X-API-Key: $INVICTON_API_KEY" \
+  -H "X-API-Key: $STATIM_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "target": "10.0.1.50",
     "benchmark": "xccdf_org.ssgproject.content_benchmark_AMAZON_LINUX_2023",
     "profile": "xccdf_org.ssgproject.content_profile_cis_server_l2"
   }' \
-  "$INVICTON_URL/api/pipeline/scan"
+  "$STATIM_URL/api/pipeline/scan"
 ```
 
-Add a webhook in **Settings → Webhooks** to receive a notification when drift is detected (any rule regresses from pass to fail). Invicton signs all webhook payloads with HMAC-SHA256.
+Add a webhook in **Settings → Webhooks** to receive a notification when drift is detected (any rule regresses from pass to fail). Statim signs all webhook payloads with HMAC-SHA256.
 
 ---
 
@@ -669,4 +669,4 @@ At this point you have:
 
 Every team member launching instances uses the same AMI. Every instance starts with a verified, documented, CIS Level 2 baseline. Any change to the blueprint goes through the same pipeline — provision, harden, scan, gate, publish.
 
-That is the Invicton workflow.
+That is the Statim workflow.

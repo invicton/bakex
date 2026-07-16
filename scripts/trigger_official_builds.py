@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Vamshi Krishna Santhapuri
-"""Trigger Invicton official blueprint builds via the REST API.
+"""Trigger Statim official blueprint builds via the REST API.
 
 Iterates all profiles in the profiles/ directory that are tagged "official"
 (or all profiles when --all is passed), posts a build job for each, and
@@ -33,7 +33,7 @@ except ImportError:
     print("pyyaml not installed — run: uv sync", file=sys.stderr)
     sys.exit(1)
 
-INVICTON_API_URL = os.environ.get("INVICTON_API_URL", "http://localhost:8000")
+STATIM_API_URL = os.environ.get("STATIM_API_URL", "http://localhost:8000")
 PROFILES_DIR = Path(__file__).parent.parent / "profiles"
 OFFICIAL_TAG = "official"
 BUILD_TIMEOUT_SECONDS = 7200  # 2 hours per build
@@ -69,12 +69,12 @@ def trigger_build(client: httpx.Client, profile_name: str) -> str | None:
     """POST /api/builder/start and return the job_id."""
     # We trigger a build using the profile; provider is inferred from profile target.
     # For the weekly refresh, we always use aws as the default provider.
-    provider = os.environ.get("INVICTON_BUILD_PROVIDER", "aws")
-    region = os.environ.get("INVICTON_BUILD_REGION", os.environ.get("AWS_DEFAULT_REGION", "us-east-1"))
+    provider = os.environ.get("STATIM_BUILD_PROVIDER", "aws")
+    region = os.environ.get("STATIM_BUILD_REGION", os.environ.get("AWS_DEFAULT_REGION", "us-east-1"))
 
     try:
         resp = client.post(
-            f"{INVICTON_API_URL}/api/builder/start",
+            f"{STATIM_API_URL}/api/builder/start",
             json={"profile_name": profile_name, "provider": provider, "region": region},
             timeout=30,
         )
@@ -91,7 +91,7 @@ def poll_job(client: httpx.Client, job_id: str, profile_name: str) -> str:
     deadline = time.time() + BUILD_TIMEOUT_SECONDS
     while time.time() < deadline:
         try:
-            resp = client.get(f"{INVICTON_API_URL}/api/builder/jobs/{job_id}", timeout=15)
+            resp = client.get(f"{STATIM_API_URL}/api/builder/jobs/{job_id}", timeout=15)
             resp.raise_for_status()
             data = resp.json()
             status = data.get("status", "unknown")
@@ -105,7 +105,7 @@ def poll_job(client: httpx.Client, job_id: str, profile_name: str) -> str:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Trigger Invicton official blueprint builds")
+    parser = argparse.ArgumentParser(description="Trigger Statim official blueprint builds")
     parser.add_argument("--all", action="store_true", help="Build ALL profiles, not just official ones")
     parser.add_argument("--profile", help="Build a single named profile")
     parser.add_argument("--no-wait", action="store_true", help="Fire-and-forget; don't poll for completion")
@@ -120,7 +120,7 @@ def main() -> int:
         return 0
 
     print(f"Triggering builds for {len(profiles)} profile(s): {profiles}")
-    print(f"Target API: {INVICTON_API_URL}")
+    print(f"Target API: {STATIM_API_URL}")
 
     results: dict[str, str] = {}
     with httpx.Client() as client:

@@ -8,8 +8,8 @@ starting a server or touching any cloud resources.
 
 from __future__ import annotations
 
-from invicton.api.pipeline import _job_to_response
-from invicton.core.auditor import AuditJob, AuditStatus, score_to_grade
+from statim.api.pipeline import _job_to_response
+from statim.core.auditor import AuditJob, AuditStatus, score_to_grade
 
 # ---------------------------------------------------------------------------
 # Helpers

@@ -238,7 +238,7 @@ def test_execute_build_terminates_qemu_on_failure(kvm, mocked_build_env):
 
 
 def test_kvm_provider_loaded_as_subprocess():
-    from invicton.plugins.loader import load_providers
+    from statim.plugins.loader import load_providers
 
     providers, _ = load_providers(Path("plugins/providers"))
     assert "kvm" in providers

@@ -136,7 +136,7 @@ def test_preview_blueprint_toggle_control(client):
 # ---------------------------------------------------------------------------
 
 _UPLOAD_YAML = """\
-invicton_version: "0.1.0"
+statim_version: "0.1.0"
 kind: ComplianceProfile
 metadata:
   name: uploaded-test-profile
@@ -153,7 +153,7 @@ compliance:
 """
 
 _INVALID_KIND_YAML = """\
-invicton_version: "0.1.0"
+statim_version: "0.1.0"
 kind: NotAProfile
 metadata:
   name: bad-kind

@@ -1,6 +1,6 @@
 # GCP Onboarding
 
-Invicton uses native `gcloud` onboarding scripts and explicit custom-role YAML files for GCP. There is no third-party IaC dependency.
+Statim uses native `gcloud` onboarding scripts and explicit custom-role YAML files for GCP. There is no third-party IaC dependency.
 
 The script must be run by a GCP principal that can enable services, create custom IAM roles, assign IAM roles, create service accounts, and create firewall rules. Customers can review the full permission set in the YAML files and create equivalent IAM bindings manually if their security process requires it.
 
@@ -25,15 +25,15 @@ If you already have a service account, user, or group principal, pass it explici
 
 ```bash
 PROJECT_ID=my-gcp-project \
-PRINCIPAL=serviceAccount:invicton@example.iam.gserviceaccount.com \
+PRINCIPAL=serviceAccount:statim@example.iam.gserviceaccount.com \
 ./onboard.sh
 ```
 
-## Invicton Fields
+## Statim Fields
 
 After the script completes, copy these outputs into **Integrations -> GCP**:
 
-| Script output | Invicton field |
+| Script output | Statim field |
 |---|---|
 | `project_id` | GCP Project ID |
 | `zone` | Zone |
@@ -47,5 +47,5 @@ For authentication, prefer Application Default Credentials or service account im
 
 - The scripts do not create service account keys.
 - The builder role can create and delete temporary instances, disks, and custom images, which can incur costs.
-- The IAP firewall rule allows TCP 22 only from `35.235.240.0/20` to instances tagged `invicton-build` or `invicton-scan`.
-- Customers can inspect `invicton-scanner-role.yaml` and `invicton-builder-role.yaml` to review every granted permission before applying.
+- The IAP firewall rule allows TCP 22 only from `35.235.240.0/20` to instances tagged `statim-build` or `statim-scan`.
+- Customers can inspect `statim-scanner-role.yaml` and `statim-builder-role.yaml` to review every granted permission before applying.

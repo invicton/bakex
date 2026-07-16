@@ -3,7 +3,7 @@
 # Copyright 2026 Vamshi Krishna Santhapuri
 """Azure subprocess provider — speaks JSON-RPC over stdin/stdout.
 
-Run as a standalone script: the core Invicton engine never imports this file.
+Run as a standalone script: the core Statim engine never imports this file.
 Logs go to stderr; only JSON-RPC responses go to stdout.
 
 Connectivity model (no public IP required):
@@ -17,7 +17,7 @@ Requirements on the VM:
   - Azure VM Agent must be running (it starts automatically on boot)
 
 Requires the [azure] optional extra:
-    pip install 'invicton[azure]'
+    pip install 'statim[azure]'
     # or: pip install azure-mgmt-compute azure-mgmt-network azure-identity
 """
 
@@ -118,7 +118,7 @@ def _write_file_on_vm(compute_client, resource_group: str, vm_name: str, remote_
 
     Uses a heredoc with a unique sentinel to safely embed arbitrary content.
     """
-    sentinel = f"INVICTON_EOF_{uuid.uuid4().hex[:8]}"
+    sentinel = f"STATIM_EOF_{uuid.uuid4().hex[:8]}"
     script = [
         f"cat > {remote_path} << '{sentinel}'",
         *content.splitlines(),
@@ -196,8 +196,8 @@ def execute_build(params: dict) -> dict:
     Flow (mirrors AWS SSM pattern):
       1. Create private VM in the specified subnet (no public IP)
       2. Wait for VM agent to be ready
-      3. Upload pre-hardening playbook via Run Command → /tmp/invicton-prehard.yml
-      4. Run: ansible-playbook -c local /tmp/invicton-prehard.yml   (via Run Command)
+      3. Upload pre-hardening playbook via Run Command → /tmp/statim-prehard.yml
+      4. Run: ansible-playbook -c local /tmp/statim-prehard.yml   (via Run Command)
       5. Upload extra_vars.json; run: ansible-playbook -c local ansible/site.yml
       6. Run: oscap xccdf eval ...                                  (via Run Command)
       7. Deallocate + generalize VM → create Azure Managed Image
@@ -205,7 +205,7 @@ def execute_build(params: dict) -> dict:
     """
     creds = params.get("credentials", {})
     subscription_id = creds.get("subscription_id", "")
-    resource_group = creds.get("resource_group", "invicton-builds")
+    resource_group = creds.get("resource_group", "statim-builds")
     location = creds.get("location", "eastus")
     vm_size = creds.get("vm_size", "Standard_D2s_v3")
     vnet_name = creds.get("vnet_name", "")
@@ -226,7 +226,7 @@ def execute_build(params: dict) -> dict:
         from azure.mgmt.network import NetworkManagementClient
     except ImportError as exc:
         raise RuntimeError(
-            "azure-mgmt-compute / azure-mgmt-network not installed. Run: pip install 'invicton[azure]'"
+            "azure-mgmt-compute / azure-mgmt-network not installed. Run: pip install 'statim[azure]'"
         ) from exc
 
     credential = ClientSecretCredential(
@@ -239,9 +239,9 @@ def execute_build(params: dict) -> dict:
 
     build_id = str(uuid.uuid4())[:8]
     safe_name = profile_name.lower().replace("_", "-").replace(".", "-")[:16]
-    vm_name = f"invicton-{safe_name}-{build_id}"
+    vm_name = f"statim-{safe_name}-{build_id}"
     nic_name = f"{vm_name}-nic"
-    admin_user = "invicton_admin"
+    admin_user = "statim_admin"
 
     # Track resources for cleanup
     resources_created: list[tuple[str, callable]] = []
@@ -313,7 +313,7 @@ def execute_build(params: dict) -> dict:
                 computer_name=vm_name[:15],
                 admin_username=admin_user,
                 # Password is disabled; access is via Run Command only
-                admin_password=f"Invicton!{uuid.uuid4().hex[:12]}",
+                admin_password=f"Statim!{uuid.uuid4().hex[:12]}",
                 linux_configuration=LinuxConfiguration(
                     disable_password_authentication=False,
                 ),
@@ -334,14 +334,14 @@ def execute_build(params: dict) -> dict:
         prehard_yaml = params.get("prehard_playbook_yaml")
         if prehard_yaml:
             logger.info("Uploading pre-hardening playbook via Run Command")
-            _write_file_on_vm(compute_client, resource_group, vm_name, "/tmp/invicton-prehard.yml", prehard_yaml)
+            _write_file_on_vm(compute_client, resource_group, vm_name, "/tmp/statim-prehard.yml", prehard_yaml)
 
             logger.info("Running pre-hardening playbook via Run Command")
             _run_command_checked(
                 compute_client,
                 resource_group,
                 vm_name,
-                ["ansible-playbook -c local /tmp/invicton-prehard.yml"],
+                ["ansible-playbook -c local /tmp/statim-prehard.yml"],
                 timeout=600,
             )
 
@@ -368,18 +368,18 @@ def execute_build(params: dict) -> dict:
                 logger.info("Installing Galaxy role %s via Run Command", role)
                 site_yaml = (
                     "---\n"
-                    f"- name: Invicton Compliance Hardening ({role})\n"
+                    f"- name: Statim Compliance Hardening ({role})\n"
                     "  hosts: localhost\n"
                     "  connection: local\n"
                     "  become: true\n"
                     "  roles:\n"
                     f"    - {role}\n"
                 )
-                _write_file_on_vm(compute_client, resource_group, vm_name, "/tmp/invicton-hardening.yml", site_yaml)
+                _write_file_on_vm(compute_client, resource_group, vm_name, "/tmp/statim-hardening.yml", site_yaml)
 
                 hardening_cmds = [
                     f"ansible-galaxy install {role} --force 2>&1 || true",
-                    "ansible-playbook -i 'localhost,' -c local /tmp/invicton-hardening.yml",
+                    "ansible-playbook -i 'localhost,' -c local /tmp/statim-hardening.yml",
                 ]
             elif strategy == "git":
                 repo_url = hardening_config.get("repo_url", "")
@@ -391,10 +391,10 @@ def execute_build(params: dict) -> dict:
                 git_pkg = "git"
                 hardening_cmds = [
                     f"command -v git >/dev/null 2>&1 || (apt-get update && apt-get install -y {git_pkg} || dnf install -y {git_pkg} || yum install -y {git_pkg})",
-                    "rm -rf /etc/ansible/invicton_custom_hardening",
-                    f"git clone {repo_url} /etc/ansible/invicton_custom_hardening",
-                    f"cp /etc/ansible/invicton_custom_hardening/{playbook_file} /tmp/invicton-hardening.yml",
-                    "ansible-playbook -i 'localhost,' -c local /tmp/invicton-hardening.yml",
+                    "rm -rf /etc/ansible/statim_custom_hardening",
+                    f"git clone {repo_url} /etc/ansible/statim_custom_hardening",
+                    f"cp /etc/ansible/statim_custom_hardening/{playbook_file} /tmp/statim-hardening.yml",
+                    "ansible-playbook -i 'localhost,' -c local /tmp/statim-hardening.yml",
                 ]
             else:
                 raise ValueError(f"Unknown hardening strategy: {strategy}")
@@ -413,14 +413,14 @@ def execute_build(params: dict) -> dict:
             compute_client,
             resource_group,
             vm_name,
-            [f"oscap xccdf eval --profile {profile_id} --results /tmp/invicton-scap-results.xml {datastream} || true"],
+            [f"oscap xccdf eval --profile {profile_id} --results /tmp/statim-scap-results.xml {datastream} || true"],
             timeout=600,
         )
 
         # --- Cleanup history (via Run Command) ---
         logger.info("Cleaning up instance logs and history via Run Command")
         cleanup_cmds = [
-            "rm -rf /tmp/invicton-*",
+            "rm -rf /tmp/statim-*",
             "rm -f /var/log/messages /var/log/syslog /var/log/auth.log",
             "journalctl --vacuum-time=1s || true",
             "sh -c 'cat /dev/null > /var/log/wtmp' || true",
@@ -439,7 +439,7 @@ def execute_build(params: dict) -> dict:
         compute_client.virtual_machines.generalize(resource_group, vm_name)
 
         safe_version = profile_version.replace(".", "-")
-        image_name = f"invicton-{safe_name}-{safe_version}"
+        image_name = f"statim-{safe_name}-{safe_version}"
         logger.info("Creating Azure Managed Image: %s", image_name)
 
         from azure.mgmt.compute.models import Image

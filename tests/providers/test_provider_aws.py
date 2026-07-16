@@ -102,7 +102,7 @@ def test_test_connection_success():
     mock_session.client.return_value = mock_sts
     mock_sts.get_caller_identity.return_value = {
         "Account": "123456789012",
-        "Arn": "arn:aws:iam::123456789012:user/invicton",
+        "Arn": "arn:aws:iam::123456789012:user/statim",
     }
 
     with patch.dict(sys.modules, {"boto3": mock_boto3}):
@@ -151,18 +151,18 @@ def test_assume_role_uses_external_id():
     with patch.dict(sys.modules, {"boto3": mock_boto3}):
         session = mod._get_boto_session(
             {
-                "role_arn": "arn:aws:iam::123456789012:role/InvictonBuilderRole",
-                "external_id": "invicton-test-external-id",
+                "role_arn": "arn:aws:iam::123456789012:role/StatimBuilderRole",
+                "external_id": "statim-test-external-id",
                 "region": "us-east-1",
             }
         )
 
     assert session is assumed_session
     mock_sts.assume_role.assert_called_once_with(
-        RoleArn="arn:aws:iam::123456789012:role/InvictonBuilderRole",
-        RoleSessionName="InvictonSession",
+        RoleArn="arn:aws:iam::123456789012:role/StatimBuilderRole",
+        RoleSessionName="StatimSession",
         DurationSeconds=3600,
-        ExternalId="invicton-test-external-id",
+        ExternalId="statim-test-external-id",
     )
 
 

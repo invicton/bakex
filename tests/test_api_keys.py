@@ -1,13 +1,13 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Vamshi Krishna Santhapuri
-"""Unit tests for invicton.core.api_keys — Phase 1 TDD red run."""
+"""Unit tests for statim.core.api_keys — Phase 1 TDD red run."""
 
 from __future__ import annotations
 
 import pytest
 
 # Isolate module state between tests by resetting the in-memory store
-import invicton.core.api_keys as ak_mod
+import statim.core.api_keys as ak_mod
 
 
 @pytest.fixture(autouse=True)

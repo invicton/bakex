@@ -2,7 +2,7 @@ name: Release
 
 # Publishes to PyPI via trusted publishing (OIDC — no stored API token).
 # Requires a "pending publisher" (first release) or publisher configured on
-# pypi.org for project `invicton`: owner invicton, repo Invicton,
+# pypi.org for project `statim`: owner invicton, repo Statim,
 # workflow release.yml, environment pypi.
 
 on:
@@ -30,7 +30,7 @@ jobs:
       - name: Smoke-test the wheel
         run: |
           uv venv /tmp/smoke && VIRTUAL_ENV=/tmp/smoke uv pip install dist/*.whl
-          cd /tmp && /tmp/smoke/bin/python -c "from invicton.main import app; import invicton; print('import OK', invicton.__version__)"
+          cd /tmp && /tmp/smoke/bin/python -c "from statim.main import app; import statim; print('import OK', statim.__version__)"
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7
         with:
           name: dist
@@ -42,7 +42,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: pypi
-      url: https://pypi.org/project/invicton/
+      url: https://pypi.org/project/statim/
     permissions:
       id-token: write
     steps:
@@ -70,7 +70,7 @@ jobs:
       - uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051  # v5
         id: meta
         with:
-          images: ghcr.io/invicton/invicton
+          images: ghcr.io/invicton/statim
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
@@ -99,4 +99,4 @@ jobs:
         run: |
           gh release create "$GITHUB_REF_NAME" dist/* \
             --title "$GITHUB_REF_NAME" \
-            --notes "See [CHANGELOG.md](https://github.com/invicton/Invicton/blob/main/CHANGELOG.md) for details."
+            --notes "See [CHANGELOG.md](https://github.com/invicton/statim/blob/main/CHANGELOG.md) for details."

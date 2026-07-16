@@ -3,7 +3,7 @@
 # Copyright 2026 Vamshi Krishna Santhapuri
 """Linode/Akamai Cloud subprocess provider — speaks JSON-RPC over stdin/stdout.
 
-Run as a standalone script: the core Invicton engine never imports this file.
+Run as a standalone script: the core Statim engine never imports this file.
 Logs go to stderr; only JSON-RPC responses go to stdout.
 
 Connectivity model:
@@ -11,16 +11,16 @@ Connectivity model:
   Access is via SSH. Two options depending on your setup:
 
   Option A — Public IP (default, works anywhere):
-    The build Linode gets its default public IPv4; Invicton connects over the internet.
+    The build Linode gets its default public IPv4; Statim connects over the internet.
 
   Option B — Private networking (recommended for production):
     Set credentials.use_private_ip: true
-    The Invicton host must also be a Linode in the same datacenter (e.g. us-east).
+    The Statim host must also be a Linode in the same datacenter (e.g. us-east).
     The build Linode is assigned a 192.168.x.x private IP reachable within the DC.
     No public SSH exposure needed.
 
 Requires the [linode] optional extra:
-    pip install 'invicton[linode]'
+    pip install 'statim[linode]'
     # or: pip install linode-api4
 """
 
@@ -62,10 +62,10 @@ def _generate_ssh_keypair() -> tuple[str, str, str]:
     """Generate an ephemeral ed25519 key pair. Returns (key_path, pub_key, tmp_dir)."""
     import tempfile
 
-    tmp = tempfile.mkdtemp(prefix="invicton-linode-key-")
-    key_path = os.path.join(tmp, "invicton-build")
+    tmp = tempfile.mkdtemp(prefix="statim-linode-key-")
+    key_path = os.path.join(tmp, "statim-build")
     subprocess.run(
-        ["ssh-keygen", "-t", "ed25519", "-f", key_path, "-N", "", "-C", "invicton-build"],
+        ["ssh-keygen", "-t", "ed25519", "-f", key_path, "-N", "", "-C", "statim-build"],
         check=True,
         capture_output=True,
     )
@@ -163,7 +163,7 @@ def _linode_client(api_token: str):
     try:
         from linode_api4 import LinodeClient
     except ImportError as exc:
-        raise RuntimeError("linode-api4 is not installed. Run: pip install 'invicton[linode]'") from exc
+        raise RuntimeError("linode-api4 is not installed. Run: pip install 'statim[linode]'") from exc
     return LinodeClient(api_token)
 
 
@@ -226,7 +226,7 @@ def execute_build(params: dict) -> dict:
     """Full Linode → Ansible hardening → OpenSCAP → Private Image pipeline.
 
     Connectivity: SSH to the Linode's public or private IP.
-    Set credentials.use_private_ip: true if the Invicton host is also a Linode
+    Set credentials.use_private_ip: true if the Statim host is also a Linode
     in the same datacenter — this avoids exposing SSH to the public internet.
     """
     creds = params.get("credentials", {})
@@ -248,7 +248,7 @@ def execute_build(params: dict) -> dict:
     key_path, pub_key, tmp_dir = _generate_ssh_keypair()
 
     safe_name = profile_name.lower().replace("_", "-").replace(".", "-")[:20]
-    linode_label = f"invicton-{safe_name}-{int(time.time())}"
+    linode_label = f"statim-{safe_name}-{int(time.time())}"
     # Linode images default to 'root' SSH access
     ssh_user = "root"
     linode_instance = None
@@ -261,7 +261,7 @@ def execute_build(params: dict) -> dict:
             image=base_image,
             label=linode_label,
             authorized_keys=[pub_key],
-            tags=["invicton", "invicton-build"],
+            tags=["statim", "statim-build"],
             private_ip=use_private_ip,  # Enable private networking if requested
         )
         logger.info(
@@ -304,9 +304,9 @@ def execute_build(params: dict) -> dict:
                 "benchmark": params.get("benchmark", ""),
                 "profile": profile_id,
                 "datastream": datastream,
-                "invicton_target_os": params.get("os", "ubuntu22"),
+                "statim_target_os": params.get("os", "ubuntu22"),
             }
-            extra_vars_path = os.path.join(tmp_dir, "invicton_vars.json")
+            extra_vars_path = os.path.join(tmp_dir, "statim_vars.json")
             with open(extra_vars_path, "w") as fh:
                 json.dump(extra_vars, fh)
 
@@ -314,7 +314,7 @@ def execute_build(params: dict) -> dict:
                 role = hardening_config.get("role", "auto")
                 logger.info("Running Ansible-Lockdown hardening (role: %s)", role)
                 # Pass the strategy variables to the local site.yml wrapper
-                extra_vars["invicton_lockdown_role"] = role
+                extra_vars["statim_lockdown_role"] = role
                 with open(extra_vars_path, "w") as fh:
                     json.dump(extra_vars, fh)
 
@@ -354,14 +354,14 @@ def execute_build(params: dict) -> dict:
             connect_ip,
             key_path,
             ssh_user,
-            f"oscap xccdf eval --profile {profile_id} --results /tmp/invicton-scap-results.xml {datastream} || true",
+            f"oscap xccdf eval --profile {profile_id} --results /tmp/statim-scap-results.xml {datastream} || true",
             timeout=600,
         )
 
         # Cleanup history
         logger.info("Cleaning up instance logs and history via SSH")
         cleanup_cmds = [
-            "rm -rf /tmp/invicton-*",
+            "rm -rf /tmp/statim-*",
             "rm -f /var/log/messages /var/log/syslog /var/log/auth.log",
             "journalctl --vacuum-time=1s || true",
             "sh -c 'cat /dev/null > /var/log/wtmp' || true",
@@ -390,12 +390,12 @@ def execute_build(params: dict) -> dict:
 
         # Create Linode Private Image from the boot disk
         safe_version = profile_version.replace(".", "-")
-        image_label = f"invicton-{safe_name}-{safe_version}"
+        image_label = f"statim-{safe_name}-{safe_version}"
         logger.info("Creating Linode Private Image '%s' from disk %d", image_label, boot_disk.id)
         image = client.images.create(
             disk=boot_disk.id,
             label=image_label,
-            description=f"Invicton hardened image: {profile_name} v{profile_version}",
+            description=f"Statim hardened image: {profile_name} v{profile_version}",
         )
         logger.info("Linode Private Image %s (%s) created", image.label, image.id)
 

@@ -3,7 +3,7 @@
 # Copyright 2026 Vamshi Krishna Santhapuri
 """DigitalOcean subprocess provider — speaks JSON-RPC over stdin/stdout.
 
-Run as a standalone script: the core Invicton engine never imports this file.
+Run as a standalone script: the core Statim engine never imports this file.
 Logs go to stderr; only JSON-RPC responses go to stdout.
 
 Connectivity model:
@@ -14,17 +14,17 @@ Connectivity model:
 
   Option A — Public IP (default, works anywhere):
     The build Droplet receives its default public IPv4.
-    Invicton connects over the internet (ensure firewall allows port 22
-    from the Invicton host only — not 0.0.0.0/0).
+    Statim connects over the internet (ensure firewall allows port 22
+    from the Statim host only — not 0.0.0.0/0).
 
   Option B — VPC private networking (recommended for production):
     Set credentials.use_private_ip: true
-    The Invicton host must also be a Droplet in the same DigitalOcean
+    The Statim host must also be a Droplet in the same DigitalOcean
     region/VPC. The build Droplet gets a 10.x.x.x private IP reachable
     within the VPC — no internet exposure needed.
 
 Requires the [digitalocean] optional extra:
-    pip install 'invicton[digitalocean]'
+    pip install 'statim[digitalocean]'
     # or: pip install requests
 """
 
@@ -69,7 +69,7 @@ def _do_api(token: str, method: str, path: str, **kwargs) -> dict | list | None:
     try:
         import requests
     except ImportError as exc:
-        raise RuntimeError("requests is not installed. Run: pip install 'invicton[digitalocean]'") from exc
+        raise RuntimeError("requests is not installed. Run: pip install 'statim[digitalocean]'") from exc
 
     resp = requests.request(
         method,
@@ -142,10 +142,10 @@ def _generate_ssh_keypair() -> tuple[str, str, str]:
     """Generate an ephemeral ed25519 key pair. Returns (key_path, pub_key, tmp_dir)."""
     import tempfile
 
-    tmp = tempfile.mkdtemp(prefix="invicton-do-key-")
-    key_path = os.path.join(tmp, "invicton-build")
+    tmp = tempfile.mkdtemp(prefix="statim-do-key-")
+    key_path = os.path.join(tmp, "statim-build")
     subprocess.run(
-        ["ssh-keygen", "-t", "ed25519", "-f", key_path, "-N", "", "-C", "invicton-build"],
+        ["ssh-keygen", "-t", "ed25519", "-f", key_path, "-N", "", "-C", "statim-build"],
         check=True,
         capture_output=True,
     )
@@ -272,7 +272,7 @@ def execute_build(params: dict) -> dict:
     """Full Droplet → Ansible hardening → OpenSCAP → Snapshot pipeline.
 
     Connectivity: SSH to the Droplet's public or VPC private IP.
-    Set credentials.use_private_ip: true if the Invicton host is a Droplet
+    Set credentials.use_private_ip: true if the Statim host is a Droplet
     in the same region/VPC to avoid internet SSH exposure.
     """
     creds = params.get("credentials", {})
@@ -293,7 +293,7 @@ def execute_build(params: dict) -> dict:
 
     key_path, pub_key, tmp_dir = _generate_ssh_keypair()
     safe_name = profile_name.lower().replace("_", "-").replace(".", "-")[:20]
-    droplet_name = f"invicton-{safe_name}-{int(time.time())}"
+    droplet_name = f"statim-{safe_name}-{int(time.time())}"
     # DigitalOcean images use 'root' by default
     ssh_user = "root"
 
@@ -303,7 +303,7 @@ def execute_build(params: dict) -> dict:
     try:
         # Register ephemeral SSH key with DigitalOcean so it can be injected at
         # Droplet creation time (DO does not allow key injection after creation)
-        key_label = f"invicton-build-{int(time.time())}"
+        key_label = f"statim-build-{int(time.time())}"
         logger.info("Registering ephemeral SSH key with DigitalOcean")
         do_ssh_key_id = _register_ssh_key(token, pub_key, key_label)
 
@@ -314,7 +314,7 @@ def execute_build(params: dict) -> dict:
             "size": size,
             "image": base_image,
             "ssh_keys": [do_ssh_key_id],
-            "tags": ["invicton", "invicton-build"],
+            "tags": ["statim", "statim-build"],
             "private_networking": use_private_ip,
         }
         logger.info(
@@ -356,9 +356,9 @@ def execute_build(params: dict) -> dict:
                 "benchmark": params.get("benchmark", ""),
                 "profile": profile_id,
                 "datastream": datastream,
-                "invicton_target_os": os_name,
+                "statim_target_os": os_name,
             }
-            extra_vars_path = os.path.join(tmp_dir, "invicton_vars.json")
+            extra_vars_path = os.path.join(tmp_dir, "statim_vars.json")
             with open(extra_vars_path, "w") as fh:
                 json.dump(extra_vars, fh)
 
@@ -366,7 +366,7 @@ def execute_build(params: dict) -> dict:
                 role = hardening_config.get("role", "auto")
                 logger.info("Running Ansible-Lockdown hardening (role: %s)", role)
                 # Pass the strategy variables to the local site.yml wrapper
-                extra_vars["invicton_lockdown_role"] = role
+                extra_vars["statim_lockdown_role"] = role
                 with open(extra_vars_path, "w") as fh:
                     json.dump(extra_vars, fh)
 
@@ -406,14 +406,14 @@ def execute_build(params: dict) -> dict:
             connect_ip,
             key_path,
             ssh_user,
-            f"oscap xccdf eval --profile {profile_id} --results /tmp/invicton-scap-results.xml {datastream} || true",
+            f"oscap xccdf eval --profile {profile_id} --results /tmp/statim-scap-results.xml {datastream} || true",
             timeout=600,
         )
 
         # Cleanup history
         logger.info("Cleaning up instance logs and history via SSH")
         cleanup_cmds = [
-            "rm -rf /tmp/invicton-*",
+            "rm -rf /tmp/statim-*",
             "rm -f /var/log/messages /var/log/syslog /var/log/auth.log",
             "journalctl --vacuum-time=1s || true",
             "sh -c 'cat /dev/null > /var/log/wtmp' || true",
@@ -438,7 +438,7 @@ def execute_build(params: dict) -> dict:
 
         # Create Snapshot
         safe_version = profile_version.replace(".", "-")
-        snapshot_name = f"invicton-{safe_name}-{safe_version}"
+        snapshot_name = f"statim-{safe_name}-{safe_version}"
         logger.info("Creating Droplet snapshot: %s", snapshot_name)
         snap_resp = _do_api(
             token,

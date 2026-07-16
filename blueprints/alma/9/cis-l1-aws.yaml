@@ -1,9 +1,9 @@
-# Invicton HardeningBlueprint — AlmaLinux 9 CIS Level 1 Server (AWS)
+# Statim HardeningBlueprint — AlmaLinux 9 CIS Level 1 Server (AWS)
 #
 # AlmaLinux 9 is a RHEL 9 binary-compatible rebuild from the CloudLinux team.
 # Uses the same SCAP datastream as Rocky Linux / RHEL 9.
 
-invicton_version: "0.5.0"
+statim_version: "0.5.0"
 kind: HardeningBlueprint
 
 metadata:
@@ -62,8 +62,8 @@ users:
     lock: true
 
   accounts:
-    - name: invicton-admin
-      comment: "Invicton-managed admin account"
+    - name: statim-admin
+      comment: "Statim-managed admin account"
       groups:
         - wheel
       shell: /bin/bash

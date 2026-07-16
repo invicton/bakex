@@ -3,25 +3,25 @@
 # Copyright 2026 Vamshi Krishna Santhapuri
 """GCP subprocess provider — speaks JSON-RPC over stdin/stdout.
 
-Run as a standalone script: the core Invicton engine never imports this file.
+Run as a standalone script: the core Statim engine never imports this file.
 Logs go to stderr; only JSON-RPC responses go to stdout.
 
 Connectivity model (no public IP required):
-  Invicton host → Cloud IAP TCP tunnel → GCE instance (private subnet)
+  Statim host → Cloud IAP TCP tunnel → GCE instance (private subnet)
   Ansible connects to the instance through the IAP tunnel using a local port
   forward created by `gcloud compute start-iap-tunnel`.
 
-Requirements on the Invicton host:
+Requirements on the Statim host:
   - gcloud CLI authenticated with the service account (or ADC)
   - IAP API enabled: gcloud services enable iap.googleapis.com
   - IAP-secured Tunnel User role on the VM resource
 
 Requirements on the GCP project:
   - VPC firewall rule allowing IAP to reach port 22 on the build VMs:
-      Source: 35.235.240.0/20  →  Target: tag invicton-build  →  TCP 22
+      Source: 35.235.240.0/20  →  Target: tag statim-build  →  TCP 22
 
 Requires the [gcp] optional extra:
-    pip install 'invicton[gcp]'
+    pip install 'statim[gcp]'
     # or: pip install google-cloud-compute google-auth
 """
 
@@ -64,10 +64,10 @@ def _generate_ssh_keypair() -> tuple[str, str, str]:
     """Generate an ephemeral ed25519 key pair. Returns (key_path, pub_key, tmp_dir)."""
     import tempfile
 
-    tmp = tempfile.mkdtemp(prefix="invicton-gcp-key-")
-    key_path = os.path.join(tmp, "invicton-build")
+    tmp = tempfile.mkdtemp(prefix="statim-gcp-key-")
+    key_path = os.path.join(tmp, "statim-build")
     subprocess.run(
-        ["ssh-keygen", "-t", "ed25519", "-f", key_path, "-N", "", "-C", "invicton-build"],
+        ["ssh-keygen", "-t", "ed25519", "-f", key_path, "-N", "", "-C", "statim-build"],
         check=True,
         capture_output=True,
     )
@@ -290,7 +290,7 @@ def execute_build(params: dict) -> dict:
     """Full GCE build pipeline via IAP — no public IP required.
 
     Flow:
-      1. Launch private GCE instance (no external IP, tag: invicton-build)
+      1. Launch private GCE instance (no external IP, tag: statim-build)
       2. Open IAP TCP tunnel → port 22
       3. Run pre-hardening Ansible playbook through the tunnel
       4. Run Ansible-Lockdown hardening through the tunnel
@@ -321,7 +321,7 @@ def execute_build(params: dict) -> dict:
     try:
         from google.cloud import compute_v1
     except ImportError as exc:
-        raise RuntimeError("google-cloud-compute is not installed. Run: pip install 'invicton[gcp]'") from exc
+        raise RuntimeError("google-cloud-compute is not installed. Run: pip install 'statim[gcp]'") from exc
 
     credentials = _get_credentials(creds)
     instances_client = compute_v1.InstancesClient(credentials=credentials)
@@ -331,7 +331,7 @@ def execute_build(params: dict) -> dict:
 
     key_path, pub_key, tmp_dir = _generate_ssh_keypair()
     safe_name = profile_name.lower().replace("_", "-").replace(".", "-")[:20]
-    instance_name = f"invicton-{safe_name}-{int(time.time())}"
+    instance_name = f"statim-{safe_name}-{int(time.time())}"
     local_port = random.randint(20000, 29999)
     iap_proc = None
 
@@ -363,12 +363,12 @@ def execute_build(params: dict) -> dict:
             network_interfaces=[net_iface],
             metadata=compute_v1.Metadata(
                 items=[
-                    compute_v1.Items(key="ssh-keys", value=f"invicton_build:{pub_key}"),
+                    compute_v1.Items(key="ssh-keys", value=f"statim_build:{pub_key}"),
                     compute_v1.Items(key="enable-oslogin", value="false"),
                 ]
             ),
             # Tag drives the firewall rule allowing IAP → port 22
-            tags=compute_v1.Tags(items=["invicton-build"]),
+            tags=compute_v1.Tags(items=["statim-build"]),
         )
 
         logger.info("Launching private GCE instance %s (%s) in %s", instance_name, machine_type, zone)
@@ -383,13 +383,13 @@ def execute_build(params: dict) -> dict:
         iap_proc = _start_iap_tunnel(instance_name, zone, project_id, local_port)
 
         # Wait for SSH through the tunnel
-        _wait_for_ssh_via_tunnel(local_port, key_path, "invicton_build", timeout=300)
+        _wait_for_ssh_via_tunnel(local_port, key_path, "statim_build", timeout=300)
 
         # Pre-hardening system configuration (hostname, filesystem, users)
         prehard_yaml = params.get("prehard_playbook_yaml")
         if prehard_yaml:
             logger.info("Running pre-hardening system configuration via IAP tunnel")
-            _run_ansible_yaml_via_tunnel(prehard_yaml, local_port, key_path, "invicton_build", tmp_dir)
+            _run_ansible_yaml_via_tunnel(prehard_yaml, local_port, key_path, "statim_build", tmp_dir)
 
         # Pluggable Hardening
         hardening = params.get("hardening", {})
@@ -403,9 +403,9 @@ def execute_build(params: dict) -> dict:
                 "benchmark": params.get("benchmark", ""),
                 "profile": profile_id,
                 "datastream": datastream,
-                "invicton_target_os": os_name,
+                "statim_target_os": os_name,
             }
-            extra_vars_path = os.path.join(tmp_dir, "invicton_vars.json")
+            extra_vars_path = os.path.join(tmp_dir, "statim_vars.json")
             with open(extra_vars_path, "w") as fh:
                 json.dump(extra_vars, fh)
 
@@ -413,7 +413,7 @@ def execute_build(params: dict) -> dict:
                 role = hardening.get("role", "auto")
                 logger.info("Running Ansible-Lockdown hardening via IAP tunnel (role: %s)", role)
                 # Pass the strategy variables to the local site.yml wrapper
-                extra_vars["invicton_lockdown_role"] = role
+                extra_vars["statim_lockdown_role"] = role
                 with open(extra_vars_path, "w") as fh:
                     json.dump(extra_vars, fh)
 
@@ -421,7 +421,7 @@ def execute_build(params: dict) -> dict:
                     "ansible/site.yml",
                     local_port,
                     key_path,
-                    "invicton_build",
+                    "statim_build",
                     extra_vars_file=extra_vars_path,
                 )
 
@@ -441,7 +441,7 @@ def execute_build(params: dict) -> dict:
                     playbook_path,
                     local_port,
                     key_path,
-                    "invicton_build",
+                    "statim_build",
                     extra_vars_file=extra_vars_path,
                 )
             else:
@@ -449,13 +449,15 @@ def execute_build(params: dict) -> dict:
 
         # OpenSCAP compliance scan through the tunnel
         logger.info("Running OpenSCAP scan via IAP tunnel")
-        oscap_cmd = f"sudo oscap xccdf eval --profile {profile_id} --results /tmp/invicton-scap-results.xml {datastream} || true"
-        _run_remote_cmd_via_tunnel(local_port, key_path, "invicton_build", oscap_cmd, timeout=600)
+        oscap_cmd = (
+            f"sudo oscap xccdf eval --profile {profile_id} --results /tmp/statim-scap-results.xml {datastream} || true"
+        )
+        _run_remote_cmd_via_tunnel(local_port, key_path, "statim_build", oscap_cmd, timeout=600)
 
         # Cleanup history
         logger.info("Cleaning up instance logs and history via IAP tunnel")
         cleanup_cmds = [
-            "sudo rm -rf /tmp/invicton-*",
+            "sudo rm -rf /tmp/statim-*",
             "sudo rm -f /var/log/messages /var/log/syslog /var/log/auth.log",
             "sudo journalctl --vacuum-time=1s || true",
             "sudo sh -c 'cat /dev/null > /var/log/wtmp' || true",
@@ -464,7 +466,7 @@ def execute_build(params: dict) -> dict:
             "sudo find /home -name '.bash_history' -exec sh -c 'cat /dev/null > {}' \\;",
         ]
         try:
-            _run_remote_cmd_via_tunnel(local_port, key_path, "invicton_build", " ; ".join(cleanup_cmds), timeout=120)
+            _run_remote_cmd_via_tunnel(local_port, key_path, "statim_build", " ; ".join(cleanup_cmds), timeout=120)
         except Exception as exc:
             logger.warning("History cleanup encountered an issue, but proceeding with snapshot: %s", exc)
 
@@ -480,14 +482,14 @@ def execute_build(params: dict) -> dict:
 
         # Create GCP Custom Image from the stopped instance's boot disk
         safe_version = profile_version.replace(".", "-")
-        image_name = f"invicton-{safe_name}-{safe_version}"[:63].lower()
+        image_name = f"statim-{safe_name}-{safe_version}"[:63].lower()
 
         logger.info("Creating GCP Custom Image: %s", image_name)
         img_op = images_client.insert(
             project=project_id,
             image_resource=compute_v1.Image(
                 name=image_name,
-                description=f"Invicton hardened image: {profile_name} v{profile_version}",
+                description=f"Statim hardened image: {profile_name} v{profile_version}",
                 source_disk=f"zones/{zone}/disks/{instance_name}",
             ),
         )

@@ -4,23 +4,23 @@
 
 These tests make REAL AWS API calls. They require:
 
-  INVICTON_RUN_INTEGRATION=1          — explicit opt-in gate
+  STATIM_RUN_INTEGRATION=1          — explicit opt-in gate
   AWS_ACCESS_KEY_ID                  — IAM access key
   AWS_SECRET_ACCESS_KEY              — IAM secret key
   AWS_DEFAULT_REGION                 — target region (default: ap-south-1)
-  INVICTON_SUBNET_ID                  — subnet-xxx or vpc-xxx for EC2 launch
-  INVICTON_SECURITY_GROUP_ID          — security group for the build instance
-  INVICTON_IAM_PROFILE                — EC2 IAM instance profile with SSM + EC2 permissions
-  INVICTON_EXPECTED_ACCOUNT           — (optional) expected AWS account ID for validation
+  STATIM_SUBNET_ID                  — subnet-xxx or vpc-xxx for EC2 launch
+  STATIM_SECURITY_GROUP_ID          — security group for the build instance
+  STATIM_IAM_PROFILE                — EC2 IAM instance profile with SSM + EC2 permissions
+  STATIM_EXPECTED_ACCOUNT           — (optional) expected AWS account ID for validation
 
 Run with:
-    INVICTON_RUN_INTEGRATION=1 \
+    STATIM_RUN_INTEGRATION=1 \
     AWS_ACCESS_KEY_ID=... \
     AWS_SECRET_ACCESS_KEY=... \
     AWS_DEFAULT_REGION=ap-south-1 \
-    INVICTON_SUBNET_ID=subnet-... \
-    INVICTON_SECURITY_GROUP_ID=sg-... \
-    INVICTON_IAM_PROFILE=InvictonBuilderRole \
+    STATIM_SUBNET_ID=subnet-... \
+    STATIM_SECURITY_GROUP_ID=sg-... \
+    STATIM_IAM_PROFILE=StatimBuilderRole \
     pytest tests/integration/ -v -s
 """
 
@@ -38,7 +38,7 @@ import pytest
 # Gate: skip entire module if opt-in env var is absent
 # ---------------------------------------------------------------------------
 
-_INTEGRATION_ENABLED = os.environ.get("INVICTON_RUN_INTEGRATION", "").strip() == "1"
+_INTEGRATION_ENABLED = os.environ.get("STATIM_RUN_INTEGRATION", "").strip() == "1"
 
 collect_ignore_glob: list[str] = []
 
@@ -48,10 +48,10 @@ if not _INTEGRATION_ENABLED:
 
 
 def pytest_collection_modifyitems(items, config):
-    """Skip all integration tests unless INVICTON_RUN_INTEGRATION=1."""
+    """Skip all integration tests unless STATIM_RUN_INTEGRATION=1."""
     if _INTEGRATION_ENABLED:
         return
-    skip_marker = pytest.mark.skip(reason="Set INVICTON_RUN_INTEGRATION=1 to run live AWS integration tests")
+    skip_marker = pytest.mark.skip(reason="Set STATIM_RUN_INTEGRATION=1 to run live AWS integration tests")
     for item in items:
         if "/integration/" in str(item.fspath):
             item.add_marker(skip_marker)
@@ -122,9 +122,9 @@ def aws_credentials() -> dict:
         "aws_access_key_id": _require_env("AWS_ACCESS_KEY_ID"),
         "aws_secret_access_key": _require_env("AWS_SECRET_ACCESS_KEY"),
         "region": os.environ.get("AWS_DEFAULT_REGION", "ap-south-1").strip(),
-        "subnet_id": _require_env("INVICTON_SUBNET_ID"),
-        "security_group_id": _require_env("INVICTON_SECURITY_GROUP_ID"),
-        "iam_profile_name": _require_env("INVICTON_IAM_PROFILE"),
+        "subnet_id": _require_env("STATIM_SUBNET_ID"),
+        "security_group_id": _require_env("STATIM_SECURITY_GROUP_ID"),
+        "iam_profile_name": _require_env("STATIM_IAM_PROFILE"),
     }
 
 
@@ -136,4 +136,4 @@ def aws_region(aws_credentials) -> str:
 @pytest.fixture(scope="session")
 def expected_account() -> str:
     """Optional: expected AWS account ID for cross-checking test_connection."""
-    return os.environ.get("INVICTON_EXPECTED_ACCOUNT", "").strip()
+    return os.environ.get("STATIM_EXPECTED_ACCOUNT", "").strip()

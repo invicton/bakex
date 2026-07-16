@@ -10,13 +10,13 @@ from __future__ import annotations
 
 from pydantic import ValidationError
 
-from invicton.core.blueprint import ComplianceProfile
+from statim.core.blueprint import ComplianceProfile
 
 
 def _minimal_profile(**overrides) -> dict:
     """Return a minimal valid blueprint dict, with optional field overrides."""
     base = {
-        "invicton_version": "0.2.0",
+        "statim_version": "0.2.0",
         "kind": "HardeningBlueprint",
         "metadata": {
             "name": "test-sec",
@@ -102,7 +102,7 @@ def test_null_bytes_in_metadata_name_handled_safely():
 # ---------------------------------------------------------------------------
 # SEC-11: Path traversal in metadata.name must be rejected — this value is
 # used to build a filesystem path (`user_profiles_dir / f"{name}.yaml"`) in
-# invicton/api/blueprints.py::upload_blueprint.
+# statim/api/blueprints.py::upload_blueprint.
 # ---------------------------------------------------------------------------
 
 

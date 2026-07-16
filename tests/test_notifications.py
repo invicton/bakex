@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Vamshi Krishna Santhapuri
-"""Unit tests for invicton.core.notifications — Phase 1 TDD red run."""
+"""Unit tests for statim.core.notifications — Phase 1 TDD red run."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-import invicton.core.notifications as notif_mod
+import statim.core.notifications as notif_mod
 
 
 @pytest.fixture(autouse=True)
@@ -95,13 +95,13 @@ async def test_fire_webhook_hmac_signature_correct():
     mock_client.__aexit__ = AsyncMock(return_value=False)
     mock_client.post = mock_post
 
-    with patch("invicton.core.notifications.httpx") as mock_httpx:
+    with patch("statim.core.notifications.httpx") as mock_httpx:
         mock_httpx.AsyncClient.return_value = mock_client
         await notif_mod.fire_webhook("scan.complete", {"job_id": "test-001"})
 
-    assert "X-Invicton-Signature" in captured_headers, "X-Invicton-Signature header missing"
+    assert "X-Statim-Signature" in captured_headers, "X-Statim-Signature header missing"
 
-    sig_header = captured_headers["X-Invicton-Signature"]
+    sig_header = captured_headers["X-Statim-Signature"]
     assert sig_header.startswith("sha256="), "Signature must start with 'sha256='"
 
     body_bytes = captured_body["raw"].encode() if isinstance(captured_body["raw"], str) else captured_body["raw"]
@@ -132,7 +132,7 @@ async def test_fire_webhook_only_fires_to_subscribed():
     mock_client.__aexit__ = AsyncMock(return_value=False)
     mock_client.post = mock_post
 
-    with patch("invicton.core.notifications.httpx") as mock_httpx:
+    with patch("statim.core.notifications.httpx") as mock_httpx:
         mock_httpx.AsyncClient.return_value = mock_client
         await notif_mod.fire_webhook("scan.complete", {"job_id": "x"})
 
@@ -162,7 +162,7 @@ async def test_disabled_webhook_not_fired():
     mock_client.__aexit__ = AsyncMock(return_value=False)
     mock_client.post = mock_post
 
-    with patch("invicton.core.notifications.httpx") as mock_httpx:
+    with patch("statim.core.notifications.httpx") as mock_httpx:
         mock_httpx.AsyncClient.return_value = mock_client
         await notif_mod.fire_webhook("scan.complete", {"job_id": "x"})
 
@@ -186,7 +186,7 @@ async def test_fire_webhook_swallows_connection_error():
     mock_client.__aexit__ = AsyncMock(return_value=False)
     mock_client.post = mock_post
 
-    with patch("invicton.core.notifications.httpx") as mock_httpx:
+    with patch("statim.core.notifications.httpx") as mock_httpx:
         mock_httpx.AsyncClient.return_value = mock_client
         # Must not raise — fire_webhook is best-effort
         await notif_mod.fire_webhook("scan.complete", {"job_id": "x"})
@@ -212,7 +212,7 @@ async def test_fire_webhook_payload_contains_event_and_timestamp():
     mock_client.__aexit__ = AsyncMock(return_value=False)
     mock_client.post = mock_post
 
-    with patch("invicton.core.notifications.httpx") as mock_httpx:
+    with patch("statim.core.notifications.httpx") as mock_httpx:
         mock_httpx.AsyncClient.return_value = mock_client
         await notif_mod.fire_webhook("scan.complete", {"job_id": "test-999"})
 
@@ -222,7 +222,7 @@ async def test_fire_webhook_payload_contains_event_and_timestamp():
 
 
 # ---------------------------------------------------------------------------
-# Extra: X-Invicton-Event header matches fired event
+# Extra: X-Statim-Event header matches fired event
 # ---------------------------------------------------------------------------
 
 
@@ -241,11 +241,11 @@ async def test_fire_webhook_event_header_matches():
     mock_client.__aexit__ = AsyncMock(return_value=False)
     mock_client.post = mock_post
 
-    with patch("invicton.core.notifications.httpx") as mock_httpx:
+    with patch("statim.core.notifications.httpx") as mock_httpx:
         mock_httpx.AsyncClient.return_value = mock_client
         await notif_mod.fire_webhook("build.complete", {"build_id": "b-1"})
 
-    assert captured_headers.get("X-Invicton-Event") == "build.complete"
+    assert captured_headers.get("X-Statim-Event") == "build.complete"
 
 
 # ---------------------------------------------------------------------------
@@ -257,5 +257,5 @@ async def test_fire_webhook_event_header_matches():
 async def test_fire_webhook_noop_when_no_matching_webhooks():
     """fire_webhook should return silently when there are no matching subscribers."""
     # No webhooks registered — should not import or call httpx at all
-    with patch("invicton.core.notifications.httpx", side_effect=AssertionError("httpx must not be called")):
+    with patch("statim.core.notifications.httpx", side_effect=AssertionError("httpx must not be called")):
         await notif_mod.fire_webhook("scan.complete", {"job_id": "x"})

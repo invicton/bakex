@@ -3,10 +3,10 @@
 # Copyright 2026 Vamshi Krishna Santhapuri
 """AWS subprocess provider — speaks JSON-RPC over stdin/stdout.
 
-Run as a standalone script: the core Invicton engine never imports this file.
+Run as a standalone script: the core Statim engine never imports this file.
 Logs go to stderr; only JSON-RPC responses go to stdout.
 
-Requires the [aws] optional extra: pip install invicton[aws]
+Requires the [aws] optional extra: pip install statim[aws]
 """
 
 from __future__ import annotations
@@ -40,7 +40,7 @@ def _get_boto_session(credentials: dict):
     try:
         import boto3
     except ImportError as exc:
-        raise RuntimeError("boto3 is not installed. Install with: pip install invicton[aws]") from exc
+        raise RuntimeError("boto3 is not installed. Install with: pip install statim[aws]") from exc
 
     role_arn = credentials.get("role_arn", "")
     external_id = credentials.get("external_id", "")
@@ -68,7 +68,7 @@ def _get_boto_session(credentials: dict):
     sts = session.client("sts")
     assume_kwargs = {
         "RoleArn": role_arn,
-        "RoleSessionName": "InvictonSession",
+        "RoleSessionName": "StatimSession",
         "DurationSeconds": 3600,
     }
     if external_id:
@@ -98,7 +98,7 @@ def _resolve_ami(ec2_client, os_slug: str, fallback: str) -> str:
         # Import lazily — this file runs as a subprocess; avoid top-level imports
         import os as _os
 
-        _catalog_path = _os.path.join(_os.path.dirname(__file__), "..", "..", "invicton", "core", "os_catalog.py")
+        _catalog_path = _os.path.join(_os.path.dirname(__file__), "..", "..", "statim", "core", "os_catalog.py")
         # Try to import os_catalog; tolerate missing (e.g. packaged builds)
         import importlib.util as _ilu
 
@@ -223,7 +223,7 @@ def execute_build(params: dict) -> dict:
         instance_type:        EC2 instance type (default: t3.medium)
         root_volume_size_gb:  Root EBS volume size in GiB (default: 20)
         prehard_playbook_yaml: YAML content of the pre-hardening playbook (auto-generated
-                               from the blueprint by the Invicton engine; optional)
+                               from the blueprint by the Statim engine; optional)
         os:                   OS identifier used to select the ansible-lockdown role
     """
     credentials = params.get("credentials", {})
@@ -303,8 +303,8 @@ def execute_build(params: dict) -> dict:
                 {
                     "ResourceType": "instance",
                     "Tags": [
-                        {"Key": "Name", "Value": f"invicton-build-{profile_name}"},
-                        {"Key": "ManagedBy", "Value": "invicton"},
+                        {"Key": "Name", "Value": f"statim-build-{profile_name}"},
+                        {"Key": "ManagedBy", "Value": "statim"},
                     ],
                 }
             ],
@@ -363,8 +363,8 @@ def execute_build(params: dict) -> dict:
                 "  fi"
                 ")",
                 # Decode playbook and run it locally on the instance
-                f"echo '{pb_b64}' | base64 -d > /tmp/invicton-prehard.yml",
-                "ansible-playbook -i 'localhost,' -c local /tmp/invicton-prehard.yml",
+                f"echo '{pb_b64}' | base64 -d > /tmp/statim-prehard.yml",
+                "ansible-playbook -i 'localhost,' -c local /tmp/statim-prehard.yml",
             ]
             ph_resp = ssm.send_command(
                 InstanceIds=[instance_id],
@@ -391,7 +391,7 @@ def execute_build(params: dict) -> dict:
                 logger.info("Installing Galaxy role %s via SSM on %s", role, instance_id)
                 site_yaml = (
                     "---\n"
-                    f"- name: Invicton Compliance Hardening ({role})\n"
+                    f"- name: Statim Compliance Hardening ({role})\n"
                     "  hosts: localhost\n"
                     "  connection: local\n"
                     "  become: true\n"
@@ -403,8 +403,8 @@ def execute_build(params: dict) -> dict:
                 site_b64 = _b64.b64encode(site_yaml.encode()).decode()
                 hardening_cmds = [
                     f"ansible-galaxy install {role} --force 2>&1 || true",
-                    f"echo '{site_b64}' | base64 -d > /tmp/invicton-hardening.yml",
-                    "ansible-playbook -i 'localhost,' -c local /tmp/invicton-hardening.yml",
+                    f"echo '{site_b64}' | base64 -d > /tmp/statim-hardening.yml",
+                    "ansible-playbook -i 'localhost,' -c local /tmp/statim-hardening.yml",
                 ]
             elif strategy == "git":
                 repo_url = hardening.get("repo_url", "")
@@ -416,10 +416,10 @@ def execute_build(params: dict) -> dict:
                 git_pkg = "git"
                 hardening_cmds = [
                     f"command -v git >/dev/null 2>&1 || (sudo apt-get update && sudo apt-get install -y {git_pkg} || sudo dnf install -y {git_pkg} || sudo yum install -y {git_pkg})",
-                    "sudo rm -rf /etc/ansible/invicton_custom_hardening",
-                    f"sudo git clone {repo_url} /etc/ansible/invicton_custom_hardening",
-                    f"sudo cp /etc/ansible/invicton_custom_hardening/{playbook_file} /tmp/invicton-hardening.yml",
-                    "ansible-playbook -i 'localhost,' -c local /tmp/invicton-hardening.yml",
+                    "sudo rm -rf /etc/ansible/statim_custom_hardening",
+                    f"sudo git clone {repo_url} /etc/ansible/statim_custom_hardening",
+                    f"sudo cp /etc/ansible/statim_custom_hardening/{playbook_file} /tmp/statim-hardening.yml",
+                    "ansible-playbook -i 'localhost,' -c local /tmp/statim-hardening.yml",
                 ]
             else:
                 raise ValueError(f"Unknown hardening strategy: {strategy}")
@@ -447,7 +447,7 @@ def execute_build(params: dict) -> dict:
         # 5.5 Cleanup history and logs
         logger.info("Cleaning up instance logs and history before snapshot")
         cleanup_cmds = [
-            "sudo rm -rf /tmp/invicton-*",
+            "sudo rm -rf /tmp/statim-*",
             "sudo rm -f /var/log/messages /var/log/syslog /var/log/auth.log",
             "sudo journalctl --vacuum-time=1s || true",
             "sudo sh -c 'cat /dev/null > /var/log/wtmp' || true",
@@ -467,12 +467,12 @@ def execute_build(params: dict) -> dict:
             logger.warning("History cleanup encountered an issue, but proceeding with snapshot: %s", exc)
 
         # 6. Create AMI + wait for availability
-        image_name = f"invicton-{profile_name}-{profile_version}"
+        image_name = f"statim-{profile_name}-{profile_version}"
         logger.info("Creating AMI: %s", image_name)
         image_resp = ec2.create_image(
             InstanceId=instance_id,
             Name=image_name,
-            Description=f"Invicton hardened image: {profile_name} v{profile_version}",
+            Description=f"Statim hardened image: {profile_name} v{profile_version}",
             NoReboot=False,
         )
         ami_id = image_resp["ImageId"]
@@ -525,9 +525,9 @@ def execute_audit(params: dict) -> dict:
     oscap_cmd = (
         f"oscap xccdf eval "
         f"--profile {profile_id} "
-        f"--results /tmp/invicton-audit.xml "
+        f"--results /tmp/statim-audit.xml "
         f"{datastream}; "
-        f"cat /tmp/invicton-audit.xml"
+        f"cat /tmp/statim-audit.xml"
     )
 
     logger.info("Sending audit command to instance %s", target_id)
@@ -585,7 +585,7 @@ def execute_scan_image(params: dict) -> dict:
         "TagSpecifications": [
             {
                 "ResourceType": "instance",
-                "Tags": [{"Key": "Name", "Value": "invicton-scan-image-temp"}],
+                "Tags": [{"Key": "Name", "Value": "statim-scan-image-temp"}],
             }
         ],
     }
@@ -606,9 +606,9 @@ def execute_scan_image(params: dict) -> dict:
         oscap_cmd = (
             f"oscap xccdf eval "
             f"--profile {profile_id} "
-            f"--results /tmp/invicton-scan.xml "
+            f"--results /tmp/statim-scan.xml "
             f"{datastream}; "
-            f"cat /tmp/invicton-scan.xml"
+            f"cat /tmp/statim-scan.xml"
         )
         logger.info("Sending scan command to %s", instance_id)
         send_resp = ssm.send_command(

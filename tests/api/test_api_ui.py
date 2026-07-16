@@ -4,10 +4,10 @@
 
 from __future__ import annotations
 
-import invicton.core.auditor as audit_mod
-import invicton.core.builder as builder_mod
-from invicton.core.auditor import AuditJob, AuditStatus
-from invicton.core.builder import BuildJob
+import statim.core.auditor as audit_mod
+import statim.core.builder as builder_mod
+from statim.core.auditor import AuditJob, AuditStatus
+from statim.core.builder import BuildJob
 
 # ---------------------------------------------------------------------------
 # Dashboard
@@ -63,7 +63,7 @@ def test_integrations_provider_form_generic_provider(client):
 
 
 def test_blueprints_page_renders(client, profiles_tmp, monkeypatch):
-    from invicton.config import settings
+    from statim.config import settings
 
     monkeypatch.setattr(settings, "profiles_dir", profiles_tmp)
     resp = client.get("/blueprints")
@@ -72,7 +72,7 @@ def test_blueprints_page_renders(client, profiles_tmp, monkeypatch):
 
 
 def test_blueprint_studio_page_renders(client, profiles_tmp, monkeypatch):
-    from invicton.config import settings
+    from statim.config import settings
 
     monkeypatch.setattr(settings, "profiles_dir", profiles_tmp)
     resp = client.get("/blueprints/studio/test-ubuntu22-cis")
@@ -81,7 +81,7 @@ def test_blueprint_studio_page_renders(client, profiles_tmp, monkeypatch):
 
 
 def test_blueprint_studio_not_found(client, profiles_tmp, monkeypatch):
-    from invicton.config import settings
+    from statim.config import settings
 
     monkeypatch.setattr(settings, "profiles_dir", profiles_tmp)
     resp = client.get("/blueprints/studio/nonexistent-profile-xyz")
@@ -147,7 +147,7 @@ def test_builder_run_page_with_job(client):
 
 
 def test_auditor_page_renders(client, profiles_tmp, monkeypatch):
-    from invicton.config import settings
+    from statim.config import settings
 
     monkeypatch.setattr(settings, "profiles_dir", profiles_tmp)
     resp = client.get("/auditor")
@@ -168,7 +168,7 @@ def test_auditor_results_page_with_job(client):
 
 
 def test_scan_image_page_renders(client, profiles_tmp, monkeypatch):
-    from invicton.config import settings
+    from statim.config import settings
 
     monkeypatch.setattr(settings, "profiles_dir", profiles_tmp)
     resp = client.get("/auditor/scan-image")
@@ -218,7 +218,7 @@ def test_scanner_step1_renders(client):
 
 
 def test_scanner_step2_renders(client, profiles_tmp, monkeypatch):
-    from invicton.config import settings
+    from statim.config import settings
 
     monkeypatch.setattr(settings, "profiles_dir", profiles_tmp)
     resp = client.get("/auditor/scanner/step2?os=ubuntu22.04&provider=aws")
@@ -253,7 +253,7 @@ def test_webhooks_settings_page_renders(client):
 
 
 def test_agent_page_renders(client, profiles_tmp, monkeypatch):
-    from invicton.config import settings
+    from statim.config import settings
 
     monkeypatch.setattr(settings, "profiles_dir", profiles_tmp)
     resp = client.get("/agent")

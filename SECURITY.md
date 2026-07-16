@@ -1,6 +1,6 @@
 # Security Policy
 
-Invicton builds and audits hardened OS images, and stores your cloud provider
+Statim builds and audits hardened OS images, and stores your cloud provider
 credentials to do it. We take vulnerability reports seriously and ask that you
 report them responsibly rather than opening a public issue.
 
@@ -10,7 +10,7 @@ Email **security@linuxcent.com** with:
 
 - A description of the vulnerability and its potential impact
 - Steps to reproduce (a minimal blueprint YAML or `curl` request is ideal)
-- The Invicton version / commit you tested against
+- The Statim version / commit you tested against
 
 You should receive an acknowledgment within 5 business days. We'll work with
 you to understand and validate the issue, and we'll credit you in the fix's
@@ -21,7 +21,7 @@ until a fix has been released.
 
 ## Supported Versions
 
-Only the latest released version of Invicton receives security fixes.
+Only the latest released version of Statim receives security fixes.
 
 | Version | Supported |
 | ------- | --------- |
@@ -30,19 +30,19 @@ Only the latest released version of Invicton receives security fixes.
 
 ## Deployment Notes
 
-Invicton is a self-hosted, single-operator tool with no reverse proxy assumed
+Statim is a self-hosted, single-operator tool with no reverse proxy assumed
 by default:
 
-- Set `INVICTON_ADMIN_TOKEN` to a strong, unique value — without it, Invicton
+- Set `STATIM_ADMIN_TOKEN` to a strong, unique value — without it, Statim
   generates one on first boot and logs it once (also saved to
   `data/.admin_token`).
-- Set `INVICTON_SECRET_KEY` to keep your encrypted credential store portable
+- Set `STATIM_SECRET_KEY` to keep your encrypted credential store portable
   across container rebuilds; without it, a random key is generated and stored
-  at `data/.invicton_key`.
-- Invicton stores cloud provider credentials encrypted at rest
+  at `data/.statim_key`.
+- Statim stores cloud provider credentials encrypted at rest
   (`data/credentials.enc`), but anyone with API/UI access to a running
   instance can read them back in plaintext via the Integrations page/API —
   treat the admin token with the same care as the cloud credentials themselves.
-- If you expose Invicton beyond `localhost`, put it behind TLS (a reverse proxy
-  like Caddy/nginx, or a private network such as Tailscale) — Invicton itself
+- If you expose Statim beyond `localhost`, put it behind TLS (a reverse proxy
+  like Caddy/nginx, or a private network such as Tailscale) — Statim itself
   serves plain HTTP.

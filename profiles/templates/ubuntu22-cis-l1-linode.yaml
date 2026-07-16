@@ -1,6 +1,6 @@
-# Invicton HardeningBlueprint — Ubuntu 22.04 LTS CIS Level 1 Server (Linode)
+# Statim HardeningBlueprint — Ubuntu 22.04 LTS CIS Level 1 Server (Linode)
 
-invicton_version: "0.5.0"
+statim_version: "0.5.0"
 kind: HardeningBlueprint
 
 metadata:
@@ -57,8 +57,8 @@ users:
     lock: true
 
   accounts:
-    - name: invicton-admin
-      comment: "Invicton-managed admin account"
+    - name: statim-admin
+      comment: "Statim-managed admin account"
       groups:
         - sudo
       shell: /bin/bash

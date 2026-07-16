@@ -1,6 +1,6 @@
 # AWS Onboarding
 
-Invicton can use an AWS IAM role instead of long-lived access keys. Download one of these CloudFormation templates, create a stack in the AWS account where Invicton should scan or build images, then paste the stack outputs into **Integrations -> AWS**.
+Statim can use an AWS IAM role instead of long-lived access keys. Download one of these CloudFormation templates, create a stack in the AWS account where Statim should scan or build images, then paste the stack outputs into **Integrations -> AWS**.
 
 The stack must be launched by an AWS principal that can create IAM roles, policies, instance profiles, and PassRole permissions. Customers can review the full permission set in the template and create equivalent resources manually if their security process requires it.
 
@@ -8,10 +8,10 @@ The stack must be launched by an AWS principal that can create IAM roles, polici
 
 | Template | Use case | Creates resources |
 |---|---|---|
-| `invicton-scanner-role.yaml` | Scan existing AMIs or EC2 instances | Invicton scanner role, EC2 SSM instance role, instance profile |
-| `invicton-builder-role.yaml` | Build hardened golden AMIs | Invicton builder role, EC2 SSM instance role, instance profile |
+| `statim-scanner-role.yaml` | Scan existing AMIs or EC2 instances | Statim scanner role, EC2 SSM instance role, instance profile |
+| `statim-builder-role.yaml` | Build hardened golden AMIs | Statim builder role, EC2 SSM instance role, instance profile |
 
-Use the scanner template first for demos. Use the builder template only when you are ready for Invicton to launch EC2 instances and create AMIs/snapshots.
+Use the scanner template first for demos. Use the builder template only when you are ready for Statim to launch EC2 instances and create AMIs/snapshots.
 
 ## Launch From The AWS Console
 
@@ -19,7 +19,7 @@ CloudFormation quick-create `templateURL` expects a supported template URL sourc
 
 For the public GitHub templates:
 
-1. Open the template link from Invicton.
+1. Open the template link from Statim.
 2. Save the YAML file locally.
 3. In CloudFormation, choose **Create stack -> With new resources**.
 4. Select **Upload a template file**.
@@ -27,29 +27,29 @@ For the public GitHub templates:
 
 ## Required Parameters
 
-- `TrustedPrincipalArn`: IAM principal allowed to assume the Invicton role. The default trusts the current AWS account root so test stacks can be created without looking up an ARN. For production, replace it with the specific IAM user or role configured for Invicton.
-- `ExternalId`: A unique string you paste into Invicton along with the role ARN. The template default, `invicton-onboarding`, is provided so demos do not fail validation; replace it with a customer-unique value for production.
+- `TrustedPrincipalArn`: IAM principal allowed to assume the Statim role. The default trusts the current AWS account root so test stacks can be created without looking up an ARN. For production, replace it with the specific IAM user or role configured for Statim.
+- `ExternalId`: A unique string you paste into Statim along with the role ARN. The template default, `statim-onboarding`, is provided so demos do not fail validation; replace it with a customer-unique value for production.
 - `RoleNamePrefix`: Optional name prefix for created IAM roles.
 
-The trusted principal must match the base credentials Invicton uses to connect to AWS. If you enter access keys for `arn:aws:iam::123456789012:user/invicton-ci`, set `TrustedPrincipalArn` to that exact user ARN. If you use an AWS profile, set it to the IAM user or role behind that profile.
+The trusted principal must match the base credentials Statim uses to connect to AWS. If you enter access keys for `arn:aws:iam::123456789012:user/statim-ci`, set `TrustedPrincipalArn` to that exact user ARN. If you use an AWS profile, set it to the IAM user or role behind that profile.
 
-That same principal must also have an identity policy allowing it to call `sts:AssumeRole` on the generated Invicton role:
+That same principal must also have an identity policy allowing it to call `sts:AssumeRole` on the generated Statim role:
 
 ```json
 {
   "Effect": "Allow",
   "Action": "sts:AssumeRole",
-  "Resource": "arn:aws:iam::123456789012:role/InvictonBuilderRole"
+  "Resource": "arn:aws:iam::123456789012:role/StatimBuilderRole"
 }
 ```
 
-If Invicton reports `base credentials cannot assume the configured Role ARN`, either update the CloudFormation stack with the correct `TrustedPrincipalArn` or attach the `sts:AssumeRole` permission shown above to the IAM user/role used by Invicton.
+If Statim reports `base credentials cannot assume the configured Role ARN`, either update the CloudFormation stack with the correct `TrustedPrincipalArn` or attach the `sts:AssumeRole` permission shown above to the IAM user/role used by Statim.
 
-## Invicton Fields
+## Statim Fields
 
-After the stack completes, enter your base AWS credentials and stack name in **Integrations -> AWS**, then click **Import Outputs**. Invicton reads the CloudFormation outputs and fills:
+After the stack completes, enter your base AWS credentials and stack name in **Integrations -> AWS**, then click **Import Outputs**. Statim reads the CloudFormation outputs and fills:
 
-- `InvictonRoleArn` -> `Role ARN`
+- `StatimRoleArn` -> `Role ARN`
 - `ExternalId` -> `External ID`
 - `InstanceProfileName` -> `IAM Instance Profile Name`
 - `RegionHint` -> `Region`

@@ -33,8 +33,8 @@ from unittest.mock import MagicMock, patch
 
 import yaml
 
-import invicton.core.auditor as audit_mod
-from invicton.core.auditor import AuditJob, AuditStatus
+import statim.core.auditor as audit_mod
+from statim.core.auditor import AuditJob, AuditStatus
 
 # ---------------------------------------------------------------------------
 # api/ui.py — integrations_provider_form catalog branch (lines 81-84)
@@ -49,7 +49,7 @@ def test_integrations_form_catalog_matching_provider(client, tmp_path, monkeypat
     (catalog_dir / "index.json").write_text(json.dumps(catalog))
     from unittest.mock import PropertyMock
 
-    from invicton.config import Settings
+    from statim.config import Settings
 
     with patch.object(Settings, "catalog_dir_absolute", new_callable=PropertyMock, return_value=catalog_dir):
         resp = client.get("/integrations/aws/form")
@@ -63,7 +63,7 @@ def test_integrations_form_catalog_bad_json(client, tmp_path, monkeypatch):
     (catalog_dir / "index.json").write_text("NOT JSON {{{")
     from unittest.mock import PropertyMock
 
-    from invicton.config import Settings
+    from statim.config import Settings
 
     with patch.object(Settings, "catalog_dir_absolute", new_callable=PropertyMock, return_value=catalog_dir):
         resp = client.get("/integrations/aws/form")
@@ -77,12 +77,12 @@ def test_integrations_form_catalog_bad_json(client, tmp_path, monkeypatch):
 
 def test_blueprints_page_user_dir_has_extra_profiles(client, profiles_tmp, monkeypatch):
     """user_dir exists and differs → extra profiles appended (lines 100-101)."""
-    from invicton.config import settings
+    from statim.config import settings
 
     # user_dir already set by _isolate_stores fixture; add a valid profile to it
     user_dir = settings.user_profiles_dir
     extra = {
-        "invicton_version": "0.1.0",
+        "statim_version": "0.1.0",
         "kind": "ComplianceProfile",
         "metadata": {"name": "user-extra-profile", "version": "1.0"},
         "target": {"os": "ubuntu22.04", "provider": "aws", "base_image": "ami-0"},
@@ -99,23 +99,23 @@ def test_blueprints_page_user_dir_has_extra_profiles(client, profiles_tmp, monke
 
 def test_blueprints_page_load_profile_raises(client, profiles_tmp, monkeypatch):
     """load_profile raises → exception is swallowed, page still renders (lines 106-107)."""
-    from invicton.config import settings
+    from statim.config import settings
 
     monkeypatch.setattr(settings, "profiles_dir", profiles_tmp)
-    with patch("invicton.api.ui.load_profile", side_effect=ValueError("bad yaml")):
+    with patch("statim.api.ui.load_profile", side_effect=ValueError("bad yaml")):
         resp = client.get("/blueprints")
     assert resp.status_code == 200
 
 
 def test_blueprints_page_registry_list_raises(client, profiles_tmp, monkeypatch):
     """get_registry().list() raises RuntimeError → community_profiles = [] (lines 112-113)."""
-    from invicton.config import settings
+    from statim.config import settings
 
     monkeypatch.setattr(settings, "profiles_dir", profiles_tmp)
     mock_reg = MagicMock()
     mock_reg.list.side_effect = RuntimeError("registry not initialised")
-    with patch("invicton.api.ui.load_profile", side_effect=ValueError("skip")):
-        with patch("invicton.core.registry.get_registry", return_value=mock_reg):
+    with patch("statim.api.ui.load_profile", side_effect=ValueError("skip")):
+        with patch("statim.core.registry.get_registry", return_value=mock_reg):
             resp = client.get("/blueprints")
     assert resp.status_code == 200
 
@@ -127,11 +127,11 @@ def test_blueprints_page_registry_list_raises(client, profiles_tmp, monkeypatch)
 
 def test_blueprint_studio_user_dir_searched(client, profiles_tmp, monkeypatch):
     """user_dir exists and differs → its profiles are searched (lines 134-135)."""
-    from invicton.config import settings
+    from statim.config import settings
 
     user_dir = settings.user_profiles_dir
     profile_data = {
-        "invicton_version": "0.1.0",
+        "statim_version": "0.1.0",
         "kind": "ComplianceProfile",
         "metadata": {"name": "user-studio-profile", "version": "1.0"},
         "target": {"os": "ubuntu22.04", "provider": "aws", "base_image": "ami-0"},
@@ -148,11 +148,11 @@ def test_blueprint_studio_user_dir_searched(client, profiles_tmp, monkeypatch):
 
 def test_blueprint_studio_load_profile_raises(client, profiles_tmp, monkeypatch):
     """load_profile raises → exception swallowed, falls through to 404 (lines 142-143)."""
-    from invicton.config import settings
+    from statim.config import settings
 
     monkeypatch.setattr(settings, "profiles_dir", profiles_tmp)
-    with patch("invicton.api.ui.load_profile", side_effect=ValueError("bad")):
-        with patch("invicton.core.registry.get_registry") as mock_get:
+    with patch("statim.api.ui.load_profile", side_effect=ValueError("bad")):
+        with patch("statim.core.registry.get_registry") as mock_get:
             mock_get.return_value.get.return_value = None
             resp = client.get("/blueprints/studio/nonexistent-xyz")
     assert resp.status_code == 404
@@ -160,13 +160,13 @@ def test_blueprint_studio_load_profile_raises(client, profiles_tmp, monkeypatch)
 
 def test_blueprint_studio_registry_get_raises(client, profiles_tmp, monkeypatch):
     """get_registry().get() raises RuntimeError → swallowed, 404 (lines 150-151)."""
-    from invicton.config import settings
+    from statim.config import settings
 
     monkeypatch.setattr(settings, "profiles_dir", profiles_tmp)
     mock_reg = MagicMock()
     mock_reg.get.side_effect = RuntimeError("not ready")
-    with patch("invicton.api.ui.load_profile", side_effect=ValueError("skip")):
-        with patch("invicton.core.registry.get_registry", return_value=mock_reg):
+    with patch("statim.api.ui.load_profile", side_effect=ValueError("skip")):
+        with patch("statim.core.registry.get_registry", return_value=mock_reg):
             resp = client.get("/blueprints/studio/nonexistent-xyz")
     assert resp.status_code == 404
 
@@ -179,40 +179,40 @@ def test_blueprint_studio_registry_get_raises(client, profiles_tmp, monkeypatch)
 
 def test_auditor_page_load_profile_raises(client, profiles_tmp, monkeypatch):
     """auditor_page: load_profile raises → swallowed (lines 250-251)."""
-    from invicton.config import settings
+    from statim.config import settings
 
     monkeypatch.setattr(settings, "profiles_dir", profiles_tmp)
-    with patch("invicton.api.ui.load_profile", side_effect=ValueError("bad")):
+    with patch("statim.api.ui.load_profile", side_effect=ValueError("bad")):
         resp = client.get("/auditor")
     assert resp.status_code == 200
 
 
 def test_scan_image_page_load_profile_raises(client, profiles_tmp, monkeypatch):
     """scan_image_page: load_profile raises → swallowed (lines 280-281)."""
-    from invicton.config import settings
+    from statim.config import settings
 
     monkeypatch.setattr(settings, "profiles_dir", profiles_tmp)
-    with patch("invicton.api.ui.load_profile", side_effect=ValueError("bad")):
+    with patch("statim.api.ui.load_profile", side_effect=ValueError("bad")):
         resp = client.get("/auditor/scan-image")
     assert resp.status_code == 200
 
 
 def test_agent_page_load_profile_raises(client, profiles_tmp, monkeypatch):
     """agent_page: load_profile raises → swallowed (lines 299-300)."""
-    from invicton.config import settings
+    from statim.config import settings
 
     monkeypatch.setattr(settings, "profiles_dir", profiles_tmp)
-    with patch("invicton.api.ui.load_profile", side_effect=ValueError("bad")):
+    with patch("statim.api.ui.load_profile", side_effect=ValueError("bad")):
         resp = client.get("/agent")
     assert resp.status_code == 200
 
 
 def test_scanner_step2_load_profile_raises(client, profiles_tmp, monkeypatch):
     """scanner_step2: load_profile raises → swallowed (lines 341-342)."""
-    from invicton.config import settings
+    from statim.config import settings
 
     monkeypatch.setattr(settings, "profiles_dir", profiles_tmp)
-    with patch("invicton.api.ui.load_profile", side_effect=ValueError("bad")):
+    with patch("statim.api.ui.load_profile", side_effect=ValueError("bad")):
         resp = client.get("/auditor/scanner/step2?os=ubuntu22.04&provider=aws")
     assert resp.status_code == 200
 
@@ -224,11 +224,11 @@ def test_scanner_step2_load_profile_raises(client, profiles_tmp, monkeypatch):
 
 def test_download_blueprint_load_profile_raises(client, profiles_tmp, monkeypatch):
     """download_blueprint: load_profile raises → continue (lines 73-74)."""
-    from invicton.config import settings
+    from statim.config import settings
 
     monkeypatch.setattr(settings, "profiles_dir", profiles_tmp)
-    with patch("invicton.api.blueprints.load_profile", side_effect=ValueError("bad")):
-        with patch("invicton.core.registry.get_registry") as mock_get:
+    with patch("statim.api.blueprints.load_profile", side_effect=ValueError("bad")):
+        with patch("statim.core.registry.get_registry") as mock_get:
             mock_get.return_value.get.return_value = None
             resp = client.get("/api/blueprints/nonexistent-xyz/download")
     assert resp.status_code == 404
@@ -236,13 +236,13 @@ def test_download_blueprint_load_profile_raises(client, profiles_tmp, monkeypatc
 
 def test_download_blueprint_registry_raises(client, profiles_tmp, monkeypatch):
     """download_blueprint: get_registry().get() raises RuntimeError → pass (lines 89-90)."""
-    from invicton.config import settings
+    from statim.config import settings
 
     monkeypatch.setattr(settings, "profiles_dir", profiles_tmp)
     mock_reg = MagicMock()
     mock_reg.get.side_effect = RuntimeError("not ready")
-    with patch("invicton.api.blueprints.load_profile", side_effect=ValueError("bad")):
-        with patch("invicton.core.registry.get_registry", return_value=mock_reg):
+    with patch("statim.api.blueprints.load_profile", side_effect=ValueError("bad")):
+        with patch("statim.core.registry.get_registry", return_value=mock_reg):
             resp = client.get("/api/blueprints/nonexistent-xyz/download")
     assert resp.status_code == 404
 
@@ -254,7 +254,7 @@ def test_download_blueprint_registry_raises(client, profiles_tmp, monkeypatch):
 
 def test_delete_blueprint_user_dir_load_profile_raises(client, profiles_tmp, monkeypatch):
     """delete_blueprint: load_profile raises in user-dir loop → continue (lines 149-150)."""
-    from invicton.config import settings
+    from statim.config import settings
 
     user_dir = settings.user_profiles_dir
     (user_dir / "bad.yaml").write_text("NOT VALID YAML {{{{")
@@ -265,7 +265,7 @@ def test_delete_blueprint_user_dir_load_profile_raises(client, profiles_tmp, mon
 def test_delete_blueprint_main_dir_load_profile_raises(client, profiles_tmp, monkeypatch):
     """delete_blueprint: load_profile raises in main-dir loop → continue (lines 160-161)."""
     # patch load_profile to raise only for the main dir path
-    with patch("invicton.api.blueprints.load_profile", side_effect=ValueError("bad")):
+    with patch("statim.api.blueprints.load_profile", side_effect=ValueError("bad")):
         resp = client.delete("/api/blueprints/nonexistent-zzz")
     assert resp.status_code == 404
 
@@ -277,10 +277,10 @@ def test_delete_blueprint_main_dir_load_profile_raises(client, profiles_tmp, mon
 
 def test_get_blueprint_load_profile_raises(client, profiles_tmp, monkeypatch):
     """get_blueprint: load_profile raises → continue, 404 (lines 174-175)."""
-    from invicton.config import settings
+    from statim.config import settings
 
     monkeypatch.setattr(settings, "profiles_dir", profiles_tmp)
-    with patch("invicton.api.blueprints.load_profile", side_effect=ValueError("bad")):
+    with patch("statim.api.blueprints.load_profile", side_effect=ValueError("bad")):
         resp = client.get("/api/blueprints/nonexistent-zzz")
     assert resp.status_code == 404
 
@@ -292,10 +292,10 @@ def test_get_blueprint_load_profile_raises(client, profiles_tmp, monkeypatch):
 
 def test_find_profile_load_raises_returns_none(client, profiles_tmp, monkeypatch):
     """_find_profile: load_profile raises → continue; profile not found returns HTML error (255-256)."""
-    from invicton.config import settings
+    from statim.config import settings
 
     monkeypatch.setattr(settings, "profiles_dir", profiles_tmp)
-    with patch("invicton.api.blueprints.load_profile", side_effect=ValueError("bad")):
+    with patch("statim.api.blueprints.load_profile", side_effect=ValueError("bad")):
         resp = client.post("/api/blueprints/preview", data={"profile_name": "nonexistent-xyz"})
     assert resp.status_code == 200
     assert "not found" in resp.text.lower() or "Profile not found" in resp.text
@@ -360,7 +360,7 @@ def test_compare_scans_findings_format(client):
     audit_mod._audit_jobs[current.id] = current
     audit_mod._audit_jobs[baseline.id] = baseline
 
-    with patch("invicton.openscap.parser.compute_delta", return_value={"added": [], "removed": [], "changed": []}):
+    with patch("statim.openscap.parser.compute_delta", return_value={"added": [], "removed": [], "changed": []}):
         resp = client.get(f"/api/auditor/jobs/{current.id}/compare/{baseline.id}")
     assert resp.status_code == 200
 
@@ -372,10 +372,10 @@ def test_compare_scans_findings_format(client):
 
 def test_audit_resolve_profile_load_raises(client, profiles_tmp, monkeypatch):
     """_resolve_profile: load_profile raises → continue, 404 (lines 250-251)."""
-    from invicton.config import settings
+    from statim.config import settings
 
     monkeypatch.setattr(settings, "profiles_dir", profiles_tmp)
-    with patch("invicton.api.auditor.load_profile", side_effect=ValueError("bad")):
+    with patch("statim.api.auditor.load_profile", side_effect=ValueError("bad")):
         resp = client.post(
             "/api/auditor/start",
             json={"target_host": "10.0.0.1", "profile_name": "nonexistent-profile"},

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Vamshi Krishna Santhapuri
-"""Refresh the fallback AMI IDs in invicton/core/os_catalog.py.
+"""Refresh the fallback AMI IDs in statim/core/os_catalog.py.
 
 Queries AWS describe_images for each OS entry that has an aws_image_query,
 then rewrites the fallback ami-xxx comment in os_catalog.py in-place.
@@ -26,7 +26,7 @@ except ImportError:
     print("boto3 not installed — run: pip install boto3", file=sys.stderr)
     sys.exit(1)
 
-CATALOG_PATH = Path(__file__).parent.parent / "invicton" / "core" / "os_catalog.py"
+CATALOG_PATH = Path(__file__).parent.parent / "statim" / "core" / "os_catalog.py"
 REGION = "us-east-1"
 
 

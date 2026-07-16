@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+{% block title %}API Keys — Statim{% endblock %}
+{% block content %}
+<div class="px-8 py-6 space-y-6 max-w-3xl">
+
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-xl font-bold text-white">API Keys</h1>
+      <p class="text-sm text-slate-400 mt-0.5">Long-lived keys for CI/CD pipelines and integrations.</p>
+    </div>
+    <button onclick="document.getElementById('create-modal').classList.remove('hidden')"
+            class="flex items-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-sm rounded-xl transition-all">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+      </svg>
+      Generate Key
+    </button>
+  </div>
+
+  <!-- Usage hint -->
+  <div class="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
+    <div class="text-xs font-bold text-slate-400 mb-2 uppercase tracking-wider">Usage</div>
+    <div class="space-y-1.5">
+      <div class="font-mono text-xs text-slate-300 bg-slate-950/60 rounded px-3 py-1.5">curl -H "X-API-Key: &lt;key&gt;" https://your-statim/api/pipeline/scan</div>
+      <div class="font-mono text-xs text-slate-300 bg-slate-950/60 rounded px-3 py-1.5">curl -H "Authorization: Bearer &lt;key&gt;" https://your-statim/api/pipeline/scans</div>
+    </div>
+  </div>
+
+  <!-- Keys table -->
+  {% if keys %}
+  <div class="bg-slate-900/50 border border-slate-800 rounded-xl overflow-hidden">
+    <table class="w-full text-xs">
+      <thead class="bg-slate-800/60">
+        <tr>
+          <th class="text-left px-4 py-3 text-slate-400 font-semibold">Label</th>
+          <th class="text-left px-4 py-3 text-slate-400 font-semibold">ID</th>
+          <th class="text-left px-4 py-3 text-slate-400 font-semibold">Created</th>
+          <th class="text-left px-4 py-3 text-slate-400 font-semibold">Last Used</th>
+          <th class="px-4 py-3"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for key in keys %}
+        <tr class="border-t border-slate-800 hover:bg-slate-800/20 transition-colors" id="key-row-{{ key.id }}">
+          <td class="px-4 py-3 text-slate-200 font-medium">{{ key.label }}</td>
+          <td class="px-4 py-3 font-mono text-slate-500">{{ key.id }}</td>
+          <td class="px-4 py-3 text-slate-500">{{ key.created_at[:10] if key.created_at else '—' }}</td>
+          <td class="px-4 py-3 text-slate-500">{{ key.last_used[:10] if key.last_used else 'Never' }}</td>
+          <td class="px-4 py-3 text-right">
+            <button onclick="revokeKey('{{ key.id }}')"
+                    class="text-[10px] px-2 py-1 rounded bg-rose-900/30 hover:bg-rose-800/50 text-rose-400 transition-colors">
+              Revoke
+            </button>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="flex flex-col items-center justify-center py-16 text-center space-y-3">
+    <div class="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center">
+      <svg class="w-6 h-6 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
+      </svg>
+    </div>
+    <div class="text-slate-400 font-semibold">No API keys yet</div>
+    <p class="text-slate-600 text-sm">Generate a key to authenticate pipeline scans and integrations.</p>
+  </div>
+  {% endif %}
+
+</div>
+
+<!-- Create key modal -->
+<div id="create-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+  <div class="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-md shadow-2xl space-y-4">
+    <div class="flex items-center justify-between">
+      <h2 class="text-base font-bold text-white">Generate API Key</h2>
+      <button onclick="closeCreateModal()" class="text-slate-500 hover:text-white transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <div id="create-form-area" class="space-y-3">
+      <label class="block">
+        <span class="text-xs text-slate-400 font-medium">Label</span>
+        <input id="key-label" type="text" placeholder="e.g. GitHub Actions — prod" maxlength="80"
+               class="mt-1 w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"/>
+      </label>
+      <button onclick="createKey()"
+              class="w-full py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-sm rounded-xl transition-all">
+        Generate
+      </button>
+    </div>
+
+    <!-- Token reveal area (shown after creation) -->
+    <div id="token-reveal" class="hidden space-y-3">
+      <div class="bg-emerald-950/30 border border-emerald-800/40 rounded-xl p-3 space-y-2">
+        <div class="text-xs font-bold text-emerald-400">Key created — copy it now, it won't be shown again</div>
+        <div class="flex items-center gap-2">
+          <code id="token-text" class="flex-1 font-mono text-xs text-emerald-300 bg-slate-950/60 rounded px-2 py-1.5 break-all"></code>
+          <button onclick="copyToken()" class="shrink-0 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-white text-xs rounded-lg transition-colors" title="Copy">
+            Copy
+          </button>
+        </div>
+      </div>
+      <button onclick="closeCreateModal(true)"
+              class="w-full py-2 bg-slate-700 hover:bg-slate-600 text-white font-semibold text-sm rounded-xl transition-all">
+        Done
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+async function createKey() {
+  const label = document.getElementById('key-label').value.trim();
+  if (!label) { document.getElementById('key-label').focus(); return; }
+  const res = await fetch('/api/api-keys', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({label}),
+  });
+  if (!res.ok) { alert('Failed to create key'); return; }
+  const data = await res.json();
+  document.getElementById('token-text').textContent = data.token;
+  document.getElementById('create-form-area').classList.add('hidden');
+  document.getElementById('token-reveal').classList.remove('hidden');
+}
+
+async function copyToken() {
+  const text = document.getElementById('token-text').textContent;
+  await navigator.clipboard.writeText(text);
+  const btn = event.target;
+  btn.textContent = 'Copied!';
+  setTimeout(() => btn.textContent = 'Copy', 2000);
+}
+
+function closeCreateModal(reload = false) {
+  document.getElementById('create-modal').classList.add('hidden');
+  document.getElementById('create-form-area').classList.remove('hidden');
+  document.getElementById('token-reveal').classList.add('hidden');
+  document.getElementById('key-label').value = '';
+  if (reload) location.reload();
+}
+
+async function revokeKey(keyId) {
+  if (!confirm('Revoke this API key? All integrations using it will stop working.')) return;
+  const res = await fetch(`/api/api-keys/${keyId}`, {method: 'DELETE'});
+  if (res.ok || res.status === 204) {
+    document.getElementById(`key-row-${keyId}`)?.remove();
+  } else {
+    alert('Failed to revoke key');
+  }
+}
+</script>
+{% endblock %}

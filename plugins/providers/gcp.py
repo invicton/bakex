@@ -3,12 +3,12 @@
 # Copyright 2026 Vamshi Krishna Santhapuri
 """GCP subprocess provider — speaks JSON-RPC over stdin/stdout.
 
-Run as a standalone script: the core Invicton engine never imports this file.
+Run as a standalone script: the core Statim engine never imports this file.
 Logs go to stderr; only JSON-RPC responses go to stdout.
 
-Requires the [gcp] optional extra: pip install invicton[gcp]
+Requires the [gcp] optional extra: pip install statim[gcp]
 
-Credential fields (stored via Invicton integrations UI):
+Credential fields (stored via Statim integrations UI):
     project_id            — GCP project ID (required)
     zone                  — Compute zone, e.g. "us-central1-a" (default: us-central1-a)
     service_account_json  — Service account JSON key content (optional; uses ADC if absent)
@@ -60,7 +60,7 @@ def _get_compute_client(credentials: dict):
         from google.cloud import compute_v1
         from google.oauth2 import service_account
     except ImportError as exc:
-        raise RuntimeError("google-cloud-compute is not installed. Install with: pip install invicton[gcp]") from exc
+        raise RuntimeError("google-cloud-compute is not installed. Install with: pip install statim[gcp]") from exc
 
     sa_json = credentials.get("service_account_json", "")
     if sa_json:
@@ -214,7 +214,7 @@ def execute_build(params: dict) -> dict:
     try:
         from google.cloud import compute_v1
 
-        with tempfile.TemporaryDirectory(prefix="invicton-gcp-") as tmpdir:
+        with tempfile.TemporaryDirectory(prefix="statim-gcp-") as tmpdir:
             tmp = Path(tmpdir)
             key_path, pub_key = utils.generate_ssh_keypair(tmp)
             # GCP SSH key metadata format: "username:ssh-rsa AAAA..."
@@ -234,7 +234,7 @@ def execute_build(params: dict) -> dict:
                 image_self_link = img.self_link
 
             # 2. Build instance config
-            instance_name = f"invicton-build-{profile_name.lower()[:20]}-{int(time.time())}"
+            instance_name = f"statim-build-{profile_name.lower()[:20]}-{int(time.time())}"
             network_interface = compute_v1.NetworkInterface(
                 network=f"projects/{project_id}/global/networks/{network}",
                 access_configs=[
@@ -269,8 +269,8 @@ def execute_build(params: dict) -> dict:
                         compute_v1.Items(key="enable-oslogin", value="false"),
                     ]
                 ),
-                labels={"managed-by": "invicton", "blueprint": profile_name.lower()[:60]},
-                tags=compute_v1.Tags(items=["invicton-build"]),
+                labels={"managed-by": "statim", "blueprint": profile_name.lower()[:60]},
+                tags=compute_v1.Tags(items=["statim-build"]),
             )
             if sa_email:
                 config.service_accounts = [
@@ -320,7 +320,7 @@ def execute_build(params: dict) -> dict:
             _wait_zone_operation(ops_client, project_id, zone, stop_op.name, timeout=300)
 
             # 10. Create a custom image from the boot disk
-            image_name = f"invicton-{profile_name.lower()[:40]}-{profile_version.replace('.', '-')}"
+            image_name = f"statim-{profile_name.lower()[:40]}-{profile_version.replace('.', '-')}"
             disk_source = f"projects/{project_id}/zones/{zone}/disks/{instance_name}"
             logger.info("Creating GCP image: %s", image_name)
             image_op = images_client.insert(
@@ -328,8 +328,8 @@ def execute_build(params: dict) -> dict:
                 image_resource=compute_v1.Image(
                     name=image_name,
                     source_disk=disk_source,
-                    description=f"Invicton hardened image: {profile_name} v{profile_version}",
-                    labels={"managed-by": "invicton"},
+                    description=f"Statim hardened image: {profile_name} v{profile_version}",
+                    labels={"managed-by": "statim"},
                 ),
             )
             _wait_global_operation(global_ops_client, project_id, image_op.name, timeout=600)
@@ -380,7 +380,7 @@ def execute_audit(params: dict) -> dict:
     if not ssh_key_pem:
         raise ValueError("execute_audit requires 'ssh_key' (private key PEM)")
 
-    with tempfile.TemporaryDirectory(prefix="invicton-gcp-audit-") as tmpdir:
+    with tempfile.TemporaryDirectory(prefix="statim-gcp-audit-") as tmpdir:
         key_path = Path(tmpdir) / "audit_key"
         key_path.write_text(ssh_key_pem)
         key_path.chmod(0o600)
@@ -422,7 +422,7 @@ def execute_scan_image(params: dict) -> dict:
     )
 
     instance_name: str | None = None
-    with tempfile.TemporaryDirectory(prefix="invicton-gcp-scan-") as tmpdir:
+    with tempfile.TemporaryDirectory(prefix="statim-gcp-scan-") as tmpdir:
         tmp = Path(tmpdir)
         try:
             from google.cloud import compute_v1
@@ -441,7 +441,7 @@ def execute_scan_image(params: dict) -> dict:
                 )
                 image_self_link = img.self_link
 
-            instance_name = f"invicton-scan-{int(time.time())}"
+            instance_name = f"statim-scan-{int(time.time())}"
             config = compute_v1.Instance(
                 name=instance_name,
                 machine_type=f"zones/{zone}/machineTypes/{machine_type}",
@@ -473,7 +473,7 @@ def execute_scan_image(params: dict) -> dict:
                         compute_v1.Items(key="enable-oslogin", value="false"),
                     ]
                 ),
-                tags=compute_v1.Tags(items=["invicton-scan"]),
+                tags=compute_v1.Tags(items=["statim-scan"]),
             )
             op = instances_client.insert(project=project_id, zone=zone, instance_resource=config)
             _wait_zone_operation(ops_client, project_id, zone, op.name)

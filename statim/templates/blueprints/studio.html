@@ -1,0 +1,245 @@
+{% extends "base.html" %}
+
+{% block title %}Studio: {{ profile.metadata.name }} — {{ app_name }}{% endblock %}
+
+{% block breadcrumbs %}
+<div class="flex items-center text-sm gap-2">
+  <a href="/blueprints" class="text-slate-400 hover:text-white transition-colors">Profile Hub</a>
+  <span class="text-slate-600">/</span>
+  <span class="text-slate-300 font-semibold">{{ profile.metadata.name }}</span>
+</div>
+{% endblock %}
+
+{% block head %}
+<style>
+  .justification-row { display: none; }
+  .justification-row.visible { display: table-row; }
+  
+  /* Custom Scrollbar for IDE feel */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #475569; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-full mx-auto h-full flex flex-col">
+  <div class="flex items-end justify-between mb-6 shrink-0">
+    <div>
+      <div class="flex items-center gap-3 flex-wrap">
+        <h1 class="text-2xl font-bold text-white tracking-tight">Blueprint Studio</h1>
+        <span class="px-2.5 py-1 bg-brand-900/30 border border-brand-800/50 rounded-md text-[10px] font-bold text-brand-400 tracking-wider">v{{ profile.metadata.version }}</span>
+        {% set tier = profile.hardening.profile_tier | default('cis-l1') %}
+        {% if tier == 'cis-l1' %}
+        <span class="px-2.5 py-1 bg-emerald-900/20 border border-emerald-800/40 rounded-md text-[10px] font-bold text-emerald-400 uppercase tracking-wider">CIS L1</span>
+        {% elif tier == 'cis-l2' %}
+        <span class="px-2.5 py-1 bg-teal-900/20 border border-teal-800/40 rounded-md text-[10px] font-bold text-teal-400 uppercase tracking-wider">CIS L2</span>
+        {% elif tier == 'stig' %}
+        <span class="px-2.5 py-1 bg-purple-900/20 border border-purple-800/40 rounded-md text-[10px] font-bold text-purple-400 uppercase tracking-wider">STIG</span>
+        {% else %}
+        <span class="px-2.5 py-1 bg-slate-800 border border-slate-700 rounded-md text-[10px] font-bold text-slate-300 uppercase tracking-wider">{{ tier }}</span>
+        {% endif %}
+        {% set badge = profile.metadata.source_badge | default('Local') %}
+        {% if badge == 'Official' %}
+        <span class="px-2.5 py-1 bg-brand-900/30 border border-brand-800/50 rounded-md text-[10px] font-bold text-brand-400 tracking-wider">Official</span>
+        {% elif badge == 'Community' %}
+        <span class="px-2.5 py-1 bg-blue-900/30 border border-blue-800/50 rounded-md text-[10px] font-bold text-blue-400 tracking-wider">Community</span>
+        {% elif badge == 'Private' %}
+        <span class="px-2.5 py-1 bg-amber-900/30 border border-amber-800/50 rounded-md text-[10px] font-bold text-amber-400 tracking-wider">Private</span>
+        {% endif %}
+      </div>
+      <p class="text-slate-400 mt-1 text-sm font-mono">{{ profile.compliance.benchmark }} • {{ profile.target.os }}</p>
+      {% if profile.metadata.description %}
+      <p class="text-slate-500 mt-1 text-xs max-w-xl">{{ profile.metadata.description }}</p>
+      {% endif %}
+    </div>
+    <div class="flex gap-3">
+      <a
+        href="/api/blueprints/{{ profile.metadata.name }}/download"
+        download="{{ profile.metadata.name }}.yaml"
+        class="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700/50 text-sm text-slate-300 font-medium rounded-lg transition-all shadow-sm">
+        ↓ Download YAML
+      </a>
+      <button
+        id="studio-build-btn"
+        onclick="studioTriggerBuild('{{ profile.metadata.name }}')"
+        class="px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-lg text-sm font-semibold transition-all shadow-[0_0_15px_rgba(6,182,212,0.3)]">
+        ▶ Build
+      </button>
+    </div>
+  </div>
+
+  <!-- Split-screen layout -->
+  <div class="flex gap-6 flex-1 min-h-0">
+
+    <!-- Left panel: controls -->
+    <div class="w-1/2 flex flex-col min-h-0 bg-slate-900/40 backdrop-blur-md border border-slate-800/60 rounded-xl overflow-hidden shadow-sm">
+      <div class="px-5 py-3 border-b border-slate-800/80 bg-slate-900/80 flex justify-between items-center shrink-0">
+        <div>
+          <h2 class="text-sm font-bold text-slate-200">CIS Controls</h2>
+          <p class="text-[10px] text-slate-500 uppercase tracking-wider mt-0.5">Toggle to create exceptions</p>
+        </div>
+        <div class="text-xs font-mono text-slate-400 bg-slate-800 px-2 py-1 rounded">Interactive</div>
+      </div>
+      <div class="flex-1 overflow-y-auto">
+        <form
+          id="controls-form"
+          hx-post="/api/blueprints/preview"
+          hx-target="#yaml-panel"
+          hx-swap="innerHTML"
+          hx-trigger="change"
+        >
+          <input type="hidden" name="profile_name" value="{{ profile.metadata.name }}" />
+          <table class="w-full text-sm">
+            <tbody class="divide-y divide-slate-800/50">
+              {% for rule_id, control in controls.items() %}
+              {% set is_enabled = control if control is boolean else control.enabled %}
+              {% set justification = '' if control is boolean else control.justification %}
+              <tr class="hover:bg-slate-800/20 transition-colors">
+                <td class="px-5 py-3.5">
+                  <label class="flex items-center gap-4 cursor-pointer group">
+                    <div class="relative flex items-center justify-center">
+                      <input
+                        type="checkbox"
+                        name="controls[{{ rule_id }}][enabled]"
+                        value="true"
+                        {% if is_enabled %}checked{% endif %}
+                        class="peer appearance-none w-5 h-5 border border-slate-600 rounded bg-slate-800 checked:bg-brand-500 checked:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30 transition-all"
+                        onchange="toggleJustification(this, '{{ rule_id }}')"
+                      />
+                      <svg class="absolute w-3 h-3 text-white opacity-0 peer-checked:opacity-100 pointer-events-none transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                    <span class="text-slate-300 font-mono text-xs group-hover:text-white transition-colors flex-1">{{ rule_id }}</span>
+                    {% if not is_enabled %}
+                      <span class="px-1.5 py-0.5 bg-rose-900/30 border border-rose-800/50 rounded text-[9px] font-bold text-rose-400 uppercase tracking-widest shrink-0">Exception</span>
+                    {% endif %}
+                  </label>
+                </td>
+              </tr>
+              <tr id="just-{{ rule_id }}" class="justification-row bg-slate-800/30 border-b border-slate-700/50{% if not is_enabled %} visible{% endif %}">
+                <td class="px-5 pb-4 pt-2 border-l-2 border-brand-500">
+                  <label class="block text-[10px] font-bold text-brand-400 uppercase tracking-wider mb-1.5">Exception Justification</label>
+                  <textarea
+                    name="controls[{{ rule_id }}][justification]"
+                    placeholder="Provide a valid security or operational justification for disabling this control..."
+                    rows="2"
+                    class="w-full bg-slate-900/80 border border-slate-700/80 rounded-lg px-3 py-2 text-xs text-slate-300 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-500 resize-none font-mono"
+                  >{{ justification }}</textarea>
+                </td>
+              </tr>
+              {% else %}
+              <tr>
+                <td class="px-5 py-10 text-slate-500 text-sm text-center border-dashed border-b border-slate-700/50">
+                  No controls defined in this profile.
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </form>
+      </div>
+    </div>
+
+    <!-- Right panel: YAML preview -->
+    <div class="w-1/2 flex flex-col min-h-0 bg-[#0d1117] border border-slate-800/60 rounded-xl overflow-hidden shadow-sm relative group">
+      <div class="px-4 py-2 border-b border-slate-800/80 bg-[#161b22] flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-2">
+          <div class="flex gap-1.5">
+            <div class="w-2.5 h-2.5 rounded-full bg-slate-700"></div>
+            <div class="w-2.5 h-2.5 rounded-full bg-slate-700"></div>
+            <div class="w-2.5 h-2.5 rounded-full bg-slate-700"></div>
+          </div>
+          <h2 class="text-xs font-mono text-slate-400 ml-2">profile.yaml</h2>
+        </div>
+        <span class="flex h-2 w-2 relative">
+          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+          <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+        </span>
+      </div>
+      <div class="flex-1 overflow-y-auto p-4 font-mono text-sm leading-relaxed">
+        <div id="yaml-panel">
+          {% include "partials/blueprint_yaml.html" %}
+        </div>
+      </div>
+      
+      <!-- Copy button overlay -->
+      <button class="absolute top-12 right-6 p-2 bg-slate-800/80 hover:bg-slate-700 border border-slate-700 rounded-md text-slate-400 hover:text-white opacity-0 group-hover:opacity-100 transition-all shadow-lg backdrop-blur" title="Copy YAML" onclick="navigator.clipboard.writeText(document.querySelector('#yaml-panel pre').innerText)">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- Build result toast -->
+<div id="studio-build-toast" class="hidden fixed bottom-6 right-6 z-50 max-w-sm text-sm rounded-xl px-5 py-3 shadow-xl border transition-all"></div>
+
+<script>
+function toggleJustification(checkbox, ruleId) {
+  const row = document.getElementById('just-' + ruleId);
+  if (!checkbox.checked) {
+    row.classList.add('visible');
+    const exceptionBadge = `<span class="px-1.5 py-0.5 bg-rose-900/30 border border-rose-800/50 rounded text-[9px] font-bold text-rose-400 uppercase tracking-widest shrink-0" id="badge-${ruleId}">Exception</span>`;
+    if (!document.getElementById(`badge-${ruleId}`)) {
+        checkbox.closest('label').insertAdjacentHTML('beforeend', exceptionBadge);
+    }
+  } else {
+    row.classList.remove('visible');
+    const badge = document.getElementById(`badge-${ruleId}`);
+    if (badge) badge.remove();
+  }
+}
+
+async function studioTriggerBuild(profileName) {
+  const btn = document.getElementById('studio-build-btn');
+  const toast = document.getElementById('studio-build-toast');
+  btn.disabled = true;
+  btn.textContent = 'Starting…';
+
+  // Read the current YAML from the preview panel — use as inline blueprint_yaml
+  const yamlEl = document.querySelector('#yaml-panel pre');
+  const blueprintYaml = yamlEl ? yamlEl.innerText : null;
+
+  const apiKey = document.querySelector('meta[name="statim-api-key"]')?.content || '';
+  const headers = { 'Content-Type': 'application/json' };
+  if (apiKey) headers['X-Api-Key'] = apiKey;
+
+  const payload = blueprintYaml
+    ? { blueprint_yaml: blueprintYaml, wait: false }
+    : { profile_name: profileName, wait: false };
+
+  try {
+    const resp = await fetch('/api/pipeline/build', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(payload),
+    });
+    const body = await resp.json();
+    if (resp.ok) {
+      showToast(toast, `Build started — job ${body.job_id}`, 'ok');
+    } else {
+      showToast(toast, body.detail || JSON.stringify(body), 'err');
+    }
+  } catch (e) {
+    showToast(toast, 'Network error: ' + e.message, 'err');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '▶ Build';
+  }
+}
+
+function showToast(el, msg, type) {
+  el.textContent = msg;
+  if (type === 'ok') {
+    el.className = 'fixed bottom-6 right-6 z-50 max-w-sm text-sm rounded-xl px-5 py-3 shadow-xl border text-emerald-300 bg-emerald-900/80 border-emerald-700/50';
+  } else {
+    el.className = 'fixed bottom-6 right-6 z-50 max-w-sm text-sm rounded-xl px-5 py-3 shadow-xl border text-red-300 bg-red-900/80 border-red-700/50';
+  }
+  el.classList.remove('hidden');
+  setTimeout(() => el.classList.add('hidden'), 5000);
+}
+</script>
+{% endblock %}

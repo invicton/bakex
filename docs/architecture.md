@@ -1,6 +1,6 @@
 # Architecture
 
-How Invicton is put together, and what happens during a build.
+How Statim is put together, and what happens during a build.
 
 ## The pipeline
 
@@ -9,7 +9,7 @@ HardeningBlueprint (YAML)  ──or──  5-Step Guided Wizard
         │
         ▼
   ┌─────────────────────────────────────────────────────┐
-  │  Invicton Engine                                      │
+  │  Statim Engine                                      │
   │                                                      │
   │  1. Provision  →  Spin up a temporary VM             │
   │  2. Harden     →  Apply Ansible-Lockdown CIS/STIG    │
@@ -45,7 +45,7 @@ not leaked.
 ## Source tree
 
 ```
-invicton/
+statim/
 ├── api/            11 FastAPI routers (blueprints, builder, auditor, agent, pipeline, …)
 ├── core/
 │   ├── blueprint.py      Pydantic schema: HardeningBlueprint + ComplianceProfile
@@ -82,7 +82,7 @@ blueprints/         Community blueprint library (contributor surface)
 
 - **Providers are isolated subprocesses** speaking JSON-RPC over stdin/stdout —
   a misbehaving provider cannot take down the engine, and adding one requires
-  no fork of Invicton. See the [Plugin Guide](plugin-guide.md).
+  no fork of Statim. See the [Plugin Guide](plugin-guide.md).
 - **Blueprints are the single source of truth** — one version-controlled YAML
   file captures OS, provider, compliance tier, per-rule overrides with
   justifications, and system/filesystem/user config. See the

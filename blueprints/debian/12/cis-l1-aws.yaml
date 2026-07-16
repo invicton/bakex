@@ -1,6 +1,6 @@
-# Invicton HardeningBlueprint — Debian 12 Bookworm CIS Level 1 Server (AWS)
+# Statim HardeningBlueprint — Debian 12 Bookworm CIS Level 1 Server (AWS)
 
-invicton_version: "0.5.0"
+statim_version: "0.5.0"
 kind: HardeningBlueprint
 
 metadata:
@@ -58,8 +58,8 @@ users:
     lock: true
 
   accounts:
-    - name: invicton-admin
-      comment: "Invicton-managed admin account"
+    - name: statim-admin
+      comment: "Statim-managed admin account"
       groups:
         - sudo
       shell: /bin/bash

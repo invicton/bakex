@@ -1,12 +1,12 @@
-# Invicton HardeningBlueprint — Generic Template
+# Statim HardeningBlueprint — Generic Template
 #
 # Use this generic template as a starting point to create custom hardening profiles.
 # Replace the placeholder values with your target OS, architecture, and cloud provider details.
 #
 # Usage:
-#   invicton build <your-blueprint-name>
+#   statim build <your-blueprint-name>
 
-invicton_version: "0.5.0"
+statim_version: "0.5.0"
 kind: HardeningBlueprint
 
 metadata:
@@ -56,8 +56,8 @@ users:
     lock: true                    # Recommended: Lock the root account
 
   accounts:
-    - name: invicton-admin
-      comment: "Invicton-managed admin account"
+    - name: statim-admin
+      comment: "Statim-managed admin account"
       groups:
         - sudo                    # Or 'wheel' for RHEL-based systems
       shell: /bin/bash
