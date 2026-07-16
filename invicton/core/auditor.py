@@ -15,6 +15,8 @@ from pathlib import Path
 from invicton.core.blueprint import ComplianceProfile
 from invicton.core.parser import SCAPParser
 from invicton.openscap import scanner as oscap_scanner
+from invicton.openscap.container_scanner import run_container_scan
+from invicton.openscap.content import ensure_datastream, resolve_scan_spec
 from invicton.openscap.parser import compute_delta, parse_arf
 from invicton.plugins.registry import registry
 
@@ -351,6 +353,56 @@ async def run_image_scan(
                 provider_cls().teardown(instance_id)
             except Exception:
                 logger.warning("Image scan %s: teardown of %s failed (ignored)", job.id, instance_id)
+
+    _persist_jobs()
+    return job
+
+
+async def run_container_scan_job(
+    job: AuditJob,
+    image_ref: str,
+    os_slug: str,
+    tier: str,
+    output_dir: Path,
+) -> AuditJob:
+    """Scan a local container image against its OS SCAP datastream via oscap-podman.
+
+    OS-level configuration compliance of the image *contents* — not the CIS Docker
+    Benchmark (daemon/runtime) and not CVEs. The caller creates *job* and registers
+    it in ``_audit_jobs`` so the API can return its id immediately; this populates
+    grade/score/severity or an actionable error. No VM, no teardown.
+    """
+    try:
+        job.status = AuditStatus.SCANNING
+        job.updated_at = datetime.now(UTC)
+
+        benchmark, profile_id, datastream_path = resolve_scan_spec(os_slug, tier)
+        datastream = ensure_datastream(datastream_path)
+
+        job.arf_path = run_container_scan(
+            image_ref=image_ref,
+            benchmark_id=benchmark,
+            profile_id=profile_id,
+            datastream=str(datastream),
+            output_dir=output_dir / job.id,
+        )
+        job.results = parse_arf(job.arf_path)
+
+        score = job.results.get("score") if job.results else None
+        if score is not None:
+            job.score_pct = float(score)
+            job.grade = score_to_grade(job.score_pct)
+        job.severity_counts = _severity_counts(job.results or {})
+
+        job.status = AuditStatus.COMPLETE
+        job.updated_at = datetime.now(UTC)
+        logger.info("Container scan %s complete — image=%s grade=%s", job.id, image_ref, job.grade)
+
+    except Exception as exc:
+        job.error = str(exc)
+        job.status = AuditStatus.FAILED
+        job.updated_at = datetime.now(UTC)
+        logger.exception("Container scan job %s failed", job.id)
 
     _persist_jobs()
     return job
