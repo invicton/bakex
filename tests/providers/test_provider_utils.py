@@ -338,7 +338,7 @@ class TestRunHardeningRemoteVersionPinning:
 
     def test_explicit_role_override_is_not_auto_pinned(self, tmp_path):
         """A user-specified role/version string must pass through unchanged —
-        pinning only applies to Statim's own auto-resolved roles."""
+        pinning only applies to BakeX's own auto-resolved roles."""
         with patch("_provider_utils.run_remote_cmd") as mock_run:
             mock_run.return_value = (0, "", "")
             utils.run_hardening_remote(

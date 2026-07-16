@@ -70,7 +70,7 @@ def test_test_connection_success():
     mod, mock_api4 = _load_linode()
     mock_client = MagicMock()
     mock_profile = MagicMock()
-    mock_profile.username = "statim-user"
+    mock_profile.username = "bakex-user"
     mock_profile.email = "user@example.com"
     mock_client.profile.return_value = mock_profile
     mock_api4.LinodeClient.return_value = mock_client

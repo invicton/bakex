@@ -30,8 +30,8 @@ for _tag in ("!Ref", "!Sub", "!GetAtt", "!Equals", "!If"):
 
 def test_aws_onboarding_templates_have_external_id_default():
     for relpath in (
-        "deploy/aws/statim-scanner-role.yaml",
-        "deploy/aws/statim-builder-role.yaml",
+        "deploy/aws/bakex-scanner-role.yaml",
+        "deploy/aws/bakex-builder-role.yaml",
     ):
         data = yaml.load((ROOT / relpath).read_text(), Loader=CfnLoader)
         trusted_principal = data["Parameters"]["TrustedPrincipalArn"]
@@ -41,13 +41,13 @@ def test_aws_onboarding_templates_have_external_id_default():
         assert "UseDefaultTrustedPrincipal" in data["Conditions"]
         assert external_id["MinLength"] == 8
         assert len(external_id["Default"]) >= 8
-        assert {"StatimRoleArn", "ExternalId", "InstanceProfileName", "RegionHint"} <= set(data["Outputs"])
+        assert {"BakeXRoleArn", "ExternalId", "InstanceProfileName", "RegionHint"} <= set(data["Outputs"])
 
 
 def test_azure_onboarding_templates_have_required_shape():
     for relpath in (
-        "deploy/azure/statim-scanner-role.json",
-        "deploy/azure/statim-builder-role.json",
+        "deploy/azure/bakex-scanner-role.json",
+        "deploy/azure/bakex-builder-role.json",
     ):
         data = json.loads((ROOT / relpath).read_text())
         assert data["$schema"].endswith("subscriptionDeploymentTemplate.json#")
@@ -79,11 +79,11 @@ def test_gcp_onboarding_scripts_and_roles_have_required_shape():
     for module in ("scanner", "builder"):
         module_dir = ROOT / "deploy" / "gcp" / module
         script = (module_dir / "onboard.sh").read_text()
-        role = yaml.safe_load((module_dir / f"statim-{module}-role.yaml").read_text())
+        role = yaml.safe_load((module_dir / f"bakex-{module}-role.yaml").read_text())
 
         assert "gcloud services enable compute.googleapis.com iap.googleapis.com" in script
         assert "gcloud iam roles create" in script
         assert "gcloud projects add-iam-policy-binding" in script
-        assert "statim-allow-iap-ssh" in script
+        assert "bakex-allow-iap-ssh" in script
         assert {"title", "description", "includedPermissions"} <= set(role)
         assert expected_permissions[module] <= set(role["includedPermissions"])

@@ -8,9 +8,9 @@ from pathlib import Path
 
 import pytest
 
-from statim.plugins.base_provider import BaseProvider, ProviderResult
-from statim.plugins.loader import load_providers
-from statim.plugins.registry import ProviderRegistry
+from bakex.plugins.base_provider import BaseProvider, ProviderResult
+from bakex.plugins.loader import load_providers
+from bakex.plugins.registry import ProviderRegistry
 
 # ===========================================================================
 # BaseProvider abstract method enforcement

@@ -8,7 +8,7 @@ import secrets
 
 import pytest
 
-import statim.core.api_keys as ak_mod
+import bakex.core.api_keys as ak_mod
 
 
 @pytest.fixture(autouse=True)

@@ -1,11 +1,11 @@
-# Statim HardeningBlueprint — Rocky Linux 9 CIS Level 1 Server (GCP)
+# BakeX HardeningBlueprint — Rocky Linux 9 CIS Level 1 Server (GCP)
 #
 # Download, set your project_id in credentials, and run:
-#   statim build rocky9-cis-l1-gcp
+#   bakex build rocky9-cis-l1-gcp
 #
 # Produces an identical hardened GCP custom image every time.
 
-statim_version: "0.5.0"
+bakex_version: "0.5.0"
 kind: HardeningBlueprint
 
 metadata:
@@ -55,8 +55,8 @@ users:
     lock: true
 
   accounts:
-    - name: statim-admin
-      comment: "Statim-managed admin account"
+    - name: bakex-admin
+      comment: "BakeX-managed admin account"
       groups:
         - wheel                   # RHEL family uses 'wheel' for sudo
       shell: /bin/bash

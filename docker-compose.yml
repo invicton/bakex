@@ -1,10 +1,10 @@
 services:
-  statim:
+  bakex:
     build: 
       context: .
       dockerfile: Dockerfile
-    image: statim:latest
-    container_name: statim-engine
+    image: bakex:latest
+    container_name: bakex-engine
     restart: unless-stopped
     ports:
       - "8001:8000"
@@ -21,38 +21,38 @@ services:
       - ./profiles:/app/profiles:z
 
       # Persist encrypted credentials and encryption key across restarts.
-      # Set STATIM_SECRET_KEY below for a deterministic key (no key file needed).
+      # Set BAKEX_SECRET_KEY below for a deterministic key (no key file needed).
       - ./data:/app/data:z
 
     environment:
       - APP_ENV=production
-      - STATIM_LOG_LEVEL=INFO
+      - BAKEX_LOG_LEVEL=INFO
       # Uncomment and set a strong passphrase to use a deterministic encryption key.
-      # Without this, a random key is auto-generated and stored in ./data/.statim_key
-      # - STATIM_SECRET_KEY=change-me-to-a-strong-passphrase
+      # Without this, a random key is auto-generated and stored in ./data/.bakex_key
+      # - BAKEX_SECRET_KEY=change-me-to-a-strong-passphrase
 
       # Admin login (HTTP Basic Auth, any username + this as the password).
       # Without this, a random token is generated on first startup — check
-      # `docker compose logs statim` or ./data/.admin_token for it.
-      # - STATIM_ADMIN_TOKEN=change-me-to-a-strong-random-token
+      # `docker compose logs bakex` or ./data/.admin_token for it.
+      # - BAKEX_ADMIN_TOKEN=change-me-to-a-strong-random-token
 
       # --- AI Builder: pick ONE backend and uncomment the relevant block ---
 
       # Anthropic (default)
-      # - STATIM_LLM_PROVIDER=anthropic
+      # - BAKEX_LLM_PROVIDER=anthropic
       # - ANTHROPIC_API_KEY=sk-ant-...
 
       # OpenAI or any OpenAI-compatible endpoint (Groq, Together, vLLM, LiteLLM)
-      # - STATIM_LLM_PROVIDER=openai
-      # - STATIM_LLM_MODEL=gpt-4o
-      # - STATIM_LLM_API_KEY=sk-...
-      # - STATIM_LLM_BASE_URL=https://api.groq.com/openai/v1   # optional override
+      # - BAKEX_LLM_PROVIDER=openai
+      # - BAKEX_LLM_MODEL=gpt-4o
+      # - BAKEX_LLM_API_KEY=sk-...
+      # - BAKEX_LLM_BASE_URL=https://api.groq.com/openai/v1   # optional override
 
       # Ollama — local model, no API key. Requires Ollama running on host.
-      # - STATIM_LLM_PROVIDER=ollama
-      # - STATIM_LLM_MODEL=llama3.3:70b
-      # - STATIM_LLM_BASE_URL=http://host.docker.internal:11434/v1
+      # - BAKEX_LLM_PROVIDER=ollama
+      # - BAKEX_LLM_MODEL=llama3.3:70b
+      # - BAKEX_LLM_BASE_URL=http://host.docker.internal:11434/v1
 
       # AWS Bedrock — uses the ~/.aws credentials mounted above
-      # - STATIM_LLM_PROVIDER=bedrock
-      # - STATIM_LLM_MODEL=us.anthropic.claude-opus-4-5-20251101-v1:0
+      # - BAKEX_LLM_PROVIDER=bedrock
+      # - BAKEX_LLM_MODEL=us.anthropic.claude-opus-4-5-20251101-v1:0

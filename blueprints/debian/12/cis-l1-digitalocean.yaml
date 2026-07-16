@@ -1,6 +1,6 @@
-# Statim HardeningBlueprint — Debian 12 CIS Level 1 Server (DigitalOcean)
+# BakeX HardeningBlueprint — Debian 12 CIS Level 1 Server (DigitalOcean)
 
-statim_version: "0.5.0"
+bakex_version: "0.5.0"
 kind: HardeningBlueprint
 
 metadata:
@@ -46,8 +46,8 @@ users:
   root:
     lock: true
   accounts:
-    - name: statim-admin
-      comment: "Statim-managed admin account"
+    - name: bakex-admin
+      comment: "BakeX-managed admin account"
       groups: [sudo]
       shell: /bin/bash
       ssh_authorized_keys: []

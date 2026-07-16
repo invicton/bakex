@@ -17,9 +17,9 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from statim.openscap import container_scanner as cs
-from statim.openscap import content as content_mod
-from statim.openscap.scanner import ScanError
+from bakex.openscap import container_scanner as cs
+from bakex.openscap import content as content_mod
+from bakex.openscap.scanner import ScanError
 
 # ---------------------------------------------------------------------------
 # CONT-01 — engine selection
@@ -174,7 +174,7 @@ def test_ensure_datastream_unavailable_raises(tmp_path):
 
 @pytest.mark.anyio
 async def test_run_container_scan_job_produces_graded_complete_job(tmp_path, monkeypatch):
-    from statim.core import auditor
+    from bakex.core import auditor
 
     monkeypatch.setattr(auditor, "resolve_scan_spec", lambda os_slug, tier: ("bench", "prof", "/ds.xml"))
     monkeypatch.setattr(auditor, "ensure_datastream", lambda ds, cache_dir=None: Path(ds))
@@ -198,8 +198,8 @@ async def test_run_container_scan_job_produces_graded_complete_job(tmp_path, mon
 
 @pytest.mark.anyio
 async def test_run_container_scan_job_scanner_error_fails_job(tmp_path, monkeypatch):
-    from statim.core import auditor
-    from statim.openscap.scanner import ScanError
+    from bakex.core import auditor
+    from bakex.openscap.scanner import ScanError
 
     monkeypatch.setattr(auditor, "resolve_scan_spec", lambda os_slug, tier: ("b", "p", "/ds.xml"))
     monkeypatch.setattr(auditor, "ensure_datastream", lambda ds, cache_dir=None: Path(ds))
@@ -220,7 +220,7 @@ async def test_run_container_scan_job_scanner_error_fails_job(tmp_path, monkeypa
 
 @pytest.mark.anyio
 async def test_run_container_scan_job_unknown_os_is_actionable(tmp_path):
-    from statim.core import auditor
+    from bakex.core import auditor
 
     job = auditor.AuditJob(job_type="container_scan", image_id="weird:latest")
     auditor._audit_jobs[job.id] = job

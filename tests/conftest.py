@@ -11,7 +11,7 @@ import pytest
 def anyio_backend() -> str:
     """Run AnyIO-marked tests on asyncio only.
 
-    Statim runtime code uses asyncio primitives for background webhook tasks.
+    BakeX runtime code uses asyncio primitives for background webhook tasks.
     Exercising every AnyIO test under Trio duplicates the suite and creates
     false failures unrelated to the supported runtime backend.
     """

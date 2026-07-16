@@ -3,7 +3,7 @@
 Blueprints are YAML documents that fully describe a hardened image. Every field
 has a safe default — start minimal and add only what you need.
 
-Annotated starter template: [`statim-blueprints-template.yaml`](statim-blueprints-template.yaml).
+Annotated starter template: [`bakex-blueprints-template.yaml`](bakex-blueprints-template.yaml).
 Contributing a blueprint to the community library? See
 [`blueprints/CONTRIBUTING.md`](../blueprints/CONTRIBUTING.md) for the
 field-by-field anatomy, naming convention, and SCAP profile reference table.
@@ -11,7 +11,7 @@ field-by-field anatomy, naming convention, and SCAP profile reference table.
 ## Minimal example
 
 ```yaml
-statim_version: "0.5.0"
+bakex_version: "0.5.0"
 kind: HardeningBlueprint
 
 metadata:
@@ -35,7 +35,7 @@ compliance:
 ## Full schema
 
 ```yaml
-statim_version: "0.5.0"
+bakex_version: "0.5.0"
 kind: HardeningBlueprint
 
 metadata:
@@ -76,7 +76,7 @@ users:
   root:
     lock: true
   accounts:
-    - name: statim-admin
+    - name: bakex-admin
       groups: [wheel]
       shell: /bin/bash
       ssh_authorized_keys: []
@@ -135,7 +135,7 @@ Load any of them in the UI or reference them by name.
 
 The top-level [`blueprints/`](../blueprints/) folder is the public library
 surface for contributor-submitted blueprints — more OS/provider/framework
-combinations without changing the Statim engine.
+combinations without changing the BakeX engine.
 
 The folder is organized by OS family and version:
 
@@ -158,12 +158,12 @@ checklist. Blueprint schema and index consistency are CI-enforced.
 ```bash
 # Validate one file via the API (server running)
 curl -s -X POST http://localhost:8000/api/blueprints/validate \
-  -u admin:$STATIM_ADMIN_TOKEN \
+  -u admin:$BAKEX_ADMIN_TOKEN \
   --data-binary @my-blueprint.yaml
 
 # Validate every template offline
 uv run python -c "
-from statim.core.blueprint import HardeningBlueprint
+from bakex.core.blueprint import HardeningBlueprint
 import glob, yaml
 for f in glob.glob('profiles/**/*.yaml', recursive=True):
     HardeningBlueprint(**yaml.safe_load(open(f)))

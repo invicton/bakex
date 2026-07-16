@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Vamshi Krishna Santhapuri
-"""Shared SSH / Ansible / OpenSCAP utilities for Statim subprocess providers.
+"""Shared SSH / Ansible / OpenSCAP utilities for BakeX subprocess providers.
 
 Import from any subprocess provider script with:
 
@@ -233,7 +233,7 @@ def generate_ssh_keypair(tmpdir: Path) -> tuple[Path, str]:
     Returns:
         (private_key_path, public_key_openssh)
     """
-    key_path = tmpdir / "statim_id_rsa"
+    key_path = tmpdir / "bakex_id_rsa"
     subprocess.run(
         [
             "ssh-keygen",
@@ -246,12 +246,12 @@ def generate_ssh_keypair(tmpdir: Path) -> tuple[Path, str]:
             "-N",
             "",
             "-C",
-            "statim-ephemeral-build",
+            "bakex-ephemeral-build",
         ],
         check=True,
         capture_output=True,
     )
-    pub = (tmpdir / "statim_id_rsa.pub").read_text().strip()
+    pub = (tmpdir / "bakex_id_rsa.pub").read_text().strip()
     key_path.chmod(0o600)
     return key_path, pub
 
@@ -382,7 +382,7 @@ def run_prehard_ansible_remote(
         host,
         user,
         key_path,
-        f"echo '{b64}' | base64 -d | sudo tee /tmp/statim-prehard.yml > /dev/null",
+        f"echo '{b64}' | base64 -d | sudo tee /tmp/bakex-prehard.yml > /dev/null",
         port=port,
     )
     # Run it locally on the instance
@@ -390,7 +390,7 @@ def run_prehard_ansible_remote(
         host,
         user,
         key_path,
-        "sudo ansible-playbook -i 'localhost,' -c local /tmp/statim-prehard.yml",
+        "sudo ansible-playbook -i 'localhost,' -c local /tmp/bakex-prehard.yml",
         timeout=timeout,
         port=port,
     )
@@ -455,7 +455,7 @@ def run_hardening_remote(
         # Build a minimal site playbook
         site_yaml = (
             "---\n"
-            f"- name: Statim Compliance Hardening ({role})\n"
+            f"- name: BakeX Compliance Hardening ({role})\n"
             "  hosts: localhost\n"
             "  connection: local\n"
             "  become: true\n"
@@ -467,7 +467,7 @@ def run_hardening_remote(
             host,
             user,
             key_path,
-            f"echo '{b64_site}' | base64 -d | sudo tee /tmp/statim-hardening.yml > /dev/null",
+            f"echo '{b64_site}' | base64 -d | sudo tee /tmp/bakex-hardening.yml > /dev/null",
             port=port,
         )
 
@@ -491,8 +491,8 @@ def run_hardening_remote(
 
         # Clone the repo
         clone_cmd = (
-            "sudo rm -rf /etc/ansible/statim_custom_hardening && "
-            f"sudo git clone {repo_url} /etc/ansible/statim_custom_hardening"
+            "sudo rm -rf /etc/ansible/bakex_custom_hardening && "
+            f"sudo git clone {repo_url} /etc/ansible/bakex_custom_hardening"
         )
         run_remote_cmd(host, user, key_path, clone_cmd, timeout=300, port=port)
 
@@ -501,7 +501,7 @@ def run_hardening_remote(
             host,
             user,
             key_path,
-            f"sudo cp /etc/ansible/statim_custom_hardening/{playbook_file} /tmp/statim-hardening.yml",
+            f"sudo cp /etc/ansible/bakex_custom_hardening/{playbook_file} /tmp/bakex-hardening.yml",
             port=port,
         )
     else:
@@ -522,17 +522,17 @@ def run_hardening_remote(
         else:
             extra_vars = {**(extra_vars or {}), rule_id: enabled}
 
-    cmd = "sudo ansible-playbook -i 'localhost,' -c local /tmp/statim-hardening.yml"
+    cmd = "sudo ansible-playbook -i 'localhost,' -c local /tmp/bakex-hardening.yml"
     if extra_vars:
         b64_ev = base64.b64encode(json.dumps(extra_vars).encode()).decode()
         run_remote_cmd(
             host,
             user,
             key_path,
-            f"echo '{b64_ev}' | base64 -d | sudo tee /tmp/statim-extravars.json > /dev/null",
+            f"echo '{b64_ev}' | base64 -d | sudo tee /tmp/bakex-extravars.json > /dev/null",
             port=port,
         )
-        cmd += " --extra-vars @/tmp/statim-extravars.json"
+        cmd += " --extra-vars @/tmp/bakex-extravars.json"
 
     run_remote_cmd(host, user, key_path, cmd, timeout=timeout, port=port)
     logger.info("Compliance hardening complete on %s", host)
@@ -547,7 +547,7 @@ def cleanup_instance_history_remote(host: str, user: str, key_path: Path, port: 
     """Clear OS history and logs before snapshot generation."""
     logger.info("Cleaning up instance logs and history before snapshot on %s", host)
     cmds = [
-        "sudo rm -rf /tmp/statim-*",
+        "sudo rm -rf /tmp/bakex-*",
         "sudo rm -f /var/log/messages /var/log/syslog /var/log/auth.log",
         "sudo journalctl --vacuum-time=1s || true",
         "sudo sh -c 'cat /dev/null > /var/log/wtmp' || true",
@@ -700,7 +700,7 @@ def install_oscap_on_remote(
     # into memory twice) — via a /tmp staging path + sudo mv, since the SSH
     # user typically can't write directly to /usr/share/xml/scap/ssg/content/.
     run_remote_cmd(host, user, key_path, f"sudo mkdir -p {os.path.dirname(datastream)}", port=port)
-    staging = f"/tmp/statim-scap-content-{os.path.basename(datastream)}"
+    staging = f"/tmp/bakex-scap-content-{os.path.basename(datastream)}"
     copy_file_to_remote(str(local_content), staging, host, user, key_path, timeout=300, port=port)
     run_remote_cmd(host, user, key_path, f"sudo mv {staging} {datastream}", timeout=30, port=port)
     logger.info("OpenSCAP content fallback uploaded to %s on %s", datastream, host)
@@ -712,7 +712,7 @@ def run_oscap_remote(
     key_path: Path,
     profile_id: str,
     datastream: str,
-    results_path: str = "/tmp/statim-oscap.xml",
+    results_path: str = "/tmp/bakex-oscap.xml",
     timeout: int = 600,
     port: int = 22,
 ) -> str:
@@ -735,7 +735,7 @@ def run_oscap_remote(
         f"sudo oscap xccdf eval "
         f"--profile {profile_id} "
         f"--results {results_path} "
-        f"--report /tmp/statim-oscap-report.html "
+        f"--report /tmp/bakex-oscap-report.html "
         f"{datastream}; "
         f"cat {results_path}"
     )
@@ -808,7 +808,7 @@ def upload_content_to_remote(
         tmp_path = tmp.name
     try:
         # SCP to a world-readable temp location, then move with sudo if needed
-        staging = f"/tmp/statim-upload-{os.path.basename(remote_path)}"
+        staging = f"/tmp/bakex-upload-{os.path.basename(remote_path)}"
         copy_file_to_remote(tmp_path, staging, host, user, key_path, timeout=timeout, port=port)
         if sudo:
             run_remote_cmd(host, user, key_path, f"sudo mv {staging} {remote_path}", timeout=30, port=port)

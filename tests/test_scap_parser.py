@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import pytest
 
-from statim.core.parser import SCAPParser
+from bakex.core.parser import SCAPParser
 
 _XCCDF_NS = "http://checklists.nist.gov/xccdf/1.2"
 

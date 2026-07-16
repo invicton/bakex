@@ -1,12 +1,12 @@
-# Statim — Pipeline Integration Guide
+# BakeX — Pipeline Integration Guide
 
-Use Statim as a compliance gate in any CI/CD pipeline. After building a hardened image, scan it automatically and fail the pipeline if it doesn't meet your thresholds.
+Use BakeX as a compliance gate in any CI/CD pipeline. After building a hardened image, scan it automatically and fail the pipeline if it doesn't meet your thresholds.
 
 ---
 
 ## Prerequisites
 
-1. Statim is running and reachable from your CI environment (e.g. `http://statim:8001`)
+1. BakeX is running and reachable from your CI environment (e.g. `http://bakex:8001`)
 2. You have at least one compliance profile loaded in `profiles/`
 3. You have generated an API key at **Settings → API Keys**
 
@@ -23,10 +23,10 @@ X-API-Key: str_<your-key>
 Authorization: Bearer str_<your-key>
 ```
 
-Generate a key from the Statim UI or via the API:
+Generate a key from the BakeX UI or via the API:
 
 ```bash
-curl -s -X POST http://statim:8001/api/api-keys \
+curl -s -X POST http://bakex:8001/api/api-keys \
   -H "Content-Type: application/json" \
   -d '{"label": "GitHub Actions — prod"}' \
   | jq '{id, token}'   # token shown once — store in your secrets manager
@@ -39,8 +39,8 @@ curl -s -X POST http://statim:8001/api/api-keys \
 The simplest possible pipeline gate — scan an AMI and fail if it doesn't pass:
 
 ```bash
-curl -sf -X POST http://statim:8001/api/pipeline/scan \
-  -H "X-API-Key: $STATIM_API_KEY" \
+curl -sf -X POST http://bakex:8001/api/pipeline/scan \
+  -H "X-API-Key: $BAKEX_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "image_id":           "ami-0abc1234",
@@ -97,9 +97,9 @@ curl -sf -X POST http://statim:8001/api/pipeline/scan \
   "region":               "us-east-1",
   "profile":              "ubuntu22-cis-l1-aws",
   "error":                null,
-  "report_url":           "http://statim:8001/api/auditor/scan-image/.../report?fmt=json",
-  "sarif_url":            "http://statim:8001/api/auditor/scan-image/.../report?fmt=sarif",
-  "html_report_url":      "http://statim:8001/api/auditor/scan-image/.../report"
+  "report_url":           "http://bakex:8001/api/auditor/scan-image/.../report?fmt=json",
+  "sarif_url":            "http://bakex:8001/api/auditor/scan-image/.../report?fmt=sarif",
+  "html_report_url":      "http://bakex:8001/api/auditor/scan-image/.../report"
 }
 ```
 
@@ -113,13 +113,13 @@ curl -sf -X POST http://statim:8001/api/pipeline/scan \
 
 ## Triggering Image Builds
 
-Statim can build the hardened image itself — provision, harden, scan, snapshot — and return the artifact ID directly to your pipeline.
+BakeX can build the hardened image itself — provision, harden, scan, snapshot — and return the artifact ID directly to your pipeline.
 
 ### Quick Build Trigger
 
 ```bash
-curl -sf -X POST http://statim:8001/api/pipeline/build \
-  -H "X-API-Key: $STATIM_API_KEY" \
+curl -sf -X POST http://bakex:8001/api/pipeline/build \
+  -H "X-API-Key: $BAKEX_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "profile_name": "ubuntu22-cis-l1-aws",
@@ -169,13 +169,13 @@ Build the image, then immediately gate on its compliance score:
 #!/usr/bin/env bash
 set -euo pipefail
 
-STATIM_URL="${STATIM_URL:-http://statim:8001}"
-STATIM_API_KEY="${STATIM_API_KEY:?Set STATIM_API_KEY}"
+BAKEX_URL="${BAKEX_URL:-http://bakex:8001}"
+BAKEX_API_KEY="${BAKEX_API_KEY:?Set BAKEX_API_KEY}"
 PROFILE="${1:-ubuntu22-cis-l1-aws}"
 
 echo "Building $PROFILE ..."
-BUILD=$(curl -sf -X POST "$STATIM_URL/api/pipeline/build" \
-  -H "X-API-Key: $STATIM_API_KEY" \
+BUILD=$(curl -sf -X POST "$BAKEX_URL/api/pipeline/build" \
+  -H "X-API-Key: $BAKEX_API_KEY" \
   -H "Content-Type: application/json" \
   -d "{\"profile_name\":\"$PROFILE\",\"wait\":true}")
 
@@ -189,8 +189,8 @@ ARTIFACT=$(echo "$BUILD" | python3 -c "import sys,json; print(json.load(sys.stdi
 echo "Built: $ARTIFACT"
 
 echo "Scanning $ARTIFACT ..."
-curl -sf -X POST "$STATIM_URL/api/pipeline/scan" \
-  -H "X-API-Key: $STATIM_API_KEY" \
+curl -sf -X POST "$BAKEX_URL/api/pipeline/scan" \
+  -H "X-API-Key: $BAKEX_API_KEY" \
   -H "Content-Type: application/json" \
   -d "{
     \"image_id\":           \"$ARTIFACT\",
@@ -217,13 +217,13 @@ jobs:
   build-and-gate:
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger Statim build
+      - name: Trigger BakeX build
         id: build
         env:
-          STATIM_API_KEY: ${{ secrets.STATIM_API_KEY }}
+          BAKEX_API_KEY: ${{ secrets.BAKEX_API_KEY }}
         run: |
-          BUILD=$(curl -sf -X POST ${{ vars.STATIM_URL }}/api/pipeline/build \
-            -H "X-API-Key: $STATIM_API_KEY" \
+          BUILD=$(curl -sf -X POST ${{ vars.BAKEX_URL }}/api/pipeline/build \
+            -H "X-API-Key: $BAKEX_API_KEY" \
             -H "Content-Type: application/json" \
             -d '{"profile_name":"ubuntu22-cis-l1-aws","wait":true}')
 
@@ -236,11 +236,11 @@ jobs:
 
       - name: Compliance gate
         env:
-          STATIM_API_KEY: ${{ secrets.STATIM_API_KEY }}
+          BAKEX_API_KEY: ${{ secrets.BAKEX_API_KEY }}
           ARTIFACT_ID: ${{ steps.build.outputs.artifact_id }}
         run: |
-          curl -sf -X POST ${{ vars.STATIM_URL }}/api/pipeline/scan \
-            -H "X-API-Key: $STATIM_API_KEY" \
+          curl -sf -X POST ${{ vars.BAKEX_URL }}/api/pipeline/scan \
+            -H "X-API-Key: $BAKEX_API_KEY" \
             -H "Content-Type: application/json" \
             -d "{
               \"image_id\":           \"$ARTIFACT_ID\",
@@ -256,15 +256,15 @@ jobs:
 For builds that exceed your CI step timeout, use `wait=false` and poll `GET /api/pipeline/build/{id}`:
 
 ```bash
-JOB_ID=$(curl -sf -X POST "$STATIM_URL/api/pipeline/build" \
-  -H "X-API-Key: $STATIM_API_KEY" \
+JOB_ID=$(curl -sf -X POST "$BAKEX_URL/api/pipeline/build" \
+  -H "X-API-Key: $BAKEX_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"profile_name":"ubuntu22-cis-l1-aws","wait":false}' \
   | jq -r '.job_id')
 
 while true; do
-  RESP=$(curl -sf "$STATIM_URL/api/pipeline/build/$JOB_ID" \
-    -H "X-API-Key: $STATIM_API_KEY")
+  RESP=$(curl -sf "$BAKEX_URL/api/pipeline/build/$JOB_ID" \
+    -H "X-API-Key: $BAKEX_API_KEY")
   STATUS=$(echo "$RESP" | jq -r '.status')
   echo "Build status: $STATUS"
   [ "$STATUS" = "complete" ] || [ "$STATUS" = "failed" ] && break
@@ -306,11 +306,11 @@ jobs:
     steps:
       - name: Compliance Scan
         env:
-          STATIM_API_KEY: ${{ secrets.STATIM_API_KEY }}
+          BAKEX_API_KEY: ${{ secrets.BAKEX_API_KEY }}
           AMI_ID: ${{ needs.build.outputs.ami_id }}
         run: |
-          RESULT=$(curl -sf -X POST ${{ vars.STATIM_URL }}/api/pipeline/scan \
-            -H "X-API-Key: $STATIM_API_KEY" \
+          RESULT=$(curl -sf -X POST ${{ vars.BAKEX_URL }}/api/pipeline/scan \
+            -H "X-API-Key: $BAKEX_API_KEY" \
             -H "Content-Type: application/json" \
             -d "{
               \"image_id\":           \"$AMI_ID\",
@@ -326,7 +326,7 @@ jobs:
 
           # Upload SARIF to GitHub Security tab
           SARIF_URL=$(echo "$RESULT" | jq -r '.sarif_url')
-          curl -sf "$SARIF_URL" -H "X-API-Key: $STATIM_API_KEY" > statim.sarif.json
+          curl -sf "$SARIF_URL" -H "X-API-Key: $BAKEX_API_KEY" > bakex.sarif.json
 
           # Fail the job if not passed
           echo "$RESULT" | jq -e '.passed == true'
@@ -335,8 +335,8 @@ jobs:
         if: always()
         uses: github/codeql-action/upload-sarif@v3
         with:
-          sarif_file: statim.sarif.json
-          category: statim-compliance
+          sarif_file: bakex.sarif.json
+          category: bakex-compliance
 ```
 
 ---
@@ -350,8 +350,8 @@ compliance-scan:
   needs: [build-ami]
   script:
     - |
-      RESULT=$(curl -sf -X POST "$STATIM_URL/api/pipeline/scan" \
-        -H "X-API-Key: $STATIM_API_KEY" \
+      RESULT=$(curl -sf -X POST "$BAKEX_URL/api/pipeline/scan" \
+        -H "X-API-Key: $BAKEX_API_KEY" \
         -H "Content-Type: application/json" \
         -d "{
           \"image_id\":           \"$AMI_ID\",
@@ -381,8 +381,8 @@ pipeline {
         script {
           def response = sh(
             script: """
-              curl -sf -X POST ${env.STATIM_URL}/api/pipeline/scan \\
-                -H "X-API-Key: ${env.STATIM_API_KEY}" \\
+              curl -sf -X POST ${env.BAKEX_URL}/api/pipeline/scan \\
+                -H "X-API-Key: ${env.BAKEX_API_KEY}" \\
                 -H "Content-Type: application/json" \\
                 -d '{"image_id":"${env.AMI_ID}","provider":"aws","compliance_profile":"ubuntu22-cis-l1-aws","wait":true}'
             """,
@@ -410,15 +410,15 @@ pipeline {
 #!/usr/bin/env bash
 set -euo pipefail
 
-STATIM_URL="${STATIM_URL:-http://statim:8001}"
-STATIM_API_KEY="${STATIM_API_KEY:?Set STATIM_API_KEY}"
+BAKEX_URL="${BAKEX_URL:-http://bakex:8001}"
+BAKEX_API_KEY="${BAKEX_API_KEY:?Set BAKEX_API_KEY}"
 AMI_ID="${1:?Pass AMI ID as first argument}"
 PROFILE="${2:-ubuntu22-cis-l1-aws}"
 
 echo "Scanning $AMI_ID against $PROFILE ..."
 
-RESULT=$(curl -sf -X POST "$STATIM_URL/api/pipeline/scan" \
-  -H "X-API-Key: $STATIM_API_KEY" \
+RESULT=$(curl -sf -X POST "$BAKEX_URL/api/pipeline/scan" \
+  -H "X-API-Key: $BAKEX_API_KEY" \
   -H "Content-Type: application/json" \
   -d "{
     \"image_id\":           \"$AMI_ID\",
@@ -453,24 +453,24 @@ For scans that may take longer than your CI timeout, use `wait=false` and poll:
 
 ```bash
 # Trigger without waiting
-JOB_ID=$(curl -sf -X POST "$STATIM_URL/api/pipeline/scan" \
-  -H "X-API-Key: $STATIM_API_KEY" \
+JOB_ID=$(curl -sf -X POST "$BAKEX_URL/api/pipeline/scan" \
+  -H "X-API-Key: $BAKEX_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"image_id":"ami-0abc","compliance_profile":"ubuntu22-cis-l1-aws","wait":false}' \
   | jq -r '.job_id')
 
 # Poll until complete
 while true; do
-  STATUS=$(curl -sf "$STATIM_URL/api/pipeline/scan/$JOB_ID" \
-    -H "X-API-Key: $STATIM_API_KEY" | jq -r '.status')
+  STATUS=$(curl -sf "$BAKEX_URL/api/pipeline/scan/$JOB_ID" \
+    -H "X-API-Key: $BAKEX_API_KEY" | jq -r '.status')
   echo "Status: $STATUS"
   [ "$STATUS" = "complete" ] || [ "$STATUS" = "failed" ] && break
   sleep 30
 done
 
 # Get final result
-curl -sf "$STATIM_URL/api/pipeline/scan/$JOB_ID" \
-  -H "X-API-Key: $STATIM_API_KEY" | jq -e '.passed == true'
+curl -sf "$BAKEX_URL/api/pipeline/scan/$JOB_ID" \
+  -H "X-API-Key: $BAKEX_API_KEY" | jq -e '.passed == true'
 ```
 
 ---
@@ -481,7 +481,7 @@ Register a webhook to receive push notifications instead of polling:
 
 ```bash
 # Register
-curl -X POST "$STATIM_URL/api/webhooks" \
+curl -X POST "$BAKEX_URL/api/webhooks" \
   -H "Content-Type: application/json" \
   -d '{
     "url":    "https://hooks.slack.com/services/...",
@@ -512,19 +512,19 @@ Every completed scan exposes a SARIF 2.1.0 endpoint. Upload it to your security 
 
 ```bash
 # Download SARIF
-curl -sf "$SARIF_URL" -H "X-API-Key: $STATIM_API_KEY" > statim.sarif.json
+curl -sf "$SARIF_URL" -H "X-API-Key: $BAKEX_API_KEY" > bakex.sarif.json
 
 # Upload via GitHub API
 curl -X POST \
   -H "Authorization: token $GITHUB_TOKEN" \
   -H "Content-Type: application/sarif+json" \
-  --data @statim.sarif.json \
+  --data @bakex.sarif.json \
   "https://api.github.com/repos/$OWNER/$REPO/code-scanning/sarifs"
 ```
 
 **Azure DevOps:**
 
-Use the [PublishBuildArtifacts task](https://learn.microsoft.com/en-us/azure/devops/pipelines/tasks/reference/publish-build-artifacts-v1) to upload `statim.sarif.json`, then view it in the Security tab.
+Use the [PublishBuildArtifacts task](https://learn.microsoft.com/en-us/azure/devops/pipelines/tasks/reference/publish-build-artifacts-v1) to upload `bakex.sarif.json`, then view it in the Security tab.
 
 ---
 
@@ -533,8 +533,8 @@ Use the [PublishBuildArtifacts task](https://learn.microsoft.com/en-us/azure/dev
 Re-check a previously completed scan against different thresholds without re-running:
 
 ```bash
-curl -X POST "$STATIM_URL/api/pipeline/verify/$JOB_ID?pass_threshold=90&severity_threshold=critical" \
-  -H "X-API-Key: $STATIM_API_KEY" \
+curl -X POST "$BAKEX_URL/api/pipeline/verify/$JOB_ID?pass_threshold=90&severity_threshold=critical" \
+  -H "X-API-Key: $BAKEX_API_KEY" \
   | jq '{passed, grade, score_pct}'
 ```
 
@@ -547,7 +547,7 @@ Manage blueprints programmatically — upload from CI, validate before committin
 ### Upload a Blueprint
 
 ```bash
-curl -sf -X POST http://statim:8001/api/blueprints/upload \
+curl -sf -X POST http://bakex:8001/api/blueprints/upload \
   -F "file=@ubuntu22-cis-l1-aws.yaml" \
   | jq '{name}'
 ```
@@ -559,7 +559,7 @@ Returns `201` with `{"name": "...", "path": "..."}`. Returns `409` if a blueprin
 Run the schema check without persisting anything — useful as a pre-commit hook:
 
 ```bash
-curl -sf -X POST http://statim:8001/api/blueprints/validate \
+curl -sf -X POST http://bakex:8001/api/blueprints/validate \
   -H "Content-Type: application/yaml" \
   --data-binary @ubuntu22-cis-l1-aws.yaml \
   | jq '{valid, errors}'
@@ -570,10 +570,10 @@ Returns `{"valid": true, "name": "..."}` or `{"valid": false, "errors": ["..."]}
 **Pre-commit hook example (`.pre-commit-hooks.yaml`):**
 
 ```yaml
-- id: statim-blueprint-validate
-  name: Validate Statim blueprint
+- id: bakex-blueprint-validate
+  name: Validate BakeX blueprint
   language: system
-  entry: bash -c 'curl -sf -X POST http://statim:8001/api/blueprints/validate
+  entry: bash -c 'curl -sf -X POST http://bakex:8001/api/blueprints/validate
     -H "Content-Type: application/yaml" --data-binary @"$1" | python3 -c
     "import sys,json; d=json.load(sys.stdin); sys.exit(0 if d[\"valid\"] else 1)"'
   files: '^profiles/.*\.ya?ml$'
@@ -584,8 +584,8 @@ Returns `{"valid": true, "name": "..."}` or `{"valid": false, "errors": ["..."]}
 Skip the upload step — pass the blueprint YAML directly in the build request:
 
 ```bash
-curl -sf -X POST http://statim:8001/api/pipeline/build \
-  -H "X-API-Key: $STATIM_API_KEY" \
+curl -sf -X POST http://bakex:8001/api/pipeline/build \
+  -H "X-API-Key: $BAKEX_API_KEY" \
   -H "Content-Type: application/json" \
   -d "{
     \"blueprint_yaml\": $(cat ubuntu22-cis-l1-aws.yaml | python3 -c 'import sys,json; print(json.dumps(sys.stdin.read()))'),
@@ -600,7 +600,7 @@ When `blueprint_yaml` is set it takes precedence over `profile_name`. Either fie
 Only blueprints you uploaded (in `profiles/user/`) can be deleted. Built-in templates return `403`.
 
 ```bash
-curl -sf -X DELETE http://statim:8001/api/blueprints/ubuntu22-cis-l1-aws
+curl -sf -X DELETE http://bakex:8001/api/blueprints/ubuntu22-cis-l1-aws
 # → 204 No Content
 ```
 
@@ -609,7 +609,7 @@ curl -sf -X DELETE http://statim:8001/api/blueprints/ubuntu22-cis-l1-aws
 Embed a live compliance grade badge in your README or dashboard:
 
 ```markdown
-![Compliance](http://statim:8001/api/auditor/scan-image/{job_id}/badge.svg)
+![Compliance](http://bakex:8001/api/auditor/scan-image/{job_id}/badge.svg)
 ```
 
 Returns SVG. While the scan is in progress the endpoint returns `202` with a "scanning…" badge — useful for polling. Colours: `A` green, `B` teal, `C` yellow, `D` orange, `F` red.

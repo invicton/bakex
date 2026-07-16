@@ -104,7 +104,7 @@ def test_get_compute_client_accepts_service_account_json():
                     {
                         "type": "service_account",
                         "project_id": "my-project",
-                        "client_email": "statim@my-project.iam.gserviceaccount.com",
+                        "client_email": "bakex@my-project.iam.gserviceaccount.com",
                         "private_key": "-----BEGIN PRIVATE KEY-----\\nredacted\\n-----END PRIVATE KEY-----\\n",
                     }
                 )

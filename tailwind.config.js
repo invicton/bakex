@@ -1,8 +1,8 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
-    "./statim/templates/**/*.html",
-    "./statim/**/*.py"
+    "./bakex/templates/**/*.html",
+    "./bakex/**/*.py"
   ],
   theme: {
     extend: {

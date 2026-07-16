@@ -19,7 +19,7 @@ _REQUIRED_CREDS = {
     "client_id": "client-456",
     "client_secret": "secret-789",
     "subscription_id": "sub-000",
-    "resource_group": "rg-statim",
+    "resource_group": "rg-bakex",
     "location": "eastus",
 }
 

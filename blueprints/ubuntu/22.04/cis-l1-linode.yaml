@@ -1,6 +1,6 @@
-# Statim HardeningBlueprint — Ubuntu 22.04 LTS CIS Level 1 Server (Linode)
+# BakeX HardeningBlueprint — Ubuntu 22.04 LTS CIS Level 1 Server (Linode)
 
-statim_version: "0.5.0"
+bakex_version: "0.5.0"
 kind: HardeningBlueprint
 
 metadata:
@@ -57,8 +57,8 @@ users:
     lock: true
 
   accounts:
-    - name: statim-admin
-      comment: "Statim-managed admin account"
+    - name: bakex-admin
+      comment: "BakeX-managed admin account"
       groups:
         - sudo
       shell: /bin/bash

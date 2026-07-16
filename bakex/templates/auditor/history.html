@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}Scan History — BakeX{% endblock %}
+{% block content %}
+<div class="px-8 py-6 space-y-6">
+
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-xl font-bold text-white">Scan History</h1>
+      <p class="text-sm text-slate-400 mt-0.5">All compliance scans — persisted across restarts.</p>
+    </div>
+    <a href="/auditor/scanner"
+       class="flex items-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-sm rounded-xl transition-all">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+      </svg>
+      New Scan
+    </a>
+  </div>
+
+  {% if audits %}
+  <div class="bg-slate-900/50 border border-slate-800 rounded-xl overflow-hidden">
+    <table class="w-full text-xs">
+      <thead class="bg-slate-800/60">
+        <tr>
+          <th class="text-left px-4 py-3 text-slate-400 font-semibold">Target / Image</th>
+          <th class="text-left px-4 py-3 text-slate-400 font-semibold">Provider</th>
+          <th class="text-left px-4 py-3 text-slate-400 font-semibold">Profile</th>
+          <th class="text-center px-3 py-3 text-slate-400 font-semibold w-16">Grade</th>
+          <th class="text-right px-4 py-3 text-slate-400 font-semibold w-20">Score</th>
+          <th class="text-left px-4 py-3 text-slate-400 font-semibold">Date</th>
+          <th class="text-center px-4 py-3 text-slate-400 font-semibold">Status</th>
+          <th class="px-4 py-3"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for job in audits %}
+        <tr class="border-t border-slate-800 hover:bg-slate-800/30 transition-colors">
+          <td class="px-4 py-3 font-mono text-slate-300 max-w-xs truncate" title="{{ job.image_id or job.target_host }}">
+            {{ (job.image_id or job.target_host or '—')[:32] }}
+          </td>
+          <td class="px-4 py-3 text-slate-400">{{ (job.provider or job.job_type or '—') | upper }}</td>
+          <td class="px-4 py-3 text-slate-400 truncate max-w-[120px]">{{ job.profile_name or '—' }}</td>
+          <td class="px-3 py-3 text-center">
+            {% if job.grade %}
+            <span class="text-sm font-black px-2 py-0.5 rounded-lg
+              {% if job.grade == 'A' %}text-emerald-400 bg-emerald-950/40 border border-emerald-800/40
+              {% elif job.grade == 'B' %}text-green-400 bg-green-950/40 border border-green-800/40
+              {% elif job.grade == 'C' %}text-yellow-400 bg-yellow-950/40 border border-yellow-800/40
+              {% elif job.grade == 'D' %}text-orange-400 bg-orange-950/40 border border-orange-800/40
+              {% else %}text-rose-400 bg-rose-950/40 border border-rose-800/40{% endif %}">
+              {{ job.grade }}
+            </span>
+            {% else %}—{% endif %}
+          </td>
+          <td class="px-4 py-3 text-right font-mono {% if job.score_pct and job.score_pct >= 75 %}text-emerald-400{% elif job.score_pct %}text-rose-400{% else %}text-slate-600{% endif %}">
+            {{ '%.1f%%' % job.score_pct if job.score_pct is not none else '—' }}
+          </td>
+          <td class="px-4 py-3 text-slate-500">{{ job.updated_at.strftime('%Y-%m-%d %H:%M') if job.updated_at else '—' }}</td>
+          <td class="px-4 py-3 text-center">
+            <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full
+              {% if job.status.value == 'complete' %}bg-emerald-900/40 text-emerald-400
+              {% elif job.status.value == 'failed' %}bg-rose-900/40 text-rose-400
+              {% else %}bg-slate-800 text-slate-400{% endif %}">
+              {{ job.status.value }}
+            </span>
+          </td>
+          <td class="px-4 py-3">
+            <div class="flex items-center gap-1.5 justify-end">
+              {% if job.job_type == 'image_scan' %}
+              <a href="/auditor/scan-image/{{ job.id }}"
+                 class="text-[10px] px-2 py-1 rounded bg-slate-700 hover:bg-slate-600 text-slate-300 transition-colors">View</a>
+              {% if job.status.value == 'complete' %}
+              <a href="/api/auditor/scan-image/{{ job.id }}/report"
+                 class="text-[10px] px-2 py-1 rounded bg-slate-700 hover:bg-cyan-700 text-slate-300 hover:text-white transition-colors">Report</a>
+              {% endif %}
+              {% else %}
+              <a href="/auditor/results/{{ job.id }}"
+                 class="text-[10px] px-2 py-1 rounded bg-slate-700 hover:bg-slate-600 text-slate-300 transition-colors">View</a>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% else %}
+  <div class="flex flex-col items-center justify-center py-20 text-center space-y-4">
+    <div class="w-14 h-14 rounded-full bg-slate-800 flex items-center justify-center">
+      <svg class="w-7 h-7 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+      </svg>
+    </div>
+    <div class="text-slate-400 font-semibold">No scans yet</div>
+    <p class="text-slate-600 text-sm max-w-sm">Run your first compliance scan to see results here. Scans are persisted across container restarts.</p>
+    <a href="/auditor/scanner" class="mt-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white text-sm font-semibold rounded-xl transition-all">
+      Launch Compliance Scanner
+    </a>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

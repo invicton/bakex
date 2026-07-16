@@ -1,6 +1,6 @@
 FROM python:3.14-slim
 
-# Install system dependencies required by Statim
+# Install system dependencies required by BakeX
 # - curl/git for downloading things
 # - openssh-client and sshpass for Ansible to connect to dynamically provisioned hosts
 # - ansible/ansible-core for the hardening engine
@@ -40,5 +40,5 @@ ENV PYTHONUNBUFFERED=1
 # Expose the default Uvicorn port
 EXPOSE 8000
 
-# Start the Statim server natively
-CMD ["uvicorn", "statim.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Start the BakeX server natively
+CMD ["uvicorn", "bakex.main:app", "--host", "0.0.0.0", "--port", "8000"]

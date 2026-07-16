@@ -1,12 +1,12 @@
-# Statim HardeningBlueprint — Generic Template
+# BakeX HardeningBlueprint — Generic Template
 #
 # Use this generic template as a starting point to create custom hardening profiles.
 # Replace the placeholder values with your target OS, architecture, and cloud provider details.
 #
 # Usage:
-#   statim build <your-blueprint-name>
+#   bakex build <your-blueprint-name>
 
-statim_version: "0.5.0"
+bakex_version: "0.5.0"
 kind: HardeningBlueprint
 
 metadata:
@@ -56,8 +56,8 @@ users:
     lock: true                    # Recommended: Lock the root account
 
   accounts:
-    - name: statim-admin
-      comment: "Statim-managed admin account"
+    - name: bakex-admin
+      comment: "BakeX-managed admin account"
       groups:
         - sudo                    # Or 'wheel' for RHEL-based systems
       shell: /bin/bash

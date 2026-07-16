@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Vamshi Krishna Santhapuri
-"""Tests for statim.core.report — Phase 1 TDD red run.
+"""Tests for bakex.core.report — Phase 1 TDD red run.
 
 This file defines the contract for the enriched report module.
 Every test that fails is a missing capability, not a pre-existing bug.
@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pytest
 
-from statim.core.report import (
+from bakex.core.report import (
     ReportFormatter,
     format_report,
     generate_delta_report,

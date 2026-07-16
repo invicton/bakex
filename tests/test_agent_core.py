@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Vamshi Krishna Santhapuri
-"""Tests for statim/core/agent.py tool implementations and agent loop.
+"""Tests for bakex/core/agent.py tool implementations and agent loop.
 
 Tests use mocked LLM backends so no API key is required.
 
@@ -19,7 +19,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 import yaml
 
-from statim.core.agent import (
+from bakex.core.agent import (
     _analyze_findings,
     _apply_required_defaults,
     _enrich_blueprint,
@@ -37,7 +37,7 @@ from statim.core.agent import (
 # ---------------------------------------------------------------------------
 
 _VALID_YAML = """\
-statim_version: "0.1.0"
+bakex_version: "0.1.0"
 kind: ComplianceProfile
 metadata:
   name: agent-test-profile
@@ -55,7 +55,7 @@ compliance:
 _INVALID_YAML = "not: valid: yaml: ["
 
 _MISSING_COMPLIANCE_YAML = """\
-statim_version: "0.1.0"
+bakex_version: "0.1.0"
 kind: ComplianceProfile
 metadata:
   name: agent-no-compliance
@@ -75,14 +75,14 @@ target:
 def test_apply_required_defaults_sets_missing_keys():
     raw: dict = {}
     result = _apply_required_defaults(raw)
-    assert result["statim_version"] == "1"
+    assert result["bakex_version"] == "1"
     assert result["kind"] == "HardeningBlueprint"
 
 
 def test_apply_required_defaults_does_not_overwrite_existing():
-    raw = {"statim_version": "0.2.0", "kind": "ComplianceProfile"}
+    raw = {"bakex_version": "0.2.0", "kind": "ComplianceProfile"}
     _apply_required_defaults(raw)
-    assert raw["statim_version"] == "0.2.0"
+    assert raw["bakex_version"] == "0.2.0"
     assert raw["kind"] == "ComplianceProfile"
 
 
@@ -125,7 +125,7 @@ def test_validate_blueprint_non_mapping_yaml_returns_valid_false():
 
 def test_enrich_blueprint_sets_instance_type_for_aws():
     minimal = """\
-statim_version: "0.1.0"
+bakex_version: "0.1.0"
 kind: ComplianceProfile
 metadata:
   name: enrich-test
@@ -148,7 +148,7 @@ compliance:
 
 def test_enrich_blueprint_sets_provider_when_missing():
     raw = """\
-statim_version: "0.1.0"
+bakex_version: "0.1.0"
 kind: ComplianceProfile
 metadata:
   name: enrich-no-provider
@@ -171,7 +171,7 @@ compliance:
 
 def test_enrich_blueprint_sets_datastream_for_ubuntu():
     raw = """\
-statim_version: "0.1.0"
+bakex_version: "0.1.0"
 kind: ComplianceProfile
 metadata:
   name: enrich-ds
@@ -193,7 +193,7 @@ compliance:
 
 def test_enrich_blueprint_sets_datastream_for_rocky():
     raw = """\
-statim_version: "0.1.0"
+bakex_version: "0.1.0"
 kind: ComplianceProfile
 metadata:
   name: enrich-rocky-ds
@@ -221,7 +221,7 @@ def test_enrich_blueprint_malformed_yaml_returns_error():
 def test_enrich_blueprint_provider_specific_instance_types():
     """Verify each supported provider gets a meaningful instance type."""
     base = """\
-statim_version: "0.1.0"
+bakex_version: "0.1.0"
 kind: ComplianceProfile
 metadata:
   name: enrich-providers
@@ -335,8 +335,8 @@ def test_retry_build_yaml_with_non_dict_yaml_falls_back():
 
 @pytest.mark.anyio
 async def test_get_build_status_returns_pending_for_known_job():
-    from statim.core import builder as bs
-    from statim.core.builder import BuildJob
+    from bakex.core import builder as bs
+    from bakex.core.builder import BuildJob
 
     job = BuildJob(profile_name="test", provider_name="aws")
     bs._jobs[job.id] = job
@@ -358,9 +358,9 @@ async def test_get_build_status_returns_error_for_unknown_job():
 
 @pytest.mark.anyio
 async def test_get_build_status_complete_job_shows_artifact():
-    from statim.core import builder as bs
-    from statim.core.builder import BuildJob, BuildStatus
-    from statim.plugins.base_provider import ProviderResult
+    from bakex.core import builder as bs
+    from bakex.core.builder import BuildJob, BuildStatus
+    from bakex.plugins.base_provider import ProviderResult
 
     job = BuildJob(profile_name="test", provider_name="aws")
     job.status = BuildStatus.COMPLETE
@@ -387,8 +387,8 @@ async def test_get_scan_report_unknown_job_returns_error():
 
 @pytest.mark.anyio
 async def test_get_scan_report_incomplete_job_returns_error():
-    from statim.core import builder as bs
-    from statim.core.builder import BuildJob, BuildStatus
+    from bakex.core import builder as bs
+    from bakex.core.builder import BuildJob, BuildStatus
 
     job = BuildJob(profile_name="test", provider_name="aws")
     # Leave as PENDING (not complete)
@@ -404,9 +404,9 @@ async def test_get_scan_report_incomplete_job_returns_error():
 
 @pytest.mark.anyio
 async def test_get_scan_report_complete_job_returns_artifact():
-    from statim.core import builder as bs
-    from statim.core.builder import BuildJob, BuildStatus
-    from statim.plugins.base_provider import ProviderResult
+    from bakex.core import builder as bs
+    from bakex.core.builder import BuildJob, BuildStatus
+    from bakex.plugins.base_provider import ProviderResult
 
     job = BuildJob(profile_name="test", provider_name="aws")
     job.status = BuildStatus.COMPLETE
@@ -428,7 +428,7 @@ async def test_get_scan_report_complete_job_returns_artifact():
 
 @pytest.mark.anyio
 async def test_start_build_creates_job():
-    with patch("statim.core.agent.asyncio.create_task"):
+    with patch("bakex.core.agent.asyncio.create_task"):
         result = await _start_build(_VALID_YAML, "aws")
     assert "job_id" in result
     assert result["status"] == "pending"
@@ -436,7 +436,7 @@ async def test_start_build_creates_job():
 
 @pytest.mark.anyio
 async def test_start_build_invalid_yaml_returns_error():
-    with patch("statim.core.agent.asyncio.create_task"):
+    with patch("bakex.core.agent.asyncio.create_task"):
         result = await _start_build("not: [valid: yaml{{{", "aws")
     assert "error" in result
 
@@ -486,26 +486,26 @@ async def test_execute_tool_unknown_tool_returns_error():
 
 @pytest.mark.anyio
 async def test_execute_tool_start_build_blocked_by_default(monkeypatch):
-    """With STATIM_AGENT_REQUIRE_CONFIRMATION at its default (true), the agent
+    """With BAKEX_AGENT_REQUIRE_CONFIRMATION at its default (true), the agent
     must not be able to trigger a real cloud build without a human clicking
     Build in the UI first."""
-    from statim.config import settings
+    from bakex.config import settings
 
-    monkeypatch.setattr(settings, "statim_agent_require_confirmation", True)
-    with patch("statim.core.agent._start_build", new_callable=AsyncMock) as mock_start:
+    monkeypatch.setattr(settings, "bakex_agent_require_confirmation", True)
+    with patch("bakex.core.agent._start_build", new_callable=AsyncMock) as mock_start:
         result = await _execute_tool("start_build", {"yaml_text": _VALID_YAML, "provider": "aws"})
     mock_start.assert_not_called()
     assert "error" in result
-    assert "STATIM_AGENT_REQUIRE_CONFIRMATION" in result["error"]
+    assert "BAKEX_AGENT_REQUIRE_CONFIRMATION" in result["error"]
 
 
 @pytest.mark.anyio
 async def test_execute_tool_start_build_allowed_when_confirmation_disabled(monkeypatch):
-    from statim.config import settings
+    from bakex.config import settings
 
-    monkeypatch.setattr(settings, "statim_agent_require_confirmation", False)
+    monkeypatch.setattr(settings, "bakex_agent_require_confirmation", False)
     with patch(
-        "statim.core.agent._start_build",
+        "bakex.core.agent._start_build",
         new_callable=AsyncMock,
         return_value={"job_id": "jb-1", "status": "pending"},
     ) as mock_start:
@@ -536,7 +536,7 @@ def _make_mock_backend(turns: list) -> MagicMock:
 @pytest.mark.anyio
 async def test_run_build_agent_end_turn_success():
     """Agent completes in one turn (end_turn) — success path."""
-    from statim.core.llm.base import AgentTurnResult, TextBlock
+    from bakex.core.llm.base import AgentTurnResult, TextBlock
 
     turn = AgentTurnResult(
         stop_reason="end_turn",
@@ -550,7 +550,7 @@ async def test_run_build_agent_end_turn_success():
 
     mock_backend = _make_mock_backend([turn])
 
-    with patch("statim.core.llm.get_backend", return_value=mock_backend):
+    with patch("bakex.core.llm.get_backend", return_value=mock_backend):
         result = await run_build_agent(_VALID_YAML, "aws", on_token)
 
     assert result.success is True
@@ -566,7 +566,7 @@ async def test_run_build_agent_backend_unavailable_returns_error():
     async def on_token(t: str):
         tokens.append(t)
 
-    with patch("statim.core.llm.get_backend", side_effect=RuntimeError("No API key")):
+    with patch("bakex.core.llm.get_backend", side_effect=RuntimeError("No API key")):
         result = await run_build_agent(_VALID_YAML, "aws", on_token)
 
     assert result.success is False
@@ -577,7 +577,7 @@ async def test_run_build_agent_backend_unavailable_returns_error():
 @pytest.mark.anyio
 async def test_run_build_agent_unexpected_stop_reason_returns_error():
     """Unexpected stop_reason (not end_turn, not tool_use) aborts the loop."""
-    from statim.core.llm.base import AgentTurnResult
+    from bakex.core.llm.base import AgentTurnResult
 
     turn = AgentTurnResult(stop_reason="max_tokens", content=[])
     mock_backend = _make_mock_backend([turn])
@@ -585,7 +585,7 @@ async def test_run_build_agent_unexpected_stop_reason_returns_error():
     async def on_token(t: str):
         pass
 
-    with patch("statim.core.llm.get_backend", return_value=mock_backend):
+    with patch("bakex.core.llm.get_backend", return_value=mock_backend):
         result = await run_build_agent(_VALID_YAML, "aws", on_token)
 
     assert result.success is False
@@ -595,7 +595,7 @@ async def test_run_build_agent_unexpected_stop_reason_returns_error():
 @pytest.mark.anyio
 async def test_run_build_agent_tool_use_then_end_turn():
     """Agent makes a tool call, gets result, then ends the turn."""
-    from statim.core.llm.base import AgentTurnResult, TextBlock, ToolUseBlock
+    from bakex.core.llm.base import AgentTurnResult, TextBlock, ToolUseBlock
 
     tool_turn = AgentTurnResult(
         stop_reason="tool_use",
@@ -619,7 +619,7 @@ async def test_run_build_agent_tool_use_then_end_turn():
 
     mock_backend = _make_mock_backend([tool_turn, end_turn])
 
-    with patch("statim.core.llm.get_backend", return_value=mock_backend):
+    with patch("bakex.core.llm.get_backend", return_value=mock_backend):
         result = await run_build_agent(_VALID_YAML, "aws", on_token)
 
     assert result.success is True
@@ -630,7 +630,7 @@ async def test_run_build_agent_tool_use_then_end_turn():
 @pytest.mark.anyio
 async def test_run_build_agent_tool_exception_is_caught():
     """Tool execution exception must not crash the agent — it returns an error dict."""
-    from statim.core.llm.base import AgentTurnResult, TextBlock, ToolUseBlock
+    from bakex.core.llm.base import AgentTurnResult, TextBlock, ToolUseBlock
 
     tool_turn = AgentTurnResult(
         stop_reason="tool_use",
@@ -653,8 +653,8 @@ async def test_run_build_agent_tool_exception_is_caught():
     mock_backend = _make_mock_backend([tool_turn, end_turn])
 
     with (
-        patch("statim.core.llm.get_backend", return_value=mock_backend),
-        patch("statim.core.agent._execute_tool", side_effect=RuntimeError("cloud error")),
+        patch("bakex.core.llm.get_backend", return_value=mock_backend),
+        patch("bakex.core.agent._execute_tool", side_effect=RuntimeError("cloud error")),
     ):
         result = await run_build_agent(_VALID_YAML, "aws", on_token)
 
@@ -665,7 +665,7 @@ async def test_run_build_agent_tool_exception_is_caught():
 @pytest.mark.anyio
 async def test_run_build_agent_records_job_id_from_start_build():
     """job_id extracted from start_build tool result is stored on AgentResult."""
-    from statim.core.llm.base import AgentTurnResult, TextBlock, ToolUseBlock
+    from bakex.core.llm.base import AgentTurnResult, TextBlock, ToolUseBlock
 
     tool_turn = AgentTurnResult(
         stop_reason="tool_use",
@@ -688,8 +688,8 @@ async def test_run_build_agent_records_job_id_from_start_build():
     mock_backend = _make_mock_backend([tool_turn, end_turn])
 
     with (
-        patch("statim.core.llm.get_backend", return_value=mock_backend),
-        patch("statim.core.agent._execute_tool", return_value={"job_id": "jb-abc-123", "status": "pending"}),
+        patch("bakex.core.llm.get_backend", return_value=mock_backend),
+        patch("bakex.core.agent._execute_tool", return_value={"job_id": "jb-abc-123", "status": "pending"}),
     ):
         result = await run_build_agent(_VALID_YAML, "aws", on_token)
 
@@ -708,12 +708,12 @@ def _agent_client(monkeypatch):
 
     from fastapi.testclient import TestClient
 
-    from statim.config import settings
+    from bakex.config import settings
 
-    monkeypatch.setattr(settings, "statim_admin_token", "test-admin-token")
+    monkeypatch.setattr(settings, "bakex_admin_token", "test-admin-token")
 
-    with patch("statim.core.registry.init_registry"):
-        from statim.main import app
+    with patch("bakex.core.registry.init_registry"):
+        from bakex.main import app
 
         with TestClient(app, raise_server_exceptions=True) as c:
             c.auth = ("admin", "test-admin-token")

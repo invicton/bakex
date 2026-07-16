@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from statim.core.registry import (
+from bakex.core.registry import (
     ProfileRegistry,
     RegistrySource,
     get_registry,
@@ -20,7 +20,7 @@ from statim.core.registry import (
 # ---------------------------------------------------------------------------
 
 _VALID_YAML = """\
-statim_version: "0.1.0"
+bakex_version: "0.1.0"
 kind: ComplianceProfile
 metadata:
   name: test-ubuntu22-cis
@@ -37,7 +37,7 @@ controls: {}
 """
 
 _VALID_YAML_2 = """\
-statim_version: "0.1.0"
+bakex_version: "0.1.0"
 kind: ComplianceProfile
 metadata:
   name: test-rocky9-cis
@@ -84,7 +84,7 @@ def test_load_yaml_text_not_a_dict_returns_none():
 
 def test_load_yaml_text_missing_required_field_returns_none():
     # Missing compliance section → Pydantic validation error
-    bad_yaml = "statim_version: '0.1.0'\nkind: ComplianceProfile\nmetadata:\n  name: x\n  version: '1'\n"
+    bad_yaml = "bakex_version: '0.1.0'\nkind: ComplianceProfile\nmetadata:\n  name: x\n  version: '1'\n"
     result = ProfileRegistry._load_yaml_text(bad_yaml, "Community")
     assert result is None
 
@@ -310,7 +310,7 @@ async def test_sync_aggregates_multiple_sources(tmp_path):
 
 
 def test_get_registry_before_init_raises():
-    import statim.core.registry as reg_mod
+    import bakex.core.registry as reg_mod
 
     original = reg_mod._registry_instance
     reg_mod._registry_instance = None

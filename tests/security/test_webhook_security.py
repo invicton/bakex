@@ -11,7 +11,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-import statim.core.notifications as notif_mod
+import bakex.core.notifications as notif_mod
 
 
 @pytest.fixture(autouse=True)
@@ -68,7 +68,7 @@ def test_wrong_secret_produces_different_signature():
 
 @pytest.mark.anyio
 async def test_signature_header_has_sha256_prefix():
-    """The X-Statim-Signature header must start with 'sha256='."""
+    """The X-BakeX-Signature header must start with 'sha256='."""
     notif_mod.register_webhook("https://example.com/hook", ["scan.complete"])
 
     captured_headers: dict = {}
@@ -82,12 +82,12 @@ async def test_signature_header_has_sha256_prefix():
     mock_client.__aexit__ = AsyncMock(return_value=False)
     mock_client.post = mock_post
 
-    with patch("statim.core.notifications.httpx") as mock_httpx:
+    with patch("bakex.core.notifications.httpx") as mock_httpx:
         mock_httpx.AsyncClient.return_value = mock_client
         await notif_mod.fire_webhook("scan.complete", {"job_id": "sec-03"})
 
-    assert "X-Statim-Signature" in captured_headers, "X-Statim-Signature header must be present"
-    sig = captured_headers["X-Statim-Signature"]
+    assert "X-BakeX-Signature" in captured_headers, "X-BakeX-Signature header must be present"
+    sig = captured_headers["X-BakeX-Signature"]
     assert sig.startswith("sha256="), f"Signature must start with 'sha256=', got: {sig[:20]!r}"
     # Verify the hex portion is a valid 64-char SHA-256 digest
     hex_part = sig[len("sha256=") :]
@@ -138,7 +138,7 @@ async def test_ssrf_target_blocked_at_send_time_not_just_registration():
     mock_client.__aexit__ = AsyncMock(return_value=False)
     mock_client.post = AsyncMock(return_value=MagicMock(status_code=200))
 
-    with patch("statim.core.notifications.httpx") as mock_httpx:
+    with patch("bakex.core.notifications.httpx") as mock_httpx:
         mock_httpx.AsyncClient.return_value = mock_client
         await notif_mod.fire_webhook("scan.complete", {"job_id": "sec-ssrf"})
 

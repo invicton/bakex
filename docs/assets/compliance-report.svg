@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
-  <title id="title">Statim compliance report screenshot preview</title>
+  <title id="title">BakeX compliance report screenshot preview</title>
   <desc id="desc">A sanitized preview of a compliance report with grade, findings, and SARIF export.</desc>
   <rect width="1200" height="720" fill="#080c14"/>
   <rect x="54" y="42" width="1092" height="636" rx="18" fill="#0f172a" stroke="#263244"/>

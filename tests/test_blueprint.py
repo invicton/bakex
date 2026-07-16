@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from statim.core.blueprint import (
+from bakex.core.blueprint import (
     ComplianceProfile,
     ControlOverride,
     ProfileMetadata,
@@ -18,7 +18,7 @@ from statim.core.blueprint import (
 EXAMPLE_PROFILE = Path("profiles/examples/ubuntu22_cis_l1.yaml")
 
 MINIMAL_PROFILE = {
-    "statim_version": "0.1.0",
+    "bakex_version": "0.1.0",
     "kind": "ComplianceProfile",
     "metadata": {
         "name": "test-profile",

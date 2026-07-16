@@ -1,9 +1,9 @@
-# Statim HardeningBlueprint — Ubuntu 22.04 LTS CIS Level 1 Server (DigitalOcean)
+# BakeX HardeningBlueprint — Ubuntu 22.04 LTS CIS Level 1 Server (DigitalOcean)
 #
-# Set api_token in Statim integrations then run:
-#   statim build ubuntu22-cis-l1-digitalocean
+# Set api_token in BakeX integrations then run:
+#   bakex build ubuntu22-cis-l1-digitalocean
 
-statim_version: "0.5.0"
+bakex_version: "0.5.0"
 kind: HardeningBlueprint
 
 metadata:
@@ -52,8 +52,8 @@ users:
     lock: true
 
   accounts:
-    - name: statim-admin
-      comment: "Statim-managed admin account"
+    - name: bakex-admin
+      comment: "BakeX-managed admin account"
       groups: [sudo]
       shell: /bin/bash
       ssh_authorized_keys: []

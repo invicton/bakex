@@ -8,9 +8,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-import statim.core.builder as builder_mod
-from statim.core.builder import BuildJob, BuildStatus
-from statim.plugins.base_provider import ProviderResult
+import bakex.core.builder as builder_mod
+from bakex.core.builder import BuildJob, BuildStatus
+from bakex.plugins.base_provider import ProviderResult
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -98,7 +98,7 @@ def test_resolve_image_aws_success(client):
     mock_provider._call_rpc.return_value = {"ami_id": "ami-resolved-123"}
     mock_provider_cls.return_value = mock_provider
 
-    with patch("statim.plugins.registry.registry.get", return_value=mock_provider_cls):
+    with patch("bakex.plugins.registry.registry.get", return_value=mock_provider_cls):
         resp = client.get("/api/builder/resolve-image?os=ubuntu22.04&provider=aws&region=us-east-1")
 
     assert resp.status_code == 200
@@ -113,7 +113,7 @@ def test_resolve_image_aws_exception_falls_back(client):
     mock_provider._call_rpc.side_effect = RuntimeError("no connection")
     mock_provider_cls.return_value = mock_provider
 
-    with patch("statim.plugins.registry.registry.get", return_value=mock_provider_cls):
+    with patch("bakex.plugins.registry.registry.get", return_value=mock_provider_cls):
         resp = client.get("/api/builder/resolve-image?os=ubuntu22.04&provider=aws")
 
     assert resp.status_code == 200
@@ -165,7 +165,7 @@ def test_controls_known_os_returns_table(client):
 
 
 def test_profile_fields_found(client, profiles_tmp, monkeypatch):
-    from statim.config import settings
+    from bakex.config import settings
 
     monkeypatch.setattr(settings, "profiles_dir", profiles_tmp)
 
@@ -176,7 +176,7 @@ def test_profile_fields_found(client, profiles_tmp, monkeypatch):
 
 
 def test_profile_fields_not_found_returns_empty(client, profiles_tmp, monkeypatch):
-    from statim.config import settings
+    from bakex.config import settings
 
     monkeypatch.setattr(settings, "profiles_dir", profiles_tmp)
 
@@ -297,7 +297,7 @@ def test_start_build_no_profile_name_returns_400(client):
 
 
 def test_start_build_profile_not_found_returns_404(client, profiles_tmp, monkeypatch):
-    from statim.config import settings
+    from bakex.config import settings
 
     monkeypatch.setattr(settings, "profiles_dir", profiles_tmp)
 
@@ -306,11 +306,11 @@ def test_start_build_profile_not_found_returns_404(client, profiles_tmp, monkeyp
 
 
 def test_start_build_legacy_success(client, profiles_tmp, monkeypatch):
-    from statim.config import settings
+    from bakex.config import settings
 
     monkeypatch.setattr(settings, "profiles_dir", profiles_tmp)
 
-    with patch("statim.core.builder.run_build", new_callable=AsyncMock):
+    with patch("bakex.core.builder.run_build", new_callable=AsyncMock):
         resp = client.post(
             "/api/builder/start",
             data={"profile_name": "test-ubuntu22-cis"},
@@ -321,11 +321,11 @@ def test_start_build_legacy_success(client, profiles_tmp, monkeypatch):
 
 
 def test_start_build_legacy_with_provider_override(client, profiles_tmp, monkeypatch):
-    from statim.config import settings
+    from bakex.config import settings
 
     monkeypatch.setattr(settings, "profiles_dir", profiles_tmp)
 
-    with patch("statim.core.builder.run_build", new_callable=AsyncMock):
+    with patch("bakex.core.builder.run_build", new_callable=AsyncMock):
         resp = client.post(
             "/api/builder/start",
             data={"profile_name": "test-ubuntu22-cis", "provider_override": "gcp"},
@@ -334,11 +334,11 @@ def test_start_build_legacy_with_provider_override(client, profiles_tmp, monkeyp
 
 
 def test_start_build_legacy_with_root_volume(client, profiles_tmp, monkeypatch):
-    from statim.config import settings
+    from bakex.config import settings
 
     monkeypatch.setattr(settings, "profiles_dir", profiles_tmp)
 
-    with patch("statim.core.builder.run_build", new_callable=AsyncMock):
+    with patch("bakex.core.builder.run_build", new_callable=AsyncMock):
         resp = client.post(
             "/api/builder/start",
             data={
@@ -350,11 +350,11 @@ def test_start_build_legacy_with_root_volume(client, profiles_tmp, monkeypatch):
 
 
 def test_start_build_with_custom_partitions(client, profiles_tmp, monkeypatch):
-    from statim.config import settings
+    from bakex.config import settings
 
     monkeypatch.setattr(settings, "profiles_dir", profiles_tmp)
 
-    with patch("statim.core.builder.run_build", new_callable=AsyncMock):
+    with patch("bakex.core.builder.run_build", new_callable=AsyncMock):
         resp = client.post(
             "/api/builder/start",
             data={
@@ -370,11 +370,11 @@ def test_start_build_with_custom_partitions(client, profiles_tmp, monkeypatch):
 
 
 def test_start_build_partition_mb_unit(client, profiles_tmp, monkeypatch):
-    from statim.config import settings
+    from bakex.config import settings
 
     monkeypatch.setattr(settings, "profiles_dir", profiles_tmp)
 
-    with patch("statim.core.builder.run_build", new_callable=AsyncMock):
+    with patch("bakex.core.builder.run_build", new_callable=AsyncMock):
         resp = client.post(
             "/api/builder/start",
             data={
@@ -390,11 +390,11 @@ def test_start_build_partition_mb_unit(client, profiles_tmp, monkeypatch):
 
 
 def test_start_build_partition_tb_unit(client, profiles_tmp, monkeypatch):
-    from statim.config import settings
+    from bakex.config import settings
 
     monkeypatch.setattr(settings, "profiles_dir", profiles_tmp)
 
-    with patch("statim.core.builder.run_build", new_callable=AsyncMock):
+    with patch("bakex.core.builder.run_build", new_callable=AsyncMock):
         resp = client.post(
             "/api/builder/start",
             data={
@@ -415,7 +415,7 @@ def test_start_build_partition_tb_unit(client, profiles_tmp, monkeypatch):
 
 
 def test_start_build_wizard_mode(client):
-    with patch("statim.core.builder.run_build", new_callable=AsyncMock):
+    with patch("bakex.core.builder.run_build", new_callable=AsyncMock):
         resp = client.post(
             "/api/builder/start",
             data={
@@ -433,7 +433,7 @@ def test_start_build_wizard_mode(client):
 
 
 def test_start_build_wizard_l2_tier(client):
-    with patch("statim.core.builder.run_build", new_callable=AsyncMock):
+    with patch("bakex.core.builder.run_build", new_callable=AsyncMock):
         resp = client.post(
             "/api/builder/start",
             data={
@@ -447,7 +447,7 @@ def test_start_build_wizard_l2_tier(client):
 
 
 def test_start_build_wizard_with_user(client):
-    with patch("statim.core.builder.run_build", new_callable=AsyncMock):
+    with patch("bakex.core.builder.run_build", new_callable=AsyncMock):
         resp = client.post(
             "/api/builder/start",
             data={
@@ -464,7 +464,7 @@ def test_start_build_wizard_with_user(client):
 
 
 def test_start_build_wizard_with_aide_fips(client):
-    with patch("statim.core.builder.run_build", new_callable=AsyncMock):
+    with patch("bakex.core.builder.run_build", new_callable=AsyncMock):
         resp = client.post(
             "/api/builder/start",
             data={
@@ -478,7 +478,7 @@ def test_start_build_wizard_with_aide_fips(client):
 
 
 def test_start_build_wizard_with_control_override(client):
-    with patch("statim.core.builder.run_build", new_callable=AsyncMock):
+    with patch("bakex.core.builder.run_build", new_callable=AsyncMock):
         resp = client.post(
             "/api/builder/start",
             data={
@@ -493,7 +493,7 @@ def test_start_build_wizard_with_control_override(client):
 
 def test_start_build_wizard_custom_mount(client):
     """Test the __custom__ mount path branch in wizard."""
-    with patch("statim.core.builder.run_build", new_callable=AsyncMock):
+    with patch("bakex.core.builder.run_build", new_callable=AsyncMock):
         resp = client.post(
             "/api/builder/start",
             data={
@@ -511,7 +511,7 @@ def test_start_build_wizard_custom_mount(client):
 
 def test_start_build_wizard_swap_partition(client):
     """swap mount should not add an ExtraVolume."""
-    with patch("statim.core.builder.run_build", new_callable=AsyncMock):
+    with patch("bakex.core.builder.run_build", new_callable=AsyncMock):
         resp = client.post(
             "/api/builder/start",
             data={
@@ -528,7 +528,7 @@ def test_start_build_wizard_swap_partition(client):
 
 def test_start_build_wizard_no_base_image_falls_back_to_catalog(client):
     """When wizard_base_image is empty, should use OS catalog default."""
-    with patch("statim.core.builder.run_build", new_callable=AsyncMock):
+    with patch("bakex.core.builder.run_build", new_callable=AsyncMock):
         resp = client.post(
             "/api/builder/start",
             data={
@@ -542,7 +542,7 @@ def test_start_build_wizard_no_base_image_falls_back_to_catalog(client):
 
 def test_start_build_wizard_invalid_size_defaults(client):
     """Non-numeric size value should not raise — defaults to 2.0."""
-    with patch("statim.core.builder.run_build", new_callable=AsyncMock):
+    with patch("bakex.core.builder.run_build", new_callable=AsyncMock):
         resp = client.post(
             "/api/builder/start",
             data={

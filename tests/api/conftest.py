@@ -21,9 +21,9 @@ import pytest
 import yaml
 from fastapi.testclient import TestClient
 
-import statim.core.api_keys as ak_mod
-import statim.core.notifications as notif_mod
-from statim.core import auditor as audit_mod
+import bakex.core.api_keys as ak_mod
+import bakex.core.notifications as notif_mod
+from bakex.core import auditor as audit_mod
 
 _TEST_ADMIN_TOKEN = "test-admin-token"
 
@@ -32,7 +32,7 @@ _TEST_ADMIN_TOKEN = "test-admin-token"
 # ---------------------------------------------------------------------------
 
 _PROFILE_DATA = {
-    "statim_version": "0.1.0",
+    "bakex_version": "0.1.0",
     "kind": "ComplianceProfile",
     "metadata": {
         "name": "test-ubuntu22-cis",
@@ -63,7 +63,7 @@ def profiles_tmp(tmp_path_factory) -> Path:
 @pytest.fixture
 def user_profiles_tmp(tmp_path, monkeypatch):
     """Return the per-test user-profiles dir (already created by _isolate_stores)."""
-    from statim.config import settings
+    from bakex.config import settings
 
     return settings.user_profiles_dir
 
@@ -82,7 +82,7 @@ def _isolate_stores(tmp_path, monkeypatch, profiles_tmp):
     monkeypatch.setattr(audit_mod, "_JOBS_FILE", tmp_path / "audit_jobs.json")
 
     # Point profile resolution to our temp profiles dir
-    from statim.config import settings
+    from bakex.config import settings
 
     monkeypatch.setattr(settings, "profiles_dir", profiles_tmp)
 
@@ -92,7 +92,7 @@ def _isolate_stores(tmp_path, monkeypatch, profiles_tmp):
     monkeypatch.setattr(settings, "user_profiles_dir", user_dir)
 
     # Fixed admin token so `client` can authenticate deterministically
-    monkeypatch.setattr(settings, "statim_admin_token", _TEST_ADMIN_TOKEN)
+    monkeypatch.setattr(settings, "bakex_admin_token", _TEST_ADMIN_TOKEN)
 
     yield
 
@@ -104,7 +104,7 @@ def _isolate_stores(tmp_path, monkeypatch, profiles_tmp):
 @pytest.fixture(scope="session")
 def app():
     """Return the FastAPI app with init_registry patched out (no network)."""
-    from statim.main import app as _app
+    from bakex.main import app as _app
 
     return _app
 
@@ -118,11 +118,11 @@ def client(app, profiles_tmp, monkeypatch):
     that specifically exercise the auth gate should build their own
     unauthenticated ``TestClient(app)`` instead of using this fixture.
     """
-    from statim.config import settings
+    from bakex.config import settings
 
     monkeypatch.setattr(settings, "profiles_dir", profiles_tmp)
 
-    with patch("statim.main.init_registry"):
+    with patch("bakex.main.init_registry"):
         with TestClient(app, raise_server_exceptions=True) as c:
             # A default header (not `c.auth`) so tests that pass an explicit
             # Authorization header (e.g. to exercise /api/pipeline's own Bearer
@@ -142,7 +142,7 @@ def api_key(client) -> str:
 @pytest.fixture
 def mock_run_image_scan():
     """Patch run_image_scan so it injects a completed AuditJob without cloud calls."""
-    from statim.core.auditor import AuditStatus
+    from bakex.core.auditor import AuditStatus
 
     async def _fake_scan(image_id, provider_name, region, profile, instance_type, output_dir):
         # Find the pre-created job and mark it complete
@@ -162,8 +162,8 @@ def mock_run_image_scan():
                 break
 
     with (
-        patch("statim.core.auditor.run_image_scan", side_effect=_fake_scan),
-        patch("statim.api.auditor.audit_service.run_image_scan", side_effect=_fake_scan),
-        patch("statim.api.pipeline.audit_service.run_image_scan", side_effect=_fake_scan),
+        patch("bakex.core.auditor.run_image_scan", side_effect=_fake_scan),
+        patch("bakex.api.auditor.audit_service.run_image_scan", side_effect=_fake_scan),
+        patch("bakex.api.pipeline.audit_service.run_image_scan", side_effect=_fake_scan),
     ):
         yield

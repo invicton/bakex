@@ -20,9 +20,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 import yaml
 
-from statim.core.parser import SCAPParser as XCCDFParser
-from statim.core.playbook_gen import generate_prehard_playbook
-from statim.core.registry import ProfileRegistry, RegistrySource
+from bakex.core.parser import SCAPParser as XCCDFParser
+from bakex.core.playbook_gen import generate_prehard_playbook
+from bakex.core.registry import ProfileRegistry, RegistrySource
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -31,7 +31,7 @@ from statim.core.registry import ProfileRegistry, RegistrySource
 
 def _minimal_profile_dict(name="gap-test"):
     return {
-        "statim_version": "0.1.0",
+        "bakex_version": "0.1.0",
         "kind": "ComplianceProfile",
         "metadata": {"name": name, "version": "1.0.0"},
         "target": {"os": "ubuntu22.04", "provider": "aws", "base_image": "ami-00"},
@@ -44,7 +44,7 @@ def _minimal_profile_dict(name="gap-test"):
 
 
 def _make_profile(**overrides):
-    from statim.core.blueprint import ComplianceProfile
+    from bakex.core.blueprint import ComplianceProfile
 
     d = _minimal_profile_dict()
     d.update(overrides)
@@ -109,7 +109,7 @@ class TestRegistrySync:
         src = RegistrySource(kind="github", url_or_bucket="x")  # override kind
         src.kind = "ftp"  # unsupported
         reg = self._make_registry(src)
-        with caplog.at_level(logging.WARNING, logger="statim.core.registry"):
+        with caplog.at_level(logging.WARNING, logger="bakex.core.registry"):
             names = await reg.sync()
         assert names == []
         assert any("Unknown" in r.message for r in caplog.records)
@@ -122,7 +122,7 @@ class TestRegistrySync:
         src = RegistrySource(kind="s3", url_or_bucket="bad-bucket")
         reg = self._make_registry(src)
         with patch.object(reg, "_sync_s3", side_effect=RuntimeError("S3 down")):
-            with caplog.at_level(logging.WARNING, logger="statim.core.registry"):
+            with caplog.at_level(logging.WARNING, logger="bakex.core.registry"):
                 names = await reg.sync()
         assert names == []
         assert any("failed" in r.message for r in caplog.records)
@@ -153,8 +153,8 @@ class TestRegistrySync:
         mock_client.__aenter__ = AsyncMock(return_value=mock_client)
         mock_client.__aexit__ = AsyncMock(return_value=None)
 
-        with patch("statim.core.registry.httpx.AsyncClient", return_value=mock_client):
-            with caplog.at_level(logging.WARNING, logger="statim.core.registry"):
+        with patch("bakex.core.registry.httpx.AsyncClient", return_value=mock_client):
+            with caplog.at_level(logging.WARNING, logger="bakex.core.registry"):
                 names = await reg.sync()
 
         assert "github-good" in names
@@ -167,7 +167,7 @@ class TestRegistrySync:
         src = RegistrySource(kind="s3", url_or_bucket="my-bucket")
         reg = self._make_registry(src)
         with patch.dict("sys.modules", {"boto3": None}):
-            with caplog.at_level(logging.WARNING, logger="statim.core.registry"):
+            with caplog.at_level(logging.WARNING, logger="bakex.core.registry"):
                 names = reg._sync_s3(src)
         assert names == []
         assert any("boto3" in r.message for r in caplog.records)
@@ -189,7 +189,7 @@ class TestRegistrySync:
         mock_boto3.client.return_value = mock_s3
 
         with patch.dict("sys.modules", {"boto3": mock_boto3}):
-            with caplog.at_level(logging.WARNING, logger="statim.core.registry"):
+            with caplog.at_level(logging.WARNING, logger="bakex.core.registry"):
                 names = reg._sync_s3(src)
 
         assert names == []
@@ -209,7 +209,7 @@ class TestRegistrySync:
         mock_boto3.client.return_value = mock_s3
 
         with patch.dict("sys.modules", {"boto3": mock_boto3}):
-            with caplog.at_level(logging.WARNING, logger="statim.core.registry"):
+            with caplog.at_level(logging.WARNING, logger="bakex.core.registry"):
                 names = reg._sync_s3(src)
 
         assert names == []
@@ -236,7 +236,7 @@ class TestRegistrySync:
             return orig_read_text(self, *args, **kwargs)
 
         with patch.object(Path, "read_text", patched_read_text):
-            with caplog.at_level(logging.WARNING, logger="statim.core.registry"):
+            with caplog.at_level(logging.WARNING, logger="bakex.core.registry"):
                 names = reg._sync_local(src)
 
         assert "local-good" in names
@@ -287,7 +287,7 @@ class TestXCCDFParserGaps:
 
     def test_is_approved_exception_pydantic_model(self):
         """_is_approved_exception works with Pydantic ControlOverride model."""
-        from statim.core.blueprint import ControlOverride
+        from bakex.core.blueprint import ControlOverride
 
         override_disabled = ControlOverride(enabled=False, justification="waiver")
         override_enabled = ControlOverride(enabled=True, justification="")

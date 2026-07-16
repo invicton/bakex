@@ -9,9 +9,9 @@ import json
 
 import pytest
 
-from statim.core.llm.bedrock_backend import _messages_to_bedrock, _tools_to_bedrock
-from statim.core.llm.factory import get_backend, provider_status
-from statim.core.llm.openai_backend import _messages_to_openai_clean, _tools_to_openai
+from bakex.core.llm.bedrock_backend import _messages_to_bedrock, _tools_to_bedrock
+from bakex.core.llm.factory import get_backend, provider_status
+from bakex.core.llm.openai_backend import _messages_to_openai_clean, _tools_to_openai
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -197,42 +197,42 @@ class TestMessagesToBedrock:
 
 class TestFactory:
     def test_default_provider_is_anthropic(self, monkeypatch):
-        monkeypatch.delenv("STATIM_LLM_PROVIDER", raising=False)
-        from statim.core.llm.anthropic_backend import AnthropicBackend
+        monkeypatch.delenv("BAKEX_LLM_PROVIDER", raising=False)
+        from bakex.core.llm.anthropic_backend import AnthropicBackend
 
         backend = get_backend()
         assert isinstance(backend, AnthropicBackend)
 
     def test_openai_provider(self, monkeypatch):
-        monkeypatch.setenv("STATIM_LLM_PROVIDER", "openai")
-        from statim.core.llm.openai_backend import OpenAICompatBackend
+        monkeypatch.setenv("BAKEX_LLM_PROVIDER", "openai")
+        from bakex.core.llm.openai_backend import OpenAICompatBackend
 
         backend = get_backend()
         assert isinstance(backend, OpenAICompatBackend)
 
     def test_ollama_provider_uses_openai_compat(self, monkeypatch):
-        monkeypatch.setenv("STATIM_LLM_PROVIDER", "ollama")
-        from statim.core.llm.openai_backend import OpenAICompatBackend
+        monkeypatch.setenv("BAKEX_LLM_PROVIDER", "ollama")
+        from bakex.core.llm.openai_backend import OpenAICompatBackend
 
         backend = get_backend()
         assert isinstance(backend, OpenAICompatBackend)
         assert "11434" in backend.base_url
 
     def test_bedrock_provider(self, monkeypatch):
-        monkeypatch.setenv("STATIM_LLM_PROVIDER", "bedrock")
-        from statim.core.llm.bedrock_backend import BedrockBackend
+        monkeypatch.setenv("BAKEX_LLM_PROVIDER", "bedrock")
+        from bakex.core.llm.bedrock_backend import BedrockBackend
 
         backend = get_backend()
         assert isinstance(backend, BedrockBackend)
 
     def test_unknown_provider_raises(self, monkeypatch):
-        monkeypatch.setenv("STATIM_LLM_PROVIDER", "grok")
-        with pytest.raises(ValueError, match="Unknown STATIM_LLM_PROVIDER"):
+        monkeypatch.setenv("BAKEX_LLM_PROVIDER", "grok")
+        with pytest.raises(ValueError, match="Unknown BAKEX_LLM_PROVIDER"):
             get_backend()
 
     def test_model_override(self, monkeypatch):
-        monkeypatch.setenv("STATIM_LLM_PROVIDER", "anthropic")
-        monkeypatch.setenv("STATIM_LLM_MODEL", "claude-haiku-4-5-20251001")
+        monkeypatch.setenv("BAKEX_LLM_PROVIDER", "anthropic")
+        monkeypatch.setenv("BAKEX_LLM_MODEL", "claude-haiku-4-5-20251001")
         backend = get_backend()
         assert backend.model == "claude-haiku-4-5-20251001"
 
@@ -244,40 +244,40 @@ class TestFactory:
 
 class TestProviderStatus:
     def test_anthropic_without_key(self, monkeypatch):
-        monkeypatch.setenv("STATIM_LLM_PROVIDER", "anthropic")
+        monkeypatch.setenv("BAKEX_LLM_PROVIDER", "anthropic")
         monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
         status = provider_status()
         assert status["available"] is False
         assert status["provider"] == "anthropic"
 
     def test_anthropic_with_key(self, monkeypatch):
-        monkeypatch.setenv("STATIM_LLM_PROVIDER", "anthropic")
+        monkeypatch.setenv("BAKEX_LLM_PROVIDER", "anthropic")
         monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-test")
         status = provider_status()
         assert status["available"] is True
 
     def test_ollama_always_available(self, monkeypatch):
-        monkeypatch.setenv("STATIM_LLM_PROVIDER", "ollama")
+        monkeypatch.setenv("BAKEX_LLM_PROVIDER", "ollama")
         status = provider_status()
         assert status["available"] is True
 
     def test_openai_without_key(self, monkeypatch):
-        monkeypatch.setenv("STATIM_LLM_PROVIDER", "openai")
-        monkeypatch.delenv("STATIM_LLM_API_KEY", raising=False)
+        monkeypatch.setenv("BAKEX_LLM_PROVIDER", "openai")
+        monkeypatch.delenv("BAKEX_LLM_API_KEY", raising=False)
         monkeypatch.delenv("OPENAI_API_KEY", raising=False)
         status = provider_status()
         assert status["available"] is False
 
     def test_bedrock_with_aws_profile(self, monkeypatch):
-        monkeypatch.setenv("STATIM_LLM_PROVIDER", "bedrock")
+        monkeypatch.setenv("BAKEX_LLM_PROVIDER", "bedrock")
         monkeypatch.setenv("AWS_PROFILE", "default")
         monkeypatch.delenv("AWS_ACCESS_KEY_ID", raising=False)
         status = provider_status()
         assert status["available"] is True
 
     def test_status_includes_model(self, monkeypatch):
-        monkeypatch.setenv("STATIM_LLM_PROVIDER", "anthropic")
-        monkeypatch.setenv("STATIM_LLM_MODEL", "claude-sonnet-4-6")
+        monkeypatch.setenv("BAKEX_LLM_PROVIDER", "anthropic")
+        monkeypatch.setenv("BAKEX_LLM_MODEL", "claude-sonnet-4-6")
         monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-test")
         status = provider_status()
         assert status["model"] == "claude-sonnet-4-6"

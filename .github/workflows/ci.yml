@@ -31,7 +31,7 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
       - run: uv sync --locked --extra all-providers --group dev
-      - run: uv run pytest tests/ --tb=short --cov=statim --cov-fail-under=80
+      - run: uv run pytest tests/ --tb=short --cov=bakex --cov-fail-under=80
 
   schema:
     name: Validate blueprint YAML schemas
@@ -47,7 +47,7 @@ jobs:
           uv run python - <<'EOF'
           import sys
           from pathlib import Path
-          from statim.core.blueprint import ComplianceProfile
+          from bakex.core.blueprint import ComplianceProfile
           import yaml
 
           errors = []
@@ -93,7 +93,7 @@ jobs:
           uv run python - <<'EOF'
           import sys
           from pathlib import Path
-          from statim.core.blueprint import ComplianceProfile
+          from bakex.core.blueprint import ComplianceProfile
           import yaml
 
           errors = []

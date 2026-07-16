@@ -1,8 +1,8 @@
 import os
 
 for path in [
-    "/Data/Vamsh_Projects/Statim/statim/api/ui.py",
-    "/Data/Vamsh_Projects/Statim/statim/api/blueprints.py",
+    "/Data/Vamsh_Projects/BakeX/bakex/api/ui.py",
+    "/Data/Vamsh_Projects/BakeX/bakex/api/blueprints.py",
 ]:
     if not os.path.exists(path):
         continue

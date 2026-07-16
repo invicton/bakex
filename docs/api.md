@@ -1,6 +1,6 @@
-# Statim API Reference
+# BakeX API Reference
 
-Statim exposes a FastAPI application for CI/CD and automation. Interactive Swagger documentation is available at `/docs` when the server is running.
+BakeX exposes a FastAPI application for CI/CD and automation. Interactive Swagger documentation is available at `/docs` when the server is running.
 
 ## Authentication
 
@@ -36,9 +36,9 @@ API keys are created in **Settings -> API Keys** or through the API key endpoint
 ```json
 {
   "region": "us-east-1",
-  "role_arn": "arn:aws:iam::123456789012:role/StatimBuilderRole",
-  "external_id": "statim-test-20260503",
-  "iam_profile_name": "StatimBuilderInstanceProfile"
+  "role_arn": "arn:aws:iam::123456789012:role/BakeXBuilderRole",
+  "external_id": "bakex-test-20260503",
+  "iam_profile_name": "BakeXBuilderInstanceProfile"
 }
 ```
 
@@ -48,9 +48,9 @@ API keys are created in **Settings -> API Keys** or through the API key endpoint
 {
   "tenant_id": "00000000-0000-0000-0000-000000000000",
   "client_id": "00000000-0000-0000-0000-000000000000",
-  "client_secret": "stored-securely-in-statim",
+  "client_secret": "stored-securely-in-bakex",
   "subscription_id": "00000000-0000-0000-0000-000000000000",
-  "resource_group": "statim-builds",
+  "resource_group": "bakex-builds",
   "location": "eastus"
 }
 ```
@@ -63,7 +63,7 @@ API keys are created in **Settings -> API Keys** or through the API key endpoint
   "zone": "us-central1-a",
   "network": "default",
   "subnetwork": "",
-  "service_account_email": "statim-builder@my-gcp-project.iam.gserviceaccount.com"
+  "service_account_email": "bakex-builder@my-gcp-project.iam.gserviceaccount.com"
 }
 ```
 

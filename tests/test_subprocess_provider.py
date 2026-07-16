@@ -10,10 +10,10 @@ from pathlib import Path
 
 import pytest
 
-from statim.core.blueprint import ComplianceProfile
-from statim.plugins.base_provider import BaseProvider, ProviderResult
-from statim.plugins.loader import _validate_provider, load_providers
-from statim.plugins.subprocess_provider import (
+from bakex.core.blueprint import ComplianceProfile
+from bakex.plugins.base_provider import BaseProvider, ProviderResult
+from bakex.plugins.loader import _validate_provider, load_providers
+from bakex.plugins.subprocess_provider import (
     _build_params,
     _call_rpc,
     make_subprocess_provider_class,
@@ -22,7 +22,7 @@ from statim.plugins.subprocess_provider import (
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
 MINIMAL_PROFILE_DATA = {
-    "statim_version": "0.1.0",
+    "bakex_version": "0.1.0",
     "kind": "ComplianceProfile",
     "metadata": {"name": "test-profile", "version": "1.0.0"},
     "target": {
@@ -199,7 +199,7 @@ class TestCallRpc:
             'print(json.dumps({"jsonrpc": "2.0", "id": req.get("id"), '
             '"result": {"artifact_id": "x", "region": ""}}))\n'
         )
-        with caplog.at_level(logging.DEBUG, logger="statim.plugins.subprocess_provider"):
+        with caplog.at_level(logging.DEBUG, logger="bakex.plugins.subprocess_provider"):
             _call_rpc(script, "execute_build", {})
         assert any("hello from stderr" in r.message for r in caplog.records)
 
@@ -265,7 +265,7 @@ class TestLoaderSubprocessIntegration:
     def test_subprocess_and_class_based_coexist(self, tmp_path):
         (tmp_path / "cloud.py").write_text('PROVIDER_NAME = "cloud"\n')
         (tmp_path / "classic.py").write_text(
-            "from statim.plugins.base_provider import BaseProvider, ProviderResult\n"
+            "from bakex.plugins.base_provider import BaseProvider, ProviderResult\n"
             "class ClassicProvider(BaseProvider):\n"
             "    name = 'classic'\n"
             "    def provision(self, p, **kw): return 'i'\n"

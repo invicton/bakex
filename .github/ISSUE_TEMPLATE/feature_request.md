@@ -1,6 +1,6 @@
 ---
 name: Feature request
-about: Suggest an idea for Statim
+about: Suggest an idea for BakeX
 title: ""
 labels: enhancement
 assignees: ""
@@ -8,7 +8,7 @@ assignees: ""
 
 **What problem does this solve?**
 Describe the gap or pain point — e.g. a cloud provider, OS, or workflow
-Statim doesn't support yet.
+BakeX doesn't support yet.
 
 **Proposed solution**
 What would you like to happen? If it touches the blueprint schema, sketch the

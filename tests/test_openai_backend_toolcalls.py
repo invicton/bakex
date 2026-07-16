@@ -18,8 +18,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from statim.core.llm.base import ToolUseBlock
-from statim.core.llm.openai_backend import (
+from bakex.core.llm.base import ToolUseBlock
+from bakex.core.llm.openai_backend import (
     OpenAICompatBackend,
     _messages_to_openai,
     _messages_to_openai_clean,

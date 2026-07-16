@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from statim.openscap.parser import (
+from bakex.openscap.parser import (
     compute_delta,
     parse_arf,
 )

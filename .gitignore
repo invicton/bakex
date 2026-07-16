@@ -20,10 +20,10 @@ build/
 .uv/
 uv.lock
 
-# Statim runtime data (never commit credentials or build artifacts)
+# BakeX runtime data (never commit credentials or build artifacts)
 data/credentials.enc
-data/.statim_key
-data/.statim_salt
+data/.bakex_key
+data/.bakex_salt
 data/.admin_token
 data/audits/
 data/builds/
