@@ -11,8 +11,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-import invicton.core.auditor as auditor_mod
-from invicton.core.auditor import (
+import statim.core.auditor as auditor_mod
+from statim.core.auditor import (
     AuditJob,
     AuditStatus,
     _severity_counts,
@@ -204,11 +204,11 @@ def test_load_jobs_corrupted_file_is_handled(tmp_path, monkeypatch):
 
 
 def _make_minimal_profile():
-    from invicton.core.blueprint import ComplianceProfile
+    from statim.core.blueprint import ComplianceProfile
 
     return ComplianceProfile.model_validate(
         {
-            "invicton_version": "0.1.0",
+            "statim_version": "0.1.0",
             "kind": "ComplianceProfile",
             "metadata": {"name": "test-profile", "version": "1.0"},
             "target": {"os": "ubuntu22.04", "provider": "aws", "base_image": "ami-0"},
@@ -224,7 +224,7 @@ def _make_minimal_profile():
 
 @pytest.mark.anyio
 async def test_run_image_scan_unknown_provider_fails():
-    from invicton.plugins.registry import registry
+    from statim.plugins.registry import registry
 
     with patch.object(registry, "get", return_value=None):
         job = await auditor_mod.run_image_scan(
@@ -241,7 +241,7 @@ async def test_run_image_scan_unknown_provider_fails():
 
 @pytest.mark.anyio
 async def test_run_image_scan_cloud_path_success(tmp_path):
-    from invicton.plugins.registry import registry
+    from statim.plugins.registry import registry
 
     mock_provider_cls = MagicMock()
     mock_provider_cls.handles_full_lifecycle = True
@@ -255,7 +255,7 @@ async def test_run_image_scan_cloud_path_success(tmp_path):
     }
 
     with patch.object(registry, "get", return_value=mock_provider_cls):
-        with patch("invicton.core.parser.SCAPParser.parse_report", return_value=mock_results):
+        with patch("statim.core.parser.SCAPParser.parse_report", return_value=mock_results):
             job = await auditor_mod.run_image_scan(
                 image_id="ami-00001",
                 provider_name="aws",
@@ -273,7 +273,7 @@ async def test_run_image_scan_cloud_path_success(tmp_path):
 
 @pytest.mark.anyio
 async def test_run_image_scan_cloud_path_exception_marks_failed(tmp_path):
-    from invicton.plugins.registry import registry
+    from statim.plugins.registry import registry
 
     mock_provider_cls = MagicMock()
     mock_provider_cls.handles_full_lifecycle = True
@@ -297,7 +297,7 @@ async def test_run_image_scan_cloud_path_exception_marks_failed(tmp_path):
 
 @pytest.mark.anyio
 async def test_run_image_scan_null_score_no_grade(tmp_path):
-    from invicton.plugins.registry import registry
+    from statim.plugins.registry import registry
 
     mock_provider_cls = MagicMock()
     mock_provider_cls.handles_full_lifecycle = True
@@ -308,7 +308,7 @@ async def test_run_image_scan_null_score_no_grade(tmp_path):
     mock_results = {"score": None, "rules": []}
 
     with patch.object(registry, "get", return_value=mock_provider_cls):
-        with patch("invicton.core.parser.SCAPParser.parse_report", return_value=mock_results):
+        with patch("statim.core.parser.SCAPParser.parse_report", return_value=mock_results):
             job = await auditor_mod.run_image_scan(
                 image_id="ami-00001",
                 provider_name="aws",
@@ -330,7 +330,7 @@ async def test_run_image_scan_null_score_no_grade(tmp_path):
 
 @pytest.mark.anyio
 async def test_run_image_scan_ssh_path_success(tmp_path):
-    from invicton.plugins.registry import registry
+    from statim.plugins.registry import registry
 
     mock_provider_cls = MagicMock()
     mock_provider_cls.handles_full_lifecycle = False
@@ -344,8 +344,8 @@ async def test_run_image_scan_ssh_path_success(tmp_path):
     mock_results = {"score": 78.0, "rules": [{"result": "fail", "severity": "low"}]}
 
     with patch.object(registry, "get", return_value=mock_provider_cls):
-        with patch("invicton.core.auditor.oscap_scanner.run_scan", return_value=fake_arf):
-            with patch("invicton.core.auditor.parse_arf", return_value=mock_results):
+        with patch("statim.core.auditor.oscap_scanner.run_scan", return_value=fake_arf):
+            with patch("statim.core.auditor.parse_arf", return_value=mock_results):
                 job = await auditor_mod.run_image_scan(
                     image_id="ami-ssh",
                     provider_name="local",
@@ -364,7 +364,7 @@ async def test_run_image_scan_ssh_path_success(tmp_path):
 
 @pytest.mark.anyio
 async def test_run_image_scan_ssh_path_teardown_on_failure(tmp_path):
-    from invicton.plugins.registry import registry
+    from statim.plugins.registry import registry
 
     mock_provider_cls = MagicMock()
     mock_provider_cls.handles_full_lifecycle = False
@@ -373,7 +373,7 @@ async def test_run_image_scan_ssh_path_teardown_on_failure(tmp_path):
     mock_provider_cls.return_value = mock_provider
 
     with patch.object(registry, "get", return_value=mock_provider_cls):
-        with patch("invicton.core.auditor.oscap_scanner.run_scan", side_effect=RuntimeError("scan failed")):
+        with patch("statim.core.auditor.oscap_scanner.run_scan", side_effect=RuntimeError("scan failed")):
             job = await auditor_mod.run_image_scan(
                 image_id="ami-fail",
                 provider_name="local",
@@ -392,7 +392,7 @@ async def test_run_image_scan_ssh_path_teardown_on_failure(tmp_path):
 @pytest.mark.anyio
 async def test_run_image_scan_ssh_path_teardown_exception_ignored(tmp_path):
     """Teardown failure in finally block should not mask the original error."""
-    from invicton.plugins.registry import registry
+    from statim.plugins.registry import registry
 
     mock_provider_cls = MagicMock()
     mock_provider_cls.handles_full_lifecycle = False
@@ -403,7 +403,7 @@ async def test_run_image_scan_ssh_path_teardown_exception_ignored(tmp_path):
     mock_provider_cls.return_value.teardown.side_effect = RuntimeError("teardown boom")
 
     with patch.object(registry, "get", return_value=mock_provider_cls):
-        with patch("invicton.core.auditor.oscap_scanner.run_scan", side_effect=RuntimeError("scan err")):
+        with patch("statim.core.auditor.oscap_scanner.run_scan", side_effect=RuntimeError("scan err")):
             job = await auditor_mod.run_image_scan(
                 image_id="ami-xyz",
                 provider_name="local",
@@ -424,7 +424,7 @@ async def test_run_image_scan_ssh_path_teardown_exception_ignored(tmp_path):
 
 @pytest.mark.anyio
 async def test_run_audit_local_path_success(tmp_path):
-    from invicton.plugins.registry import registry
+    from statim.plugins.registry import registry
 
     mock_provider_cls = MagicMock()
     mock_provider_cls.handles_full_lifecycle = False
@@ -433,8 +433,8 @@ async def test_run_audit_local_path_success(tmp_path):
         fake_arf.write_text("<arf/>")
         mock_results = {"score": 91.0, "rules": []}
 
-        with patch("invicton.core.auditor.oscap_scanner.run_scan", return_value=fake_arf):
-            with patch("invicton.core.auditor.parse_arf", return_value=mock_results):
+        with patch("statim.core.auditor.oscap_scanner.run_scan", return_value=fake_arf):
+            with patch("statim.core.auditor.parse_arf", return_value=mock_results):
                 job = await auditor_mod.run_audit(
                     profile=_make_minimal_profile(),
                     target_host="10.0.0.1",
@@ -449,7 +449,7 @@ async def test_run_audit_local_path_success(tmp_path):
 
 @pytest.mark.anyio
 async def test_run_audit_local_path_with_baseline(tmp_path):
-    from invicton.plugins.registry import registry
+    from statim.plugins.registry import registry
 
     mock_provider_cls = MagicMock()
     mock_provider_cls.handles_full_lifecycle = False
@@ -462,9 +462,9 @@ async def test_run_audit_local_path_with_baseline(tmp_path):
         mock_results = {"score": 80.0, "rules": []}
         mock_delta = {"added": [], "removed": [], "changed": []}
 
-        with patch("invicton.core.auditor.oscap_scanner.run_scan", return_value=fake_arf):
-            with patch("invicton.core.auditor.parse_arf", return_value=mock_results):
-                with patch("invicton.core.auditor.compute_delta", return_value=mock_delta):
+        with patch("statim.core.auditor.oscap_scanner.run_scan", return_value=fake_arf):
+            with patch("statim.core.auditor.parse_arf", return_value=mock_results):
+                with patch("statim.core.auditor.compute_delta", return_value=mock_delta):
                     job = await auditor_mod.run_audit(
                         profile=_make_minimal_profile(),
                         target_host="10.0.0.2",
@@ -479,7 +479,7 @@ async def test_run_audit_local_path_with_baseline(tmp_path):
 
 @pytest.mark.anyio
 async def test_run_audit_cloud_path_success(tmp_path):
-    from invicton.plugins.registry import registry
+    from statim.plugins.registry import registry
 
     mock_provider_cls = MagicMock()
     mock_provider_cls.handles_full_lifecycle = True
@@ -490,7 +490,7 @@ async def test_run_audit_cloud_path_success(tmp_path):
     mock_results = {"score": 88.0, "rules": []}
 
     with patch.object(registry, "get", return_value=mock_provider_cls):
-        with patch("invicton.core.parser.SCAPParser.parse_report", return_value=mock_results):
+        with patch("statim.core.parser.SCAPParser.parse_report", return_value=mock_results):
             job = await auditor_mod.run_audit(
                 profile=_make_minimal_profile(),
                 target_host="i-cloud-001",
@@ -504,12 +504,12 @@ async def test_run_audit_cloud_path_success(tmp_path):
 
 @pytest.mark.anyio
 async def test_run_audit_exception_marks_failed(tmp_path):
-    from invicton.plugins.registry import registry
+    from statim.plugins.registry import registry
 
     mock_provider_cls = MagicMock()
     mock_provider_cls.handles_full_lifecycle = False
     with patch.object(registry, "get", return_value=mock_provider_cls):
-        with patch("invicton.core.auditor.oscap_scanner.run_scan", side_effect=RuntimeError("oscap not found")):
+        with patch("statim.core.auditor.oscap_scanner.run_scan", side_effect=RuntimeError("oscap not found")):
             job = await auditor_mod.run_audit(
                 profile=_make_minimal_profile(),
                 target_host="10.0.0.3",
@@ -535,7 +535,7 @@ def test_persist_jobs_exception_is_warned(tmp_path, monkeypatch, caplog):
     job = AuditJob(target_host="h", profile_name="p")
     auditor_mod._audit_jobs[job.id] = job
 
-    with caplog.at_level(logging.WARNING, logger="invicton.core.auditor"):
+    with caplog.at_level(logging.WARNING, logger="statim.core.auditor"):
         auditor_mod._persist_jobs()
 
     assert any("Could not persist" in r.message for r in caplog.records)

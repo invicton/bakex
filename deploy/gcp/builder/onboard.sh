@@ -8,9 +8,9 @@ REGION="${REGION:-us-central1}"
 ZONE="${ZONE:-us-central1-a}"
 NETWORK="${NETWORK:-default}"
 SUBNETWORK="${SUBNETWORK:-}"
-ROLE_ID="${ROLE_ID:-invictonBuilder}"
-SERVICE_ACCOUNT_ID="${SERVICE_ACCOUNT_ID:-invicton-builder}"
-FIREWALL_RULE="${FIREWALL_RULE:-invicton-allow-iap-ssh}"
+ROLE_ID="${ROLE_ID:-statimBuilder}"
+SERVICE_ACCOUNT_ID="${SERVICE_ACCOUNT_ID:-statim-builder}"
+FIREWALL_RULE="${FIREWALL_RULE:-statim-allow-iap-ssh}"
 PRINCIPAL="${PRINCIPAL:-}"
 
 if ! command -v gcloud >/dev/null 2>&1; then
@@ -25,15 +25,15 @@ if [[ -z "${PRINCIPAL}" ]]; then
   if ! gcloud iam service-accounts describe "${SERVICE_ACCOUNT_ID}@${PROJECT_ID}.iam.gserviceaccount.com" --project "${PROJECT_ID}" >/dev/null 2>&1; then
     gcloud iam service-accounts create "${SERVICE_ACCOUNT_ID}" \
       --project "${PROJECT_ID}" \
-      --display-name "Invicton builder service account"
+      --display-name "Statim builder service account"
   fi
   PRINCIPAL="serviceAccount:${SERVICE_ACCOUNT_ID}@${PROJECT_ID}.iam.gserviceaccount.com"
 fi
 
 if gcloud iam roles describe "${ROLE_ID}" --project "${PROJECT_ID}" >/dev/null 2>&1; then
-  gcloud iam roles update "${ROLE_ID}" --project "${PROJECT_ID}" --file "${SCRIPT_DIR}/invicton-builder-role.yaml"
+  gcloud iam roles update "${ROLE_ID}" --project "${PROJECT_ID}" --file "${SCRIPT_DIR}/statim-builder-role.yaml"
 else
-  gcloud iam roles create "${ROLE_ID}" --project "${PROJECT_ID}" --file "${SCRIPT_DIR}/invicton-builder-role.yaml"
+  gcloud iam roles create "${ROLE_ID}" --project "${PROJECT_ID}" --file "${SCRIPT_DIR}/statim-builder-role.yaml"
 fi
 
 gcloud projects add-iam-policy-binding "${PROJECT_ID}" \
@@ -61,19 +61,19 @@ if gcloud compute firewall-rules describe "${FIREWALL_RULE}" --project "${PROJEC
     --network "${NETWORK}" \
     --allow tcp:22 \
     --source-ranges 35.235.240.0/20 \
-    --target-tags invicton-build,invicton-scan
+    --target-tags statim-build,statim-scan
 else
   gcloud compute firewall-rules create "${FIREWALL_RULE}" \
     --project "${PROJECT_ID}" \
     --network "${NETWORK}" \
     --allow tcp:22 \
     --source-ranges 35.235.240.0/20 \
-    --target-tags invicton-build,invicton-scan \
-    --description "Allow Invicton SSH through Google Cloud IAP only."
+    --target-tags statim-build,statim-scan \
+    --description "Allow Statim SSH through Google Cloud IAP only."
 fi
 
 cat <<EOF
-Invicton GCP builder onboarding complete.
+Statim GCP builder onboarding complete.
 
 Paste these values into Integrations -> GCP:
   project_id: ${PROJECT_ID}

@@ -3,16 +3,16 @@
 # Copyright 2026 Vamshi Krishna Santhapuri
 """Proxmox VE subprocess provider — speaks JSON-RPC over stdin/stdout.
 
-Run as a standalone script: the core Invicton engine never imports this file.
+Run as a standalone script: the core Statim engine never imports this file.
 Logs go to stderr; only JSON-RPC responses go to stdout.
 
-Requires the [proxmox] optional extra: pip install invicton[proxmox]
+Requires the [proxmox] optional extra: pip install statim[proxmox]
 
-Credential fields (stored via Invicton integrations UI):
+Credential fields (stored via Statim integrations UI):
     host            — Proxmox VE hostname or IP (required)
     user            — Proxmox user, e.g. "root@pam" (default: root@pam)
     password        — Password for user (required unless token_name+token_value provided)
-    token_name      — API token name, e.g. "invicton" (alternative to password)
+    token_name      — API token name, e.g. "statim" (alternative to password)
     token_value     — API token secret (alternative to password)
     node            — Proxmox node name (default: pve)
     storage         — Storage ID for new disks (default: local-lvm)
@@ -63,7 +63,7 @@ def _get_proxmox(credentials: dict):
     try:
         from proxmoxer import ProxmoxAPI
     except ImportError as exc:
-        raise RuntimeError("proxmoxer is not installed. Install with: pip install invicton[proxmox]") from exc
+        raise RuntimeError("proxmoxer is not installed. Install with: pip install statim[proxmox]") from exc
 
     host = credentials.get("host", "")
     if not host:
@@ -198,14 +198,14 @@ def execute_build(params: dict) -> dict:
     proxmox = _get_proxmox(credentials)
     new_vmid: int | None = None
 
-    with tempfile.TemporaryDirectory(prefix="invicton-proxmox-") as tmpdir:
+    with tempfile.TemporaryDirectory(prefix="statim-proxmox-") as tmpdir:
         tmp = Path(tmpdir)
         key_path, pub_key = utils.generate_ssh_keypair(tmp)
 
         try:
             # 1. Clone the template VM to a new VMID
             new_vmid = _next_vmid(proxmox)
-            vm_name = f"invicton-build-{profile_name[:20]}-{new_vmid}"
+            vm_name = f"statim-build-{profile_name[:20]}-{new_vmid}"
             logger.info("Cloning template VMID %s → %s (%s)", template_vmid, new_vmid, vm_name)
             clone_task = (
                 proxmox.nodes(node)
@@ -325,7 +325,7 @@ def execute_audit(params: dict) -> dict:
     if not ssh_key_pem:
         raise ValueError("execute_audit requires 'ssh_key' (private key PEM)")
 
-    with tempfile.TemporaryDirectory(prefix="invicton-proxmox-audit-") as tmpdir:
+    with tempfile.TemporaryDirectory(prefix="statim-proxmox-audit-") as tmpdir:
         key_path = Path(tmpdir) / "audit_key"
         key_path.write_text(ssh_key_pem)
         key_path.chmod(0o600)
@@ -361,12 +361,12 @@ def execute_scan_image(params: dict) -> dict:
     proxmox = _get_proxmox(credentials)
     new_vmid: int | None = None
 
-    with tempfile.TemporaryDirectory(prefix="invicton-proxmox-scan-") as tmpdir:
+    with tempfile.TemporaryDirectory(prefix="statim-proxmox-scan-") as tmpdir:
         tmp = Path(tmpdir)
         key_path, pub_key = utils.generate_ssh_keypair(tmp)
         try:
             new_vmid = _next_vmid(proxmox)
-            vm_name = f"invicton-scan-{new_vmid}"
+            vm_name = f"statim-scan-{new_vmid}"
             logger.info("Cloning template VMID %s → %s for scan", template_vmid, new_vmid)
             clone_task = (
                 proxmox.nodes(node)

@@ -6,8 +6,8 @@ from __future__ import annotations
 
 from unittest.mock import AsyncMock, patch
 
-from invicton.core import auditor as audit_mod
-from invicton.core.auditor import AuditJob, AuditStatus
+from statim.core import auditor as audit_mod
+from statim.core.auditor import AuditJob, AuditStatus
 
 
 def _inject_complete_job(**kwargs) -> AuditJob:
@@ -43,7 +43,7 @@ def _inject_complete_job(**kwargs) -> AuditJob:
 
 
 def test_start_audit_returns_job_id(client):
-    with patch("invicton.api.auditor.audit_service.run_audit", new=AsyncMock()):
+    with patch("statim.api.auditor.audit_service.run_audit", new=AsyncMock()):
         resp = client.post(
             "/api/auditor/start",
             json={

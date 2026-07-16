@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from invicton.core.blueprint import ComplianceProfile
+from statim.core.blueprint import ComplianceProfile
 
 # ---------------------------------------------------------------------------
 # Helpers — build a minimal ComplianceProfile for mock returns
@@ -16,7 +16,7 @@ from invicton.core.blueprint import ComplianceProfile
 def _make_profile(name: str = "test-profile") -> ComplianceProfile:
     return ComplianceProfile.model_validate(
         {
-            "invicton_version": "0.1.0",
+            "statim_version": "0.1.0",
             "kind": "ComplianceProfile",
             "metadata": {"name": name, "version": "1.0.0"},
             "target": {
@@ -41,7 +41,7 @@ def _make_profile(name: str = "test-profile") -> ComplianceProfile:
 def test_list_registry_profiles_returns_200(client):
     mock_registry = MagicMock()
     mock_registry.list.return_value = []
-    with patch("invicton.api.registry.get_registry", return_value=mock_registry):
+    with patch("statim.api.registry.get_registry", return_value=mock_registry):
         resp = client.get("/api/registry/")
     assert resp.status_code == 200
     assert resp.json() == []
@@ -51,7 +51,7 @@ def test_list_registry_profiles_returns_profile_fields(client):
     profile = _make_profile("ubuntu22-cis-l1-aws")
     mock_registry = MagicMock()
     mock_registry.list.return_value = [profile]
-    with patch("invicton.api.registry.get_registry", return_value=mock_registry):
+    with patch("statim.api.registry.get_registry", return_value=mock_registry):
         resp = client.get("/api/registry/")
     assert resp.status_code == 200
     items = resp.json()
@@ -68,7 +68,7 @@ def test_list_registry_profiles_multiple(client):
     profiles = [_make_profile(f"profile-{i}") for i in range(3)]
     mock_registry = MagicMock()
     mock_registry.list.return_value = profiles
-    with patch("invicton.api.registry.get_registry", return_value=mock_registry):
+    with patch("statim.api.registry.get_registry", return_value=mock_registry):
         resp = client.get("/api/registry/")
     assert len(resp.json()) == 3
 
@@ -81,7 +81,7 @@ def test_list_registry_profiles_multiple(client):
 def test_sync_registry_returns_html(client):
     mock_registry = MagicMock()
     mock_registry.sync = AsyncMock(return_value=["ubuntu22-cis-l1"])
-    with patch("invicton.api.registry.get_registry", return_value=mock_registry):
+    with patch("statim.api.registry.get_registry", return_value=mock_registry):
         resp = client.post("/api/registry/sync")
     assert resp.status_code == 200
     assert "text/html" in resp.headers["content-type"]
@@ -90,7 +90,7 @@ def test_sync_registry_returns_html(client):
 def test_sync_registry_reports_synced_count(client):
     mock_registry = MagicMock()
     mock_registry.sync = AsyncMock(return_value=["p1", "p2", "p3"])
-    with patch("invicton.api.registry.get_registry", return_value=mock_registry):
+    with patch("statim.api.registry.get_registry", return_value=mock_registry):
         resp = client.post("/api/registry/sync")
     assert "3" in resp.text
 
@@ -98,7 +98,7 @@ def test_sync_registry_reports_synced_count(client):
 def test_sync_registry_empty_result_warns(client):
     mock_registry = MagicMock()
     mock_registry.sync = AsyncMock(return_value=[])
-    with patch("invicton.api.registry.get_registry", return_value=mock_registry):
+    with patch("statim.api.registry.get_registry", return_value=mock_registry):
         resp = client.post("/api/registry/sync")
     assert resp.status_code == 200
     assert "No profiles synced" in resp.text or "0" in resp.text or "unavailable" in resp.text.lower()
@@ -107,7 +107,7 @@ def test_sync_registry_empty_result_warns(client):
 def test_sync_registry_single_profile_no_plural_s(client):
     mock_registry = MagicMock()
     mock_registry.sync = AsyncMock(return_value=["only-one"])
-    with patch("invicton.api.registry.get_registry", return_value=mock_registry):
+    with patch("statim.api.registry.get_registry", return_value=mock_registry):
         resp = client.post("/api/registry/sync")
     # "1 profile" — no trailing 's'
     assert "profiles" not in resp.text, f"Expected singular 'profile', got: {resp.text}"

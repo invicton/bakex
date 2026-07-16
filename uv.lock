@@ -842,7 +842,7 @@ wheels = [
 ]
 
 [[package]]
-name = "invicton"
+name = "statim"
 version = "0.6.0"
 source = { editable = "." }
 dependencies = [
@@ -946,8 +946,8 @@ requires-dist = [
     { name = "google-cloud-compute", marker = "extra == 'gcp'", specifier = ">=1.14.0" },
     { name = "httpx", specifier = ">=0.27.0" },
     { name = "httpx", marker = "extra == 'dev'", specifier = ">=0.27.0" },
-    { name = "invicton", extras = ["aws", "gcp", "azure", "linode", "digitalocean", "proxmox"], marker = "extra == 'all-providers'" },
-    { name = "invicton", extras = ["llm-openai", "llm-bedrock"], marker = "extra == 'llm-all'" },
+    { name = "statim", extras = ["aws", "gcp", "azure", "linode", "digitalocean", "proxmox"], marker = "extra == 'all-providers'" },
+    { name = "statim", extras = ["llm-openai", "llm-bedrock"], marker = "extra == 'llm-all'" },
     { name = "jinja2", specifier = ">=3.1.4" },
     { name = "linode-api4", marker = "extra == 'linode'", specifier = ">=5.0.0" },
     { name = "openai", marker = "extra == 'llm-openai'", specifier = ">=1.30.0" },

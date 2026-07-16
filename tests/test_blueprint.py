@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from invicton.core.blueprint import (
+from statim.core.blueprint import (
     ComplianceProfile,
     ControlOverride,
     ProfileMetadata,
@@ -18,7 +18,7 @@ from invicton.core.blueprint import (
 EXAMPLE_PROFILE = Path("profiles/examples/ubuntu22_cis_l1.yaml")
 
 MINIMAL_PROFILE = {
-    "invicton_version": "0.1.0",
+    "statim_version": "0.1.0",
     "kind": "ComplianceProfile",
     "metadata": {
         "name": "test-profile",

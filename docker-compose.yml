@@ -1,10 +1,10 @@
 services:
-  invicton:
+  statim:
     build: 
       context: .
       dockerfile: Dockerfile
-    image: invicton:latest
-    container_name: invicton-engine
+    image: statim:latest
+    container_name: statim-engine
     restart: unless-stopped
     ports:
       - "8001:8000"
@@ -21,38 +21,38 @@ services:
       - ./profiles:/app/profiles:z
 
       # Persist encrypted credentials and encryption key across restarts.
-      # Set INVICTON_SECRET_KEY below for a deterministic key (no key file needed).
+      # Set STATIM_SECRET_KEY below for a deterministic key (no key file needed).
       - ./data:/app/data:z
 
     environment:
       - APP_ENV=production
-      - INVICTON_LOG_LEVEL=INFO
+      - STATIM_LOG_LEVEL=INFO
       # Uncomment and set a strong passphrase to use a deterministic encryption key.
-      # Without this, a random key is auto-generated and stored in ./data/.invicton_key
-      # - INVICTON_SECRET_KEY=change-me-to-a-strong-passphrase
+      # Without this, a random key is auto-generated and stored in ./data/.statim_key
+      # - STATIM_SECRET_KEY=change-me-to-a-strong-passphrase
 
       # Admin login (HTTP Basic Auth, any username + this as the password).
       # Without this, a random token is generated on first startup — check
-      # `docker compose logs invicton` or ./data/.admin_token for it.
-      # - INVICTON_ADMIN_TOKEN=change-me-to-a-strong-random-token
+      # `docker compose logs statim` or ./data/.admin_token for it.
+      # - STATIM_ADMIN_TOKEN=change-me-to-a-strong-random-token
 
       # --- AI Builder: pick ONE backend and uncomment the relevant block ---
 
       # Anthropic (default)
-      # - INVICTON_LLM_PROVIDER=anthropic
+      # - STATIM_LLM_PROVIDER=anthropic
       # - ANTHROPIC_API_KEY=sk-ant-...
 
       # OpenAI or any OpenAI-compatible endpoint (Groq, Together, vLLM, LiteLLM)
-      # - INVICTON_LLM_PROVIDER=openai
-      # - INVICTON_LLM_MODEL=gpt-4o
-      # - INVICTON_LLM_API_KEY=sk-...
-      # - INVICTON_LLM_BASE_URL=https://api.groq.com/openai/v1   # optional override
+      # - STATIM_LLM_PROVIDER=openai
+      # - STATIM_LLM_MODEL=gpt-4o
+      # - STATIM_LLM_API_KEY=sk-...
+      # - STATIM_LLM_BASE_URL=https://api.groq.com/openai/v1   # optional override
 
       # Ollama — local model, no API key. Requires Ollama running on host.
-      # - INVICTON_LLM_PROVIDER=ollama
-      # - INVICTON_LLM_MODEL=llama3.3:70b
-      # - INVICTON_LLM_BASE_URL=http://host.docker.internal:11434/v1
+      # - STATIM_LLM_PROVIDER=ollama
+      # - STATIM_LLM_MODEL=llama3.3:70b
+      # - STATIM_LLM_BASE_URL=http://host.docker.internal:11434/v1
 
       # AWS Bedrock — uses the ~/.aws credentials mounted above
-      # - INVICTON_LLM_PROVIDER=bedrock
-      # - INVICTON_LLM_MODEL=us.anthropic.claude-opus-4-5-20251101-v1:0
+      # - STATIM_LLM_PROVIDER=bedrock
+      # - STATIM_LLM_MODEL=us.anthropic.claude-opus-4-5-20251101-v1:0

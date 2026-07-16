@@ -1,6 +1,6 @@
 # Ansible Hardening Roles
 
-Invicton uses [Ansible-Lockdown](https://github.com/ansible-lockdown) roles to apply CIS/STIG hardening before snapshotting. The roles are installed on demand during the build — you do not need to vendor them manually for standard builds.
+Statim uses [Ansible-Lockdown](https://github.com/ansible-lockdown) roles to apply CIS/STIG hardening before snapshotting. The roles are installed on demand during the build — you do not need to vendor them manually for standard builds.
 
 ## Vendoring Roles (manual / offline)
 
@@ -46,7 +46,7 @@ ansible/
     - role: UBUNTU22-CIS
 ```
 
-Invicton generates this playbook dynamically from your blueprint's `hardening.profile_tier` and `hardening.overrides` fields. You rarely need to edit `site.yml` directly.
+Statim generates this playbook dynamically from your blueprint's `hardening.profile_tier` and `hardening.overrides` fields. You rarely need to edit `site.yml` directly.
 
 ## Profile Tier Variable Mapping
 
@@ -63,12 +63,12 @@ Invicton generates this playbook dynamically from your blueprint's `hardening.pr
 ansible-playbook -i "192.168.1.10," ansible/site.yml -u root
 ```
 
-Invicton's providers call `ansible-playbook` automatically during the build pipeline via `_provider_utils.run_ansible()`. See `plugins/providers/example_local.py` for reference.
+Statim's providers call `ansible-playbook` automatically during the build pipeline via `_provider_utils.run_ansible()`. See `plugins/providers/example_local.py` for reference.
 
 ## In the Build Pipeline
 
 ```
-Invicton Blueprint YAML
+Statim Blueprint YAML
         │
         ▼ playbook_gen.py generates site.yml
         ▼ provider calls ansible-playbook via SSH / SSM

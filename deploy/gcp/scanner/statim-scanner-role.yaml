@@ -1,0 +1,29 @@
+title: Statim Scanner
+description: Least-privilege role for Statim GCP image scans using temporary private scan VMs.
+stage: GA
+includedPermissions:
+  - compute.disks.create
+  - compute.disks.delete
+  - compute.disks.get
+  - compute.firewalls.get
+  - compute.firewalls.list
+  - compute.images.get
+  - compute.images.getFromFamily
+  - compute.images.list
+  - compute.instances.create
+  - compute.instances.delete
+  - compute.instances.get
+  - compute.instances.list
+  - compute.instances.setMetadata
+  - compute.instances.setTags
+  - compute.instances.use
+  - compute.machineTypes.get
+  - compute.networks.get
+  - compute.networks.list
+  - compute.projects.get
+  - compute.regions.list
+  - compute.subnetworks.get
+  - compute.subnetworks.list
+  - compute.subnetworks.use
+  - compute.zoneOperations.get
+  - compute.zones.list

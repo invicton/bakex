@@ -1,0 +1,244 @@
+<div class="h-full flex flex-col pt-4">
+  <div class="px-8 pb-4 border-b border-slate-800/50 flex justify-between items-center">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-lg bg-slate-800 border border-slate-700/50 flex items-center justify-center">
+        <span class="text-xs font-bold text-slate-300 uppercase tracking-wider">AWS</span>
+      </div>
+      <div>
+        <h2 class="text-xl font-bold text-white capitalize">AWS Configuration</h2>
+        <p class="text-sm text-slate-400">Manage your Amazon Web Services integration securely.</p>
+      </div>
+    </div>
+    <button type="button" onclick="document.getElementById('aws-info-panel').classList.toggle('hidden')" class="w-8 h-8 flex items-center justify-center bg-slate-800/50 hover:bg-slate-700 text-slate-400 hover:text-brand-400 rounded-full border border-slate-700/50 transition-colors" title="Configuration Info">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+    </button>
+  </div>
+
+  <div id="aws-info-panel" class="hidden px-8 py-5 bg-brand-900/10 border-b border-brand-800/30 flex gap-4 text-sm text-slate-300 relative shadow-inner">
+    <div class="mt-0.5 shrink-0"><svg class="w-4 h-4 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div>
+    <div class="space-y-3">
+      <div>
+        <strong class="text-brand-400 block mb-1">Local AWS Credentials</strong>
+        If you run Statim locally, it mounts your host's <code class="text-xs text-brand-300 bg-brand-500/10 px-1 py-0.5 rounded">~/.aws</code> directory. You can specify a specific <strong class="text-white font-medium">AWS Profile</strong>. If left blank, it defaults to your environment securely.
+      </div>
+      <div>
+        <strong class="text-brand-400 block mb-1">IAM PassRole (Optional)</strong>
+        You can bind an <strong class="text-white font-medium">IAM Role ARN</strong> that trusts Statim's execution context with an External ID, and provide the generated <strong class="text-white font-medium">IAM Instance Profile Name</strong> for temporary scan/build instances.
+      </div>
+      <div>
+        <strong class="text-brand-400 block mb-1">Required Permissions</strong>
+        The IAM Role must have policies granting the following actions for the build pipeline:
+        <ul class="list-disc list-inside mt-1 ml-1 text-slate-400 marker:text-brand-500/50 space-y-0.5 mb-2">
+          <li><code class="text-xs text-brand-300 bg-brand-500/10 px-1 py-0.5 rounded">ec2:RunInstances</code>, <code class="text-xs text-brand-300 bg-brand-500/10 px-1 py-0.5 rounded">ec2:TerminateInstances</code> (to launch the build VM)</li>
+          <li><code class="text-xs text-brand-300 bg-brand-500/10 px-1 py-0.5 rounded">ec2:CreateImage</code>, <code class="text-xs text-brand-300 bg-brand-500/10 px-1 py-0.5 rounded">ec2:CreateTags</code>, <code class="text-xs text-brand-300 bg-brand-500/10 px-1 py-0.5 rounded">ec2:Describe*</code> (for Golden AMI)</li>
+          <li><code class="text-xs text-brand-300 bg-brand-500/10 px-1 py-0.5 rounded">ssm:SendCommand</code>, <code class="text-xs text-brand-300 bg-brand-500/10 px-1 py-0.5 rounded">ssm:GetCommandInvocation</code> (to run Ansible hardening securely)</li>
+          <li><code class="text-xs text-brand-300 bg-brand-500/10 px-1 py-0.5 rounded">iam:PassRole</code> (required if instance profile is used)</li>
+        </ul>
+        <details class="group bg-slate-900/30 rounded-lg border border-slate-700/50 mt-2">
+          <summary class="cursor-pointer px-3 py-2 text-xs font-semibold text-slate-300 hover:text-white transition-colors flex items-center justify-between">
+            View Exact JSON Policy Definition
+            <svg class="w-4 h-4 transform group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+          </summary>
+          <div class="p-3 pt-1 relative">
+            <button type="button" onclick="navigator.clipboard.writeText(document.getElementById('aws-iam-policy').innerText); this.innerHTML='<svg class=\'w-3.5 h-3.5\' fill=\'none\' stroke=\'currentColor\' viewBox=\'0 0 24 24\'><path stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M5 13l4 4L19 7\'></path></svg> Copied!'; setTimeout(() => this.innerHTML='<svg class=\'w-3.5 h-3.5\' fill=\'none\' stroke=\'currentColor\' viewBox=\'0 0 24 24\'><path stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z\'></path></svg> Copy', 2000);" class="absolute top-3 right-5 bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-300 px-2 py-1 rounded text-[10px] flex items-center gap-1 transition-colors">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg> Copy
+            </button>
+<pre class="text-[10px] font-mono text-slate-400 bg-slate-950 p-3 pt-5 rounded border border-slate-800 overflow-x-auto"><code id="aws-iam-policy">{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "ec2:RunInstances",
+                "ec2:TerminateInstances",
+                "ec2:DescribeInstances",
+                "ec2:DescribeImages",
+                "ec2:DescribeSecurityGroups",
+                "ec2:DescribeSubnets",
+                "ec2:DescribeVpcs",
+                "ec2:DescribeVolumes",
+                "ec2:DescribeSnapshots",
+                "ec2:CreateTags",
+                "ec2:CreateImage",
+                "ec2:CreateSnapshot",
+                "ec2:ModifyImageAttribute",
+                "ssm:SendCommand",
+                "ssm:GetCommandInvocation",
+                "ssm:ListCommandInvocations",
+                "ssm:DescribeInstanceInformation"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": "iam:PassRole",
+            "Resource": "arn:aws:iam::*:role/Statim*InstanceRole",
+            "Condition": {
+                "StringEquals": {
+                    "iam:PassedToService": "ec2.amazonaws.com"
+                }
+            }
+        }
+    ]
+}</code></pre>
+          </div>
+        </details>
+      </div>
+    </div>
+  </div>
+
+  <div class="flex-1 overflow-y-auto p-8">
+    <div class="mb-6 rounded-lg border border-cyan-900/40 bg-cyan-950/10 p-4">
+      <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <h3 class="text-sm font-semibold text-cyan-300">Onboard AWS with CloudFormation</h3>
+          <p class="mt-1 text-xs text-slate-400">
+            Download a template, create a CloudFormation stack using <span class="font-semibold text-slate-300">Upload a template file</span>, then paste the stack outputs below.
+          </p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <a href="/api/integrations/aws/templates/statim-scanner-role.yaml"
+             class="inline-flex items-center justify-center rounded-lg border border-cyan-700/60 bg-cyan-600/15 px-3 py-2 text-xs font-semibold text-cyan-200 hover:bg-cyan-600/25">
+            Scanner Template
+          </a>
+          <a href="/api/integrations/aws/templates/statim-builder-role.yaml"
+             class="inline-flex items-center justify-center rounded-lg border border-amber-700/60 bg-amber-600/15 px-3 py-2 text-xs font-semibold text-amber-200 hover:bg-amber-600/25">
+            Builder Template
+          </a>
+          <a href="https://console.aws.amazon.com/cloudformation/home#/stacks/create"
+             target="_blank"
+             rel="noopener noreferrer"
+             class="inline-flex items-center justify-center rounded-lg border border-slate-700 bg-slate-800/70 px-3 py-2 text-xs font-semibold text-slate-200 hover:bg-slate-700">
+            CloudFormation
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <form
+      hx-post="/api/integrations/aws"
+      hx-target="#aws-status"
+      hx-swap="innerHTML"
+      class="space-y-5"
+    >
+      <div class="grid grid-cols-2 gap-5">
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5" title="IAM user access key ID">Access Key ID</label>
+          <input type="text" name="aws_access_key_id"
+            value="{{ creds.aws_access_key_id if creds else '' }}"
+            placeholder="AKIAIOSFODNN7EXAMPLE"
+            class="w-full bg-slate-900/50 border border-slate-700/80 rounded-lg px-4 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-all font-mono" />
+          <p class="text-[10px] text-slate-500 mt-1">Required unless Statim can use an AWS profile or environment credentials.</p>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5" title="IAM user secret access key">Secret Access Key</label>
+          <input type="password" name="aws_secret_access_key"
+            value="{{ creds.aws_secret_access_key if creds else '' }}"
+            placeholder="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+            class="w-full bg-slate-900/50 border border-slate-700/80 rounded-lg px-4 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-all font-mono" />
+          <p class="text-[10px] text-slate-500 mt-1">Stored encrypted by Statim.</p>
+        </div>
+      </div>
+      <div class="rounded-lg border border-cyan-900/40 bg-cyan-950/10 p-4">
+        <div class="grid grid-cols-[1fr_auto] gap-3 items-end">
+          <div>
+            <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">CloudFormation Stack Name</label>
+            <input type="text" name="cloudformation_stack_name"
+              value="{{ creds.cloudformation_stack_name if creds else '' }}"
+              placeholder="statim-builder"
+              class="w-full bg-slate-900/50 border border-slate-700/80 rounded-lg px-4 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-all font-mono" />
+          </div>
+          <button type="button"
+            hx-post="/api/integrations/aws/import-stack"
+            hx-include="closest form"
+            hx-target="#aws-status"
+            hx-swap="innerHTML"
+            class="px-4 py-2.5 bg-cyan-700/30 hover:bg-cyan-700/45 text-cyan-200 border border-cyan-700/60 text-sm font-semibold rounded-lg transition-all">
+            Import Outputs
+          </button>
+        </div>
+        <p class="text-[10px] text-slate-500 mt-2">Uses the credentials above to read stack outputs and fill Role ARN, External ID, instance profile, and region.</p>
+      </div>
+      <div class="grid grid-cols-2 gap-5">
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5" title="Local ~/.aws profile (e.g. 'work', 'sandbox')">AWS Profile (Optional)</label>
+          <input type="text" name="aws_profile"
+            value="{{ creds.aws_profile if creds else '' }}"
+            placeholder="default"
+            class="w-full bg-slate-900/50 border border-slate-700/80 rounded-lg px-4 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-all font-mono" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5" title="CloudFormation StatimRoleArn output">Role ARN</label>
+          <input id="aws-role-arn" type="text" name="role_arn"
+            value="{{ creds.role_arn if creds else '' }}"
+            placeholder="arn:aws:iam::123456789012:role/StatimBuilderRole"
+            class="w-full bg-slate-900/50 border border-slate-700/80 rounded-lg px-4 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-all font-mono" />
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">External ID <span class="text-slate-600 normal-case font-normal">from CloudFormation output</span></label>
+        <input id="aws-external-id" type="text" name="external_id"
+          value="{{ creds.external_id if creds else '' }}"
+          placeholder="statim-your-company-or-random-id"
+          class="w-full bg-slate-900/50 border border-slate-700/80 rounded-lg px-4 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-all font-mono" />
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Region</label>
+        <input id="aws-region" type="text" name="region"
+          value="{{ creds.region if creds else 'us-east-1' }}"
+          placeholder="us-east-1"
+          class="w-full bg-slate-900/50 border border-slate-700/80 rounded-lg px-4 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-all font-mono" />
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Subnet ID <span class="text-slate-600 normal-case font-normal">or VPC ID</span></label>
+        <input type="text" name="subnet_id"
+          value="{{ creds.subnet_id if creds else '' }}"
+          placeholder="subnet-0abc1234 or vpc-xxxxxxxx"
+          class="w-full bg-slate-900/50 border border-slate-700/80 rounded-lg px-4 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-all font-mono" />
+        <p class="text-[10px] text-slate-500 mt-1">Enter a <code class="text-cyan-600">subnet-xxx</code> ID, or a <code class="text-cyan-600">vpc-xxx</code> ID to auto-select the first available subnet.</p>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Security Group ID</label>
+        <input type="text" name="security_group_id"
+          value="{{ creds.security_group_id if creds else '' }}"
+          placeholder="sg-0abc1234"
+          class="w-full bg-slate-900/50 border border-slate-700/80 rounded-lg px-4 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-all font-mono" />
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">IAM Instance Profile Name</label>
+        <input id="aws-iam-profile-name" type="text" name="iam_profile_name"
+          value="{{ creds.iam_profile_name if creds else '' }}"
+          placeholder="StatimInstanceProfile"
+          class="w-full bg-slate-900/50 border border-slate-700/80 rounded-lg px-4 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-all font-mono" />
+      </div>
+      
+      <div class="pt-4 flex flex-col gap-4 border-t border-slate-800/50">
+        <div class="flex items-start justify-between">
+          <div class="flex items-center gap-3">
+            <button type="submit"
+              class="px-5 py-2.5 bg-brand-600 hover:bg-brand-500 text-white text-sm font-semibold rounded-lg transition-all shadow-[0_0_15px_rgba(6,182,212,0.3)] min-w-[120px]">
+              Update Config
+            </button>
+            <button type="button"
+              hx-post="/api/integrations/aws/test"
+              hx-include="closest form"
+              hx-target="#aws-status"
+              hx-swap="innerHTML"
+              class="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 hover:border-slate-500 text-sm font-semibold rounded-lg transition-all flex items-center gap-2">
+              <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+              Test Connectivity
+            </button>
+          </div>
+          <button type="button"
+            hx-post="/api/plugins/aws/remove"
+            hx-target="body"
+            hx-confirm="Are you sure you want to permanently remove this integration?"
+            class="px-4 py-2 hover:bg-rose-500/10 border border-transparent hover:border-rose-500/30 text-slate-500 hover:text-rose-400 text-xs font-medium rounded-lg transition-all">
+            Remove Integration
+          </button>
+        </div>
+        <div id="aws-status" class="w-full"></div>
+      </div>
+    </form>
+  </div>
+</div>

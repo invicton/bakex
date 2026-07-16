@@ -196,7 +196,7 @@ def convert_to_raw(qcow2_path: Path, raw_path: Path) -> None:
 def build_seed_iso(tmpdir: Path, ssh_pubkey: str, ssh_user: str, hostname: str) -> Path:
     """Build a cloud-init NoCloud seed ISO granting SSH access to *ssh_user*.
 
-    Key-only auth: no password is ever set, matching every other Invicton
+    Key-only auth: no password is ever set, matching every other Statim
     provider's ephemeral-credential convention.
     """
     user_data = (
@@ -213,7 +213,7 @@ def build_seed_iso(tmpdir: Path, ssh_pubkey: str, ssh_user: str, hostname: str) 
         "chpasswd:\n"
         "  expire: false\n"
     )
-    meta_data = f"instance-id: invicton-{hostname}\nlocal-hostname: {hostname}\n"
+    meta_data = f"instance-id: statim-{hostname}\nlocal-hostname: {hostname}\n"
 
     (tmpdir / "user-data").write_text(user_data)
     (tmpdir / "meta-data").write_text(meta_data)
@@ -325,7 +325,7 @@ def launch_qemu(
     cmd = [
         "qemu-system-x86_64",
         "-name",
-        "invicton-kvm-build",
+        "statim-kvm-build",
         "-machine",
         f"accel={accel}",
         "-cpu",

@@ -1,10 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
-  <title id="title">Invicton cloud onboarding screenshot preview</title>
+  <title id="title">Statim cloud onboarding screenshot preview</title>
   <desc id="desc">A sanitized preview of cloud onboarding cards for AWS, Azure, and GCP.</desc>
   <rect width="1200" height="720" fill="#071018"/>
   <rect x="42" y="42" width="1116" height="636" rx="18" fill="#0f172a" stroke="#263244"/>
   <text x="86" y="104" fill="#f8fafc" font-family="Inter, Arial, sans-serif" font-size="30" font-weight="800">Cloud onboarding</text>
-  <text x="86" y="136" fill="#94a3b8" font-family="Inter, Arial, sans-serif" font-size="15">Admin-reviewed templates create only the role permissions Invicton needs.</text>
+  <text x="86" y="136" fill="#94a3b8" font-family="Inter, Arial, sans-serif" font-size="15">Admin-reviewed templates create only the role permissions Statim needs.</text>
   <g font-family="Inter, Arial, sans-serif">
     <rect x="86" y="190" width="318" height="346" rx="14" fill="#111827" stroke="#334155"/>
     <text x="118" y="240" fill="#fde68a" font-size="26" font-weight="800">AWS</text>
@@ -37,5 +37,5 @@
     <rect x="954" y="444" width="118" height="38" rx="8" fill="#1e293b"/>
     <text x="976" y="468" fill="#e2e8f0" font-size="13" font-weight="700">Review</text>
   </g>
-  <text x="86" y="610" fill="#cbd5e1" font-family="Inter, Arial, sans-serif" font-size="16" font-weight="700">Simple rule: a cloud admin reviews the permission set, deploys it, then pastes the outputs into Invicton.</text>
+  <text x="86" y="610" fill="#cbd5e1" font-family="Inter, Arial, sans-serif" font-size="16" font-weight="700">Simple rule: a cloud admin reviews the permission set, deploys it, then pastes the outputs into Statim.</text>
 </svg>

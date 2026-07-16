@@ -33,7 +33,7 @@ jobs:
       - name: Check for changes
         id: diff
         run: |
-          git diff --quiet invicton/core/os_catalog.py || echo "changed=true" >> "$GITHUB_OUTPUT"
+          git diff --quiet statim/core/os_catalog.py || echo "changed=true" >> "$GITHUB_OUTPUT"
 
       - name: Commit and open PR
         if: steps.diff.outputs.changed == 'true'
@@ -44,7 +44,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           BRANCH="chore/refresh-amis-$(date +%Y%m%d)"
           git checkout -b "$BRANCH"
-          git add invicton/core/os_catalog.py
+          git add statim/core/os_catalog.py
           git commit -m "chore: refresh AWS AMI catalog defaults $(date +%Y-%m-%d)"
           git push origin "$BRANCH"
           gh pr create \

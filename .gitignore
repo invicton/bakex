@@ -20,10 +20,10 @@ build/
 .uv/
 uv.lock
 
-# Invicton runtime data (never commit credentials or build artifacts)
+# Statim runtime data (never commit credentials or build artifacts)
 data/credentials.enc
-data/.invicton_key
-data/.invicton_salt
+data/.statim_key
+data/.statim_salt
 data/.admin_token
 data/audits/
 data/builds/

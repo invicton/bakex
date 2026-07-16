@@ -1,10 +1,10 @@
-# Invicton HardeningBlueprint — Rocky Linux 9 CIS Level 1 Server (Azure)
+# Statim HardeningBlueprint — Rocky Linux 9 CIS Level 1 Server (Azure)
 #
-# Set credentials in Invicton integrations (tenant_id, client_id, client_secret,
+# Set credentials in Statim integrations (tenant_id, client_id, client_secret,
 # subscription_id, resource_group) then run:
-#   invicton build rocky9-cis-l1-azure
+#   statim build rocky9-cis-l1-azure
 
-invicton_version: "0.5.0"
+statim_version: "0.5.0"
 kind: HardeningBlueprint
 
 metadata:
@@ -55,8 +55,8 @@ users:
     lock: true
 
   accounts:
-    - name: invicton-admin
-      comment: "Invicton-managed admin account"
+    - name: statim-admin
+      comment: "Statim-managed admin account"
       groups: [wheel]
       shell: /bin/bash
       ssh_authorized_keys: []

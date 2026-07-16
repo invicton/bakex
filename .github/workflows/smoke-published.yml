@@ -20,15 +20,15 @@ jobs:
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6
         with:
           python-version: "3.12"
-      - name: Install latest invicton from PyPI and boot it
+      - name: Install latest statim from PyPI and boot it
         run: |
           python -m venv /tmp/smoke && . /tmp/smoke/bin/activate
-          pip install --quiet "invicton[all-providers]"
+          pip install --quiet "statim[all-providers]"
           mkdir /tmp/rundir && cd /tmp/rundir
-          INVICTON_ADMIN_TOKEN=smoke python - <<'EOF'
+          STATIM_ADMIN_TOKEN=smoke python - <<'EOF'
           from fastapi.testclient import TestClient
-          from invicton.main import app
-          import invicton
+          from statim.main import app
+          import statim
           with TestClient(app) as c:
               a = ("admin", "smoke")
               assert c.get("/", auth=a).status_code == 200, "UI failed"
@@ -37,7 +37,7 @@ jobs:
               cat = c.get("/api/plugins/catalog", auth=a).json()
               assert len(cat) >= 5, f"provider catalog missing: {len(cat)}"
               assert c.get("/static/js/htmx.min.js", auth=a).status_code == 200, "static assets missing"
-          print(f"PyPI smoke OK: invicton {invicton.__version__}")
+          print(f"PyPI smoke OK: statim {statim.__version__}")
           EOF
 
   ghcr-image:
@@ -46,8 +46,8 @@ jobs:
     steps:
       - name: Pull and boot the published image
         run: |
-          docker run -d --rm --name smoke -e INVICTON_ADMIN_TOKEN=smoke -p 8000:8000 \
-            ghcr.io/invicton/invicton:latest
+          docker run -d --rm --name smoke -e STATIM_ADMIN_TOKEN=smoke -p 8000:8000 \
+            ghcr.io/invicton/statim:latest
           for i in $(seq 1 30); do
             curl -sf -u admin:smoke http://127.0.0.1:8000/ >/dev/null && break
             sleep 2

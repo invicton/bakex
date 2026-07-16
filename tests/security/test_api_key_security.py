@@ -8,7 +8,7 @@ import secrets
 
 import pytest
 
-import invicton.core.api_keys as ak_mod
+import statim.core.api_keys as ak_mod
 
 
 @pytest.fixture(autouse=True)

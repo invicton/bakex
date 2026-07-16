@@ -85,7 +85,7 @@ def test_get_proxmox_token_auth_accepted():
             {
                 "host": "proxmox.lab.local",
                 "user": "root@pam",
-                "token_name": "invicton",
+                "token_name": "statim",
                 "token_value": "abc123",
                 "verify_ssl": False,
             }
@@ -110,7 +110,7 @@ def test_get_proxmox_verify_ssl_coercion(stored_value, expected):
             {
                 "host": "proxmox.lab.local",
                 "user": "root@pam",
-                "token_name": "invicton",
+                "token_name": "statim",
                 "token_value": "abc123",
                 "verify_ssl": stored_value,
             }

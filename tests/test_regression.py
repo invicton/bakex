@@ -15,9 +15,9 @@ from unittest.mock import patch
 import pytest
 from fastapi.testclient import TestClient
 
-import invicton.core.api_keys as ak_mod
-import invicton.core.notifications as notif_mod
-from invicton.core import auditor as audit_mod
+import statim.core.api_keys as ak_mod
+import statim.core.notifications as notif_mod
+from statim.core import auditor as audit_mod
 
 # ---------------------------------------------------------------------------
 # Isolation — reset in-memory stores and redirect persistence files
@@ -41,12 +41,12 @@ def _isolate_stores(tmp_path, monkeypatch):
 @pytest.fixture
 def smoke_client(monkeypatch):
     """TestClient that patches init_registry to avoid network calls on startup."""
-    from invicton.config import settings
-    from invicton.main import app
+    from statim.config import settings
+    from statim.main import app
 
-    monkeypatch.setattr(settings, "invicton_admin_token", "test-admin-token")
+    monkeypatch.setattr(settings, "statim_admin_token", "test-admin-token")
 
-    with patch("invicton.core.registry.init_registry"):
+    with patch("statim.core.registry.init_registry"):
         with TestClient(app, raise_server_exceptions=True) as c:
             c.auth = ("admin", "test-admin-token")
             yield c
@@ -103,7 +103,7 @@ def test_api_keys_empty_on_fresh_start(smoke_client):
 
 
 def test_example_profile_loads():
-    from invicton.core.blueprint import load_profile
+    from statim.core.blueprint import load_profile
 
     profile = load_profile(Path("profiles/examples/ubuntu22_cis_l1.yaml"))
     assert profile is not None
@@ -117,7 +117,7 @@ def test_example_profile_loads():
 
 
 def test_local_provider_in_registry():
-    from invicton.plugins.loader import load_providers
+    from statim.plugins.loader import load_providers
 
     providers, _ = load_providers(Path("plugins/providers"), strict=False)
     assert "local" in providers, f"'local' not found in loaded providers: {sorted(providers)}"
@@ -129,7 +129,7 @@ def test_local_provider_in_registry():
 
 
 def test_aws_and_digitalocean_providers_load():
-    from invicton.plugins.loader import load_providers
+    from statim.plugins.loader import load_providers
 
     providers, _ = load_providers(Path("plugins/providers"), strict=False)
     assert "aws" in providers, f"'aws' not found in loaded providers: {sorted(providers)}"

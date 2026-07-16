@@ -3,7 +3,7 @@
     {
       "id": "digitalocean",
       "name": "DigitalOcean",
-      "description": "Build hardened Snapshots on DigitalOcean. Provisions a Droplet, applies hardening via Ansible over SSH, runs OpenSCAP, then creates a Droplet Snapshot. Use VPC private networking if the Invicton host is also a Droplet in the same region.",
+      "description": "Build hardened Snapshots on DigitalOcean. Provisions a Droplet, applies hardening via Ansible over SSH, runs OpenSCAP, then creates a Droplet Snapshot. Use VPC private networking if the Statim host is also a Droplet in the same region.",
       "icon": "🌊",
       "script": "digitalocean.py",
       "version": "1.0.0",
@@ -13,7 +13,7 @@
         {"key": "api_token", "label": "DigitalOcean Personal Access Token", "type": "password", "required": true},
         {"key": "region", "label": "Region", "type": "text", "default": "nyc3"},
         {"key": "size", "label": "Droplet Size", "type": "text", "default": "s-2vcpu-4gb"},
-        {"key": "use_private_ip", "label": "Use VPC Private IP (requires Invicton host in same region)", "type": "checkbox", "default": false}
+        {"key": "use_private_ip", "label": "Use VPC Private IP (requires Statim host in same region)", "type": "checkbox", "default": false}
       ]
     },
     {
@@ -56,7 +56,7 @@
     {
       "id": "linode",
       "name": "Linode / Akamai Cloud",
-      "description": "Build hardened Private Images on Linode. Provisions a Linode instance from a base image, applies hardening via Ansible over SSH, then creates a Linode Private Image (disk snapshot). Use private networking if the Invicton host is also a Linode in the same datacenter.",
+      "description": "Build hardened Private Images on Linode. Provisions a Linode instance from a base image, applies hardening via Ansible over SSH, then creates a Linode Private Image (disk snapshot). Use private networking if the Statim host is also a Linode in the same datacenter.",
       "icon": "🟢",
       "script": "linode.py",
       "version": "1.0.0",
@@ -66,7 +66,7 @@
         {"key": "api_token", "label": "Linode Personal Access Token", "type": "password", "required": true},
         {"key": "region", "label": "Region", "type": "text", "default": "us-east"},
         {"key": "instance_type", "label": "Instance Type", "type": "text", "default": "g6-standard-2"},
-        {"key": "use_private_ip", "label": "Use Linode Private IP (requires Invicton host in same datacenter)", "type": "checkbox", "default": false}
+        {"key": "use_private_ip", "label": "Use Linode Private IP (requires Statim host in same datacenter)", "type": "checkbox", "default": false}
       ]
     },
     {

@@ -1,0 +1,335 @@
+<!-- Step 5: Review & Launch -->
+<div class="space-y-6" id="step5-content">
+
+  <div class="grid grid-cols-2 gap-6">
+
+    <!-- Summary cards -->
+    <div class="space-y-3">
+
+      <!-- Step 1: OS & Provider -->
+      <div class="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-xs font-bold uppercase text-slate-500 tracking-wider">OS &amp; Cloud Provider</h3>
+          <button type="button" onclick="editStep(1)" class="text-[10px] text-cyan-400 hover:text-cyan-300">Edit</button>
+        </div>
+        <div class="flex items-center gap-4">
+          <div>
+            <span class="text-xs text-slate-400">Operating System</span>
+            <div id="review-os" class="text-sm font-semibold text-white">—</div>
+          </div>
+          <div class="h-8 w-px bg-slate-800"></div>
+          <div>
+            <span class="text-xs text-slate-400">Cloud Provider</span>
+            <div id="review-provider" class="text-sm font-semibold text-white">—</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 2: Storage -->
+      <div class="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-xs font-bold uppercase text-slate-500 tracking-wider">Instance &amp; Storage</h3>
+          <button type="button" onclick="editStep(2)" class="text-[10px] text-cyan-400 hover:text-cyan-300">Edit</button>
+        </div>
+        <div class="grid grid-cols-3 gap-3 text-xs">
+          <div>
+            <span class="text-slate-400">Instance</span>
+            <div id="review-instance" class="font-mono text-slate-200 mt-0.5">—</div>
+          </div>
+          <div>
+            <span class="text-slate-400">Root Volume</span>
+            <div id="review-root-gb" class="font-mono text-slate-200 mt-0.5">—</div>
+          </div>
+          <div>
+            <span class="text-slate-400">Extra Partitions</span>
+            <div id="review-partitions" class="font-mono text-slate-200 mt-0.5">—</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 3: Users -->
+      <div class="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-xs font-bold uppercase text-slate-500 tracking-wider">User Accounts</h3>
+          <button type="button" onclick="editStep(3)" class="text-[10px] text-cyan-400 hover:text-cyan-300">Edit</button>
+        </div>
+        <div id="review-users" class="text-xs text-slate-400">—</div>
+      </div>
+
+      <!-- Step 4: Hardening -->
+      <div class="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-xs font-bold uppercase text-slate-500 tracking-wider">Hardening Configuration</h3>
+          <button type="button" onclick="editStep(4)" class="text-[10px] text-cyan-400 hover:text-cyan-300">Edit</button>
+        </div>
+        <div class="grid grid-cols-2 gap-3 text-xs">
+          <div>
+            <span class="text-slate-400">Standard / Tier</span>
+            <div id="review-tier" class="text-slate-200 font-mono mt-0.5">—</div>
+          </div>
+          <div>
+            <span class="text-slate-400">Extras</span>
+            <div id="review-extras" class="text-slate-200 mt-0.5">—</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Blueprint YAML preview -->
+    <div class="bg-slate-900/50 border border-slate-800 rounded-xl p-4 space-y-3 flex flex-col">
+      <div class="flex items-center justify-between">
+        <h3 class="text-xs font-bold uppercase text-slate-500 tracking-wider">Blueprint YAML Preview</h3>
+        <button type="button" onclick="downloadYaml()"
+                class="flex items-center gap-1.5 text-[10px] px-2 py-1 rounded border border-slate-700 hover:border-cyan-600 text-slate-400 hover:text-cyan-300 transition-all">
+          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+          </svg>
+          Download YAML
+        </button>
+      </div>
+      <div class="flex-1 overflow-auto">
+        <pre id="yaml-preview"
+             class="text-[11px] font-mono text-slate-400 bg-slate-950/60 rounded-lg p-3 h-80 overflow-auto whitespace-pre leading-relaxed">Generating...</pre>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Launch section -->
+  <div class="bg-gradient-to-r from-cyan-950/40 to-slate-900/60 border border-cyan-800/30 rounded-xl p-6 flex items-center justify-between">
+    <div>
+      <h2 class="text-base font-bold text-white">Ready to Build</h2>
+      <p class="text-xs text-slate-400 mt-0.5">A temporary build instance will be provisioned, hardened, scanned, and snapshotted. This typically takes 15–30 minutes.</p>
+    </div>
+    <div class="flex gap-3">
+      <button type="button"
+              onclick="goBackToStep4()"
+              class="flex items-center gap-2 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-sm rounded-xl transition-all border border-slate-700">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+        </svg>
+        Back
+      </button>
+      <button type="button"
+              onclick="launchBuild()"
+              id="launch-btn"
+              class="flex items-center gap-2 px-6 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-sm rounded-xl transition-all shadow-[0_0_20px_rgba(6,182,212,0.4)] hover:shadow-[0_0_30px_rgba(6,182,212,0.6)]">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+        </svg>
+        Launch Build
+      </button>
+    </div>
+  </div>
+
+  <!-- Hidden form for final submission -->
+  <form id="wizard-final-form" method="POST" action="/api/builder/start" style="display:none">
+    <div id="wizard-hidden-inputs"></div>
+  </form>
+
+</div>
+
+<script>
+(function init() {
+  setActiveStep(5);
+  populateReview();
+  generateYamlPreview();
+})();
+
+function populateReview() {
+  const s1 = WizardState.get(1);
+  const s2 = WizardState.get(2);
+  const s3 = WizardState.get(3);
+  const s4 = WizardState.get(4);
+
+  document.getElementById('review-os').textContent       = s1.osDisplay || s1.os || '—';
+  document.getElementById('review-provider').textContent = s1.providerDisplay || s1.provider || '—';
+  document.getElementById('review-instance').textContent = s2.instanceType || '—';
+  document.getElementById('review-root-gb').textContent  = s2.rootGb ? `${s2.rootGb} GB` : '—';
+  document.getElementById('review-partitions').textContent = (() => {
+    const parts = document.querySelectorAll('[data-part-row]').length;
+    return parts ? `${parts} extra` : 'Root only';
+  })();
+
+  const users = s3.users || [];
+  document.getElementById('review-users').innerHTML = users.length
+    ? users.map(u => `<span class="inline-flex items-center gap-1 mr-2"><svg class="w-3 h-3 text-cyan-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg><span class="text-slate-200">${u.name}</span><span class="text-slate-500">(${u.groups.join(',')||'no groups'})</span></span>`).join('')
+    : '<span class="text-slate-500">No extra users configured</span>';
+
+  const rootLocked = s3.rootLock !== false;
+  if (!users.length && rootLocked) {
+    document.getElementById('review-users').innerHTML +=
+      '<div class="mt-1.5 text-amber-400 text-[10px]">⚠ Root is locked but no admin user defined — you may lose access!</div>';
+  }
+
+  const std  = s4.standard || 'cis';
+  const tier = s4.tier || 'l1';
+  document.getElementById('review-tier').textContent = `${std.toUpperCase()} ${tier.toUpperCase()}`;
+  const extras = [s4.aide && 'AIDE', s4.fips && 'FIPS'].filter(Boolean);
+  document.getElementById('review-extras').textContent = extras.join(', ') || 'None';
+}
+
+function generateYamlPreview() {
+  const s1 = WizardState.get(1);
+  const s2 = WizardState.get(2);
+  const s3 = WizardState.get(3);
+  const s4 = WizardState.get(4);
+
+  const yaml = [
+    'statim_version: "0.3.0"',
+    'kind: HardeningBlueprint',
+    '',
+    'metadata:',
+    `  name: ${s1.os || 'unnamed'}-${s4.standard || 'cis'}-${s4.tier || 'l1'}-${s1.provider || 'aws'}-wizard`,
+    '  version: "1.0.0"',
+    `  description: "Wizard-generated blueprint: ${s1.osDisplay || s1.os} on ${s1.providerDisplay || s1.provider}"`,
+    '  author: wizard',
+    `  tags: [${s1.os}, ${s4.standard}-${s4.tier}, ${s1.provider}]`,
+    '',
+    'target:',
+    `  os: ${s1.os || ''}`,
+    `  provider: ${s1.provider || ''}`,
+    `  base_image: ${s2.baseImage || '# auto-resolved from catalog'}`,
+    `  instance_type: ${s2.instanceType || ''}`,
+    `  root_volume_size_gb: ${s2.rootGb || 20}`,
+    '',
+    'compliance:',
+    `  benchmark: # resolved at build time for ${s1.os}`,
+    `  profile:   ${s4.standard || 'cis'}_${s4.tier === 'l2' ? 'level2' : s4.tier === 'stig' ? 'stig' : 'level1'}_server`,
+    `  datastream: # resolved at build time`,
+    `  aide: ${s4.aide ? 'true' : 'false'}`,
+    `  fips: ${s4.fips ? 'true' : 'false'}`,
+    '',
+    'hardening:',
+    `  strategy: ansible-galaxy`,
+    `  role: auto`,
+    `  profile_tier: ${s4.standard || 'cis'}-${s4.tier || 'l1'}`,
+    '',
+    'system:',
+    '  hostname: hardened-node',
+    '  timezone: UTC',
+    '  locale: en_US.UTF-8',
+    '',
+    '# filesystem, users, controls: configured in wizard',
+  ].join('\n');
+
+  document.getElementById('yaml-preview').textContent = yaml;
+}
+
+function downloadYaml() {
+  const yaml = document.getElementById('yaml-preview').textContent;
+  const s1 = WizardState.get(1);
+  const s4 = WizardState.get(4);
+  const name = `${s1.os || 'blueprint'}-${s4.standard || 'cis'}-${s4.tier || 'l1'}-${s1.provider || 'aws'}.yaml`;
+  const blob = new Blob([yaml], { type: 'text/yaml' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  a.click();
+}
+
+function editStep(n) {
+  if (n === 1) { location.reload(); return; }
+  const s1 = WizardState.get(1);
+  const s2 = WizardState.get(2);
+  const urls = {
+    2: `/builder/wizard/step2?os=${s1.os||''}&provider=${s1.provider||''}&min_root_gb=${s2.rootGb||20}`,
+    3: '/builder/wizard/step3',
+    4: `/builder/wizard/step4?os=${s1.os||''}&supported_tiers=${(s1.supportedTiers||['cis-l1']).join(',')}`,
+  };
+  fetch(urls[n]).then(r => r.text()).then(html => {
+    loadStep(html);
+    setActiveStep(n);
+  });
+}
+
+function goBackToStep4() {
+  const s1 = WizardState.get(1);
+  const tiers = (s1.supportedTiers || ['cis-l1']).join(',');
+  fetch(`/builder/wizard/step4?os=${encodeURIComponent(s1.os||'')}&supported_tiers=${encodeURIComponent(tiers)}`)
+    .then(r => r.text())
+    .then(html => {
+      loadStep(html);
+      setActiveStep(4);
+    });
+}
+
+function launchBuild() {
+  const btn = document.getElementById('launch-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> Launching...';
+
+  const form  = document.getElementById('wizard-final-form');
+  const container = document.getElementById('wizard-hidden-inputs');
+  container.innerHTML = '';
+
+  function addHidden(name, value) {
+    const input = document.createElement('input');
+    input.type  = 'hidden';
+    input.name  = name;
+    input.value = value;
+    container.appendChild(input);
+  }
+
+  const s1 = WizardState.get(1);
+  const s2 = WizardState.get(2);
+  const s3 = WizardState.get(3);
+  const s4 = WizardState.get(4);
+
+  /* Step 1 */
+  addHidden('wizard_os',       s1.os       || '');
+  addHidden('wizard_provider', s1.provider || '');
+
+  /* Step 2 */
+  addHidden('wizard_instance_type',  s2.instanceType || '');
+  addHidden('wizard_base_image',     s2.baseImage    || '');
+  addHidden('root_volume_size_gb',   s2.rootGb || 20);
+  if (s2.useLVM) addHidden('use_lvm', 'on');
+
+  /* Copy partition fields from DOM — they may have been filled via CIS layout */
+  document.querySelectorAll('[name^="extra_vol_"]').forEach(inp => {
+    addHidden(inp.name, inp.value);
+  });
+
+  /* Step 3: users */
+  addHidden('root_lock', (s3.rootLock !== false) ? 'on' : '');
+  (s3.users || []).forEach((u, i) => {
+    addHidden(`user_${i}_name`,    u.name   || '');
+    addHidden(`user_${i}_shell`,   u.shell  || '/bin/bash');
+    addHidden(`user_${i}_groups`,  (u.groups || []).join(','));
+    addHidden(`user_${i}_ssh_key`, u.sshKey || '');
+  });
+
+  /* Step 4: hardening */
+  addHidden('hardening_standard', s4.standard || 'cis');
+  addHidden('hardening_tier',     s4.tier     || 'l1');
+  if (s4.aide) addHidden('aide_enabled', 'on');
+  if (s4.fips) addHidden('fips_enabled', 'on');
+
+  /* Control toggles from DOM */
+  document.querySelectorAll('.control-toggle').forEach(cb => {
+    if (cb.checked) addHidden(cb.name, 'on');
+    const justInput = document.querySelector(`[name="${cb.name}_justification"]`);
+    if (justInput && justInput.value.trim()) addHidden(justInput.name, justInput.value.trim());
+  });
+
+  /* Submit and follow HTMX-style redirect */
+  fetch('/api/builder/start', {
+    method: 'POST',
+    body: new FormData(form),
+  }).then(resp => {
+    const redirect = resp.headers.get('HX-Redirect') || resp.headers.get('Location');
+    if (redirect) {
+      WizardState.clear();
+      window.location.href = redirect;
+    } else {
+      btn.disabled = false;
+      btn.innerHTML = '⚠ Build start failed. Check logs.';
+    }
+  }).catch(() => {
+    btn.disabled = false;
+    btn.innerHTML = '⚠ Network error. Try again.';
+  });
+}
+</script>

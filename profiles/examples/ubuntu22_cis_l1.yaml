@@ -1,11 +1,11 @@
-# Invicton ComplianceProfile — Ubuntu 22.04 CIS Level 1 Server
+# Statim ComplianceProfile — Ubuntu 22.04 CIS Level 1 Server
 #
-# This file is the primary unit of configuration in Invicton.
-# Pass it to `invicton build` or select it in the UI.
+# This file is the primary unit of configuration in Statim.
+# Pass it to `statim build` or select it in the UI.
 #
-# Schema: ComplianceProfile (invicton.core.blueprint)
+# Schema: ComplianceProfile (statim.core.blueprint)
 
-invicton_version: "0.5.0"
+statim_version: "0.5.0"
 kind: ComplianceProfile
 
 metadata:

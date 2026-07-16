@@ -1,4 +1,4 @@
-# Invicton HardeningBlueprint — Ubuntu 22.04 LTS CIS Level 1 Server (Proxmox VE)
+# Statim HardeningBlueprint — Ubuntu 22.04 LTS CIS Level 1 Server (Proxmox VE)
 #
 # For Proxmox, base_image is the VMID of a base VM template.
 # Create a base template before using this blueprint:
@@ -7,7 +7,7 @@
 #   3. Convert to template: qm template 9000
 #   4. Set base_image to that VMID
 
-invicton_version: "0.5.0"
+statim_version: "0.5.0"
 kind: HardeningBlueprint
 
 metadata:
@@ -64,8 +64,8 @@ users:
     lock: true
 
   accounts:
-    - name: invicton-admin
-      comment: "Invicton-managed admin account"
+    - name: statim-admin
+      comment: "Statim-managed admin account"
       groups:
         - sudo
       shell: /bin/bash

@@ -177,7 +177,7 @@ def test_test_webhook_fires_and_returns_200(client):
     )
     hook_id = create_resp.json()["id"]
 
-    with patch("invicton.api.webhooks.fire_webhook", new=AsyncMock(return_value=None)):
+    with patch("statim.api.webhooks.fire_webhook", new=AsyncMock(return_value=None)):
         resp = client.post(f"/api/webhooks/{hook_id}/test")
 
     assert resp.status_code == 200
@@ -192,7 +192,7 @@ def test_test_webhook_fires_and_returns_200(client):
 
 
 def test_test_nonexistent_webhook_returns_404(client):
-    with patch("invicton.api.webhooks.fire_webhook", new=AsyncMock(return_value=None)):
+    with patch("statim.api.webhooks.fire_webhook", new=AsyncMock(return_value=None)):
         resp = client.post("/api/webhooks/does-not-exist/test")
     assert resp.status_code == 404
 

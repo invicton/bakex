@@ -10,7 +10,7 @@ jobs:
     name: Trigger official blueprint builds
     runs-on: ubuntu-latest
     env:
-      INVICTON_API_URL: ${{ vars.INVICTON_API_URL }}
+      STATIM_API_URL: ${{ vars.STATIM_API_URL }}
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7
       - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86  # v5
@@ -21,7 +21,7 @@ jobs:
         id: trigger
         run: uv run python scripts/trigger_official_builds.py
         env:
-          INVICTON_API_URL: ${{ env.INVICTON_API_URL }}
+          STATIM_API_URL: ${{ env.STATIM_API_URL }}
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: ${{ vars.AWS_DEFAULT_REGION || 'us-east-1' }}
@@ -32,7 +32,7 @@ jobs:
         with:
           payload: |
             {
-              "text": ":warning: *Invicton Weekly Image Refresh failed*",
+              "text": ":warning: *Statim Weekly Image Refresh failed*",
               "blocks": [
                 {
                   "type": "section",

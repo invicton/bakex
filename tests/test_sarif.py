@@ -6,8 +6,8 @@ from __future__ import annotations
 
 import pytest
 
-from invicton.api.auditor import _to_sarif
-from invicton.core.auditor import AuditJob, AuditStatus
+from statim.api.auditor import _to_sarif
+from statim.core.auditor import AuditJob, AuditStatus
 
 # ---------------------------------------------------------------------------
 # Helpers

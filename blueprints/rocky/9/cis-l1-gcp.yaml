@@ -1,11 +1,11 @@
-# Invicton HardeningBlueprint — Rocky Linux 9 CIS Level 1 Server (GCP)
+# Statim HardeningBlueprint — Rocky Linux 9 CIS Level 1 Server (GCP)
 #
 # Download, set your project_id in credentials, and run:
-#   invicton build rocky9-cis-l1-gcp
+#   statim build rocky9-cis-l1-gcp
 #
 # Produces an identical hardened GCP custom image every time.
 
-invicton_version: "0.5.0"
+statim_version: "0.5.0"
 kind: HardeningBlueprint
 
 metadata:
@@ -55,8 +55,8 @@ users:
     lock: true
 
   accounts:
-    - name: invicton-admin
-      comment: "Invicton-managed admin account"
+    - name: statim-admin
+      comment: "Statim-managed admin account"
       groups:
         - wheel                   # RHEL family uses 'wheel' for sudo
       shell: /bin/bash

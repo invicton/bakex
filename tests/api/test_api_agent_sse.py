@@ -17,14 +17,14 @@ from unittest.mock import patch
 
 import pytest
 
-from invicton.core.agent import AgentResult
+from statim.core.agent import AgentResult
 
 # ---------------------------------------------------------------------------
 # Shared YAML fixture
 # ---------------------------------------------------------------------------
 
 _VALID_YAML = """\
-invicton_version: "0.1.0"
+statim_version: "0.1.0"
 kind: ComplianceProfile
 metadata:
   name: sse-test-profile
@@ -61,7 +61,7 @@ def _parse_sse_events(body: bytes) -> list[dict]:
 
 def test_agent_build_provider_unavailable_returns_400(client):
     """When the LLM provider has no credentials, endpoint returns 400."""
-    with patch("invicton.api.agent.provider_status", return_value={"available": False, "message": "No API key"}):
+    with patch("statim.api.agent.provider_status", return_value={"available": False, "message": "No API key"}):
         resp = client.post("/api/agent/build", json={"blueprint_yaml": _VALID_YAML, "provider": "aws"})
     assert resp.status_code == 400
     assert "No API key" in resp.json()["detail"]
@@ -69,7 +69,7 @@ def test_agent_build_provider_unavailable_returns_400(client):
 
 def test_agent_build_empty_yaml_returns_400(client):
     """Empty blueprint_yaml returns 400 immediately."""
-    with patch("invicton.api.agent.provider_status", return_value={"available": True, "message": "ok"}):
+    with patch("statim.api.agent.provider_status", return_value={"available": True, "message": "ok"}):
         resp = client.post("/api/agent/build", json={"blueprint_yaml": "   ", "provider": "aws"})
     assert resp.status_code == 400
     assert "blueprint_yaml is required" in resp.json()["detail"]
@@ -95,8 +95,8 @@ async def test_agent_build_sse_streams_narration_and_result(client):
         await on_token("Done.")
         return mock_result
 
-    with patch("invicton.api.agent.provider_status", return_value={"available": True, "message": "ok"}):
-        with patch("invicton.api.agent.run_build_agent", side_effect=fake_run_build_agent):
+    with patch("statim.api.agent.provider_status", return_value={"available": True, "message": "ok"}):
+        with patch("statim.api.agent.run_build_agent", side_effect=fake_run_build_agent):
             resp = client.post(
                 "/api/agent/build",
                 json={"blueprint_yaml": _VALID_YAML, "provider": "aws"},
@@ -126,8 +126,8 @@ async def test_agent_build_sse_streams_error_on_exception(client):
     async def failing_agent(blueprint_yaml, provider, on_token):
         raise RuntimeError("LLM quota exceeded")
 
-    with patch("invicton.api.agent.provider_status", return_value={"available": True, "message": "ok"}):
-        with patch("invicton.api.agent.run_build_agent", side_effect=failing_agent):
+    with patch("statim.api.agent.provider_status", return_value={"available": True, "message": "ok"}):
+        with patch("statim.api.agent.run_build_agent", side_effect=failing_agent):
             resp = client.post(
                 "/api/agent/build",
                 json={"blueprint_yaml": _VALID_YAML, "provider": "aws"},
@@ -143,7 +143,7 @@ async def test_agent_build_sse_streams_error_on_exception(client):
 def test_agent_status_returns_provider_info(client):
     """GET /api/agent/status returns provider_status dict."""
     with patch(
-        "invicton.api.agent.provider_status", return_value={"available": True, "provider": "anthropic", "message": "ok"}
+        "statim.api.agent.provider_status", return_value={"available": True, "provider": "anthropic", "message": "ok"}
     ):
         resp = client.get("/api/agent/status")
     assert resp.status_code == 200

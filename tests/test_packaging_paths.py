@@ -2,7 +2,7 @@
 # Copyright 2026 Vamshi Krishna Santhapuri
 """Packaging-path tests — the app must work from any CWD (pip install, not just repo checkout).
 
-PKG-01  invicton.paths constants are package-anchored and exist
+PKG-01  statim.paths constants are package-anchored and exist
 PKG-02  UI + template endpoints render with CWD outside the repo (subprocess)
 PKG-03  Settings falls back to bundled profiles/ and plugins/catalog when
         the CWD-relative defaults are missing
@@ -24,7 +24,7 @@ import pytest
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
 _VALID_YAML = """\
-invicton_version: "0.1.0"
+statim_version: "0.1.0"
 kind: ComplianceProfile
 metadata:
   name: test-nested-cache
@@ -47,10 +47,10 @@ controls: {}
 
 
 def test_paths_module_is_package_anchored():
-    import invicton
-    from invicton.paths import PACKAGE_DIR, STATIC_DIR, TEMPLATES_DIR
+    import statim
+    from statim.paths import PACKAGE_DIR, STATIC_DIR, TEMPLATES_DIR
 
-    pkg_root = Path(invicton.__file__).resolve().parent
+    pkg_root = Path(statim.__file__).resolve().parent
     assert PACKAGE_DIR == pkg_root
     for d in (TEMPLATES_DIR, STATIC_DIR):
         assert d.is_absolute()
@@ -59,11 +59,11 @@ def test_paths_module_is_package_anchored():
 
 
 def test_no_cwd_relative_template_or_static_literals():
-    """No module may hardcode the CWD-relative 'invicton/templates' / 'invicton/static' strings."""
+    """No module may hardcode the CWD-relative 'statim/templates' / 'statim/static' strings."""
     offenders = []
-    for py in (REPO_ROOT / "invicton").rglob("*.py"):
+    for py in (REPO_ROOT / "statim").rglob("*.py"):
         text = py.read_text()
-        if '"invicton/templates' in text or '"invicton/static' in text:
+        if '"statim/templates' in text or '"statim/static' in text:
             offenders.append(str(py.relative_to(REPO_ROOT)))
     assert offenders == []
 
@@ -84,7 +84,7 @@ def test_ui_renders_from_foreign_cwd(tmp_path):
             """
             from fastapi.testclient import TestClient
 
-            from invicton.main import app
+            from statim.main import app
 
             with TestClient(app) as client:
                 auth = ("admin", "probe-token")
@@ -105,7 +105,7 @@ def test_ui_renders_from_foreign_cwd(tmp_path):
         text=True,
         env={
             "PYTHONPATH": str(REPO_ROOT),
-            "INVICTON_ADMIN_TOKEN": "probe-token",
+            "STATIM_ADMIN_TOKEN": "probe-token",
             "PATH": "/usr/bin:/bin",
         },
         timeout=120,
@@ -128,8 +128,8 @@ def _make_bundled(tmp_path: Path) -> Path:
 
 
 def test_settings_fall_back_to_bundled_dirs(tmp_path, monkeypatch):
-    from invicton import paths
-    from invicton.config import Settings
+    from statim import paths
+    from statim.config import Settings
 
     bundled = _make_bundled(tmp_path)
     monkeypatch.setattr(paths, "BUNDLED_DIR", bundled)
@@ -141,8 +141,8 @@ def test_settings_fall_back_to_bundled_dirs(tmp_path, monkeypatch):
 
 
 def test_settings_prefer_cwd_dirs_when_present(tmp_path, monkeypatch):
-    from invicton import paths
-    from invicton.config import Settings
+    from statim import paths
+    from statim.config import Settings
 
     bundled = _make_bundled(tmp_path)
     monkeypatch.setattr(paths, "BUNDLED_DIR", bundled)
@@ -156,8 +156,8 @@ def test_settings_prefer_cwd_dirs_when_present(tmp_path, monkeypatch):
 
 
 def test_settings_never_override_explicit_dirs(tmp_path, monkeypatch):
-    from invicton import paths
-    from invicton.config import Settings
+    from statim import paths
+    from statim.config import Settings
 
     bundled = _make_bundled(tmp_path)
     monkeypatch.setattr(paths, "BUNDLED_DIR", bundled)
@@ -174,11 +174,11 @@ def test_settings_never_override_explicit_dirs(tmp_path, monkeypatch):
 # ---------------------------------------------------------------------------
 
 
-def test_registry_url_default_points_at_invicton_blueprints():
-    from invicton.config import Settings
+def test_registry_url_default_points_at_statim_blueprints():
+    from statim.config import Settings
 
     s = Settings(_env_file=None)
-    assert s.registry_url == "https://raw.githubusercontent.com/invicton/Invicton/main/blueprints"
+    assert s.registry_url == "https://raw.githubusercontent.com/statim/Statim/main/blueprints"
 
 
 # ---------------------------------------------------------------------------
@@ -188,7 +188,7 @@ def test_registry_url_default_points_at_invicton_blueprints():
 
 @pytest.mark.anyio
 async def test_sync_github_caches_nested_filename(tmp_path):
-    from invicton.core.registry import ProfileRegistry, RegistrySource
+    from statim.core.registry import ProfileRegistry, RegistrySource
 
     reg = ProfileRegistry(local_cache_dir=tmp_path)
     source = RegistrySource("github", "https://raw.example.com/registry", "Community")

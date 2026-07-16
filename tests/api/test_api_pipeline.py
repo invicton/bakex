@@ -6,8 +6,8 @@ from __future__ import annotations
 
 from unittest.mock import AsyncMock, patch
 
-from invicton.core import auditor as audit_mod
-from invicton.core.auditor import AuditJob, AuditStatus
+from statim.core import auditor as audit_mod
+from statim.core.auditor import AuditJob, AuditStatus
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -309,8 +309,8 @@ def test_pipeline_build_unknown_profile_returns_404(client, api_key):
 
 
 def test_pipeline_build_wait_true_returns_complete(client, api_key):
-    from invicton.core.builder import BuildJob, BuildStatus
-    from invicton.plugins.base_provider import ProviderResult
+    from statim.core.builder import BuildJob, BuildStatus
+    from statim.plugins.base_provider import ProviderResult
 
     async def _fake_run(profile, output_dir, job=None):
         if job is None:
@@ -320,12 +320,12 @@ def test_pipeline_build_wait_true_returns_complete(client, api_key):
             )
         job.status = BuildStatus.COMPLETE
         job.result = ProviderResult(artifact_id="ami-ci-test-001", artifact_type="ami")
-        from invicton.core import builder as bs
+        from statim.core import builder as bs
 
         bs._jobs[job.id] = job
         return job
 
-    with patch("invicton.api.pipeline.build_service.run_build", side_effect=_fake_run):
+    with patch("statim.api.pipeline.build_service.run_build", side_effect=_fake_run):
         resp = client.post(
             "/api/pipeline/build",
             json={"profile_name": "test-ubuntu22-cis", "wait": True},
@@ -341,20 +341,20 @@ def test_pipeline_build_wait_true_returns_complete(client, api_key):
 
 # ---------------------------------------------------------------------------
 # PL-BUILD-04b: POST /api/pipeline/build with a `region` override must not
-# raise (TargetSpec has no `region` field — see invicton/api/pipeline.py).
+# raise (TargetSpec has no `region` field — see statim/api/pipeline.py).
 # ---------------------------------------------------------------------------
 
 
 def test_pipeline_build_with_region_does_not_raise(client, api_key):
-    from invicton.core.builder import BuildStatus
-    from invicton.plugins.base_provider import ProviderResult
+    from statim.core.builder import BuildStatus
+    from statim.plugins.base_provider import ProviderResult
 
     async def _fake_run(profile, output_dir, job=None):
         job.status = BuildStatus.COMPLETE
         job.result = ProviderResult(artifact_id="ami-region-test", artifact_type="ami")
         return job
 
-    with patch("invicton.api.pipeline.build_service.run_build", side_effect=_fake_run):
+    with patch("statim.api.pipeline.build_service.run_build", side_effect=_fake_run):
         resp = client.post(
             "/api/pipeline/build",
             json={"profile_name": "test-ubuntu22-cis", "region": "eu-west-1", "wait": True},
@@ -376,8 +376,8 @@ def test_pipeline_build_wait_false_returns_pending(client, api_key):
         return object()
 
     with (
-        patch("invicton.api.pipeline.build_service.run_build", new_callable=AsyncMock),
-        patch("invicton.api.pipeline.asyncio.create_task", side_effect=close_scheduled),
+        patch("statim.api.pipeline.build_service.run_build", new_callable=AsyncMock),
+        patch("statim.api.pipeline.asyncio.create_task", side_effect=close_scheduled),
     ):
         resp = client.post(
             "/api/pipeline/build",
@@ -420,9 +420,9 @@ def test_get_pipeline_build_job_not_found(client, api_key):
 
 
 def test_get_pipeline_build_job_returns_status(client, api_key):
-    from invicton.core import builder as bs
-    from invicton.core.builder import BuildJob, BuildStatus
-    from invicton.plugins.base_provider import ProviderResult
+    from statim.core import builder as bs
+    from statim.core.builder import BuildJob, BuildStatus
+    from statim.plugins.base_provider import ProviderResult
 
     job = BuildJob(profile_name="test-ubuntu22-cis", provider_name="aws")
     job.status = BuildStatus.COMPLETE
@@ -445,7 +445,7 @@ def test_get_pipeline_build_job_returns_status(client, api_key):
 # ---------------------------------------------------------------------------
 
 _INLINE_BLUEPRINT_YAML = """\
-invicton_version: "0.1.0"
+statim_version: "0.1.0"
 kind: ComplianceProfile
 metadata:
   name: inline-ci-profile
@@ -463,19 +463,19 @@ compliance:
 
 
 def test_pipeline_build_inline_yaml_returns_200(client, api_key):
-    from invicton.core.builder import BuildJob, BuildStatus
-    from invicton.plugins.base_provider import ProviderResult
+    from statim.core.builder import BuildJob, BuildStatus
+    from statim.plugins.base_provider import ProviderResult
 
     async def _fake_run(profile, output_dir, job=None):
         if job is None:
-            from invicton.core import builder as bs
+            from statim.core import builder as bs
 
             job = BuildJob(profile_name=profile.metadata.name, provider_name=profile.target.provider)
             bs._jobs[job.id] = job
         job.status = BuildStatus.COMPLETE
         job.result = ProviderResult(artifact_id="ami-inline-001", artifact_type="ami")
 
-    with patch("invicton.api.pipeline.build_service.run_build", side_effect=_fake_run):
+    with patch("statim.api.pipeline.build_service.run_build", side_effect=_fake_run):
         resp = client.post(
             "/api/pipeline/build",
             json={"blueprint_yaml": _INLINE_BLUEPRINT_YAML, "wait": True},
@@ -489,19 +489,19 @@ def test_pipeline_build_inline_yaml_returns_200(client, api_key):
 
 
 def test_pipeline_build_inline_yaml_takes_precedence_over_profile_name(client, api_key):
-    from invicton.core.builder import BuildJob, BuildStatus
-    from invicton.plugins.base_provider import ProviderResult
+    from statim.core.builder import BuildJob, BuildStatus
+    from statim.plugins.base_provider import ProviderResult
 
     async def _fake_run(profile, output_dir, job=None):
         if job is None:
-            from invicton.core import builder as bs
+            from statim.core import builder as bs
 
             job = BuildJob(profile_name=profile.metadata.name, provider_name=profile.target.provider)
             bs._jobs[job.id] = job
         job.status = BuildStatus.COMPLETE
         job.result = ProviderResult(artifact_id="ami-inline-002", artifact_type="ami")
 
-    with patch("invicton.api.pipeline.build_service.run_build", side_effect=_fake_run):
+    with patch("statim.api.pipeline.build_service.run_build", side_effect=_fake_run):
         resp = client.post(
             "/api/pipeline/build",
             json={

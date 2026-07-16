@@ -30,11 +30,11 @@ _KVM_PATH = Path(__file__).parent.parent / "plugins" / "providers" / "kvm.py"
 @pytest.fixture
 def raw_client(monkeypatch):
     """TestClient that surfaces 500 responses instead of re-raising, with admin auth."""
-    from invicton.config import settings
-    from invicton.main import app
+    from statim.config import settings
+    from statim.main import app
 
-    monkeypatch.setattr(settings, "invicton_admin_token", _TEST_ADMIN_TOKEN)
-    with patch("invicton.main.init_registry"):
+    monkeypatch.setattr(settings, "statim_admin_token", _TEST_ADMIN_TOKEN)
+    with patch("statim.main.init_registry"):
         with TestClient(app, raise_server_exceptions=False) as c:
             c.headers.update(_AUTH_HEADER)
             yield c
@@ -46,7 +46,7 @@ def raw_client(monkeypatch):
 
 
 def test_sysdeps_check_reports_missing_binary(monkeypatch):
-    from invicton.core import sysdeps
+    from statim.core import sysdeps
 
     monkeypatch.setattr(sysdeps.shutil, "which", lambda name: None)
     report = sysdeps.check_system_deps()
@@ -57,7 +57,7 @@ def test_sysdeps_check_reports_missing_binary(monkeypatch):
 
 
 def test_health_deep_reports_missing_binaries(raw_client, monkeypatch):
-    from invicton.core import sysdeps
+    from statim.core import sysdeps
 
     monkeypatch.setattr(sysdeps.shutil, "which", lambda name: None)
     resp = raw_client.get("/health", params={"deep": "1"})
@@ -93,7 +93,7 @@ def test_system_deps_endpoint_schema(raw_client):
 
 
 def test_prehard_ansible_missing_binary_is_actionable(monkeypatch):
-    from invicton.core import builder
+    from statim.core import builder
 
     monkeypatch.setattr(builder.shutil, "which", lambda name: None)
     with pytest.raises(RuntimeError) as exc_info:
@@ -126,7 +126,7 @@ def test_kvm_execute_build_preflights_binaries():
 
 
 def test_job_status_partial_renders_error_panel(raw_client):
-    from invicton.core import builder
+    from statim.core import builder
 
     job = builder.BuildJob(profile_name="p", provider_name="kvm")
     job.status = builder.BuildStatus.FAILED
@@ -147,7 +147,7 @@ def test_job_status_partial_renders_error_panel(raw_client):
 
 
 def test_unhandled_exception_returns_structured_500(raw_client, monkeypatch):
-    import invicton.api.ui as ui_mod
+    import statim.api.ui as ui_mod
 
     def _boom():
         raise RuntimeError("synthetic unhandled failure")
@@ -166,8 +166,8 @@ def test_unhandled_exception_returns_structured_500(raw_client, monkeypatch):
 
 
 def test_upload_internal_error_is_not_422(raw_client, monkeypatch, tmp_path):
-    from invicton.config import settings
-    from invicton.core.blueprint import ComplianceProfile
+    from statim.config import settings
+    from statim.core.blueprint import ComplianceProfile
 
     monkeypatch.setattr(settings, "user_profiles_dir", tmp_path)
 
@@ -177,7 +177,7 @@ def test_upload_internal_error_is_not_422(raw_client, monkeypatch, tmp_path):
     monkeypatch.setattr(ComplianceProfile, "model_validate", classmethod(_internal_boom))
     resp = raw_client.post(
         "/api/blueprints/upload",
-        files={"file": ("bp.yaml", b"invicton_version: '0.1.0'\nkind: ComplianceProfile\n", "text/yaml")},
+        files={"file": ("bp.yaml", b"statim_version: '0.1.0'\nkind: ComplianceProfile\n", "text/yaml")},
     )
     assert resp.status_code == 500, f"expected 500, got {resp.status_code}: {resp.text[:200]}"
     assert "database exploded" not in resp.text

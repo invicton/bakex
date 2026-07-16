@@ -1,48 +1,48 @@
 ---
-# Invicton Pluggable Hardening Entrypoint
+# Statim Pluggable Hardening Entrypoint
 #
-# This playbook is executed by the Invicton engine during image builds
+# This playbook is executed by the Statim engine during image builds
 # when using the 'ansible-galaxy' hardening strategy.
 
-- name: Apply Invicton Compliance Hardening
+- name: Apply Statim Compliance Hardening
   hosts: all
   become: true
   gather_facts: true
 
   vars:
     # Set explicitly by catalog plugins, or defaults to "auto"
-    invicton_lockdown_role: "auto"
-    invicton_target_os: "ubuntu22"
+    statim_lockdown_role: "auto"
+    statim_target_os: "ubuntu22"
 
   pre_tasks:
     - name: Determine ansible-lockdown role from OS
       ansible.builtin.set_fact:
         _auto_role: >-
-          {%- if invicton_target_os is search('ubuntu22') -%}
+          {%- if statim_target_os is search('ubuntu22') -%}
             UBUNTU22-CIS
-          {%- elif invicton_target_os is search('ubuntu24') -%}
+          {%- elif statim_target_os is search('ubuntu24') -%}
             UBUNTU24-CIS
-          {%- elif invicton_target_os is search('rhel9|rocky9|alma9') -%}
+          {%- elif statim_target_os is search('rhel9|rocky9|alma9') -%}
             RHEL9-CIS
-          {%- elif invicton_target_os is search('debian12') -%}
+          {%- elif statim_target_os is search('debian12') -%}
             DEBIAN12-CIS
-          {%- elif invicton_target_os is search('amazon2023') -%}
+          {%- elif statim_target_os is search('amazon2023') -%}
             AMAZON2023-CIS
           {%- else -%}
             UBUNTU22-CIS
           {%- endif -%}
-      when: invicton_lockdown_role == 'auto'
+      when: statim_lockdown_role == 'auto'
 
     - name: Set final role
       ansible.builtin.set_fact:
         final_role: >-
-          {{ ("ansible-lockdown." + _auto_role | trim) if invicton_lockdown_role == "auto" else invicton_lockdown_role }}
+          {{ ("ansible-lockdown." + _auto_role | trim) if statim_lockdown_role == "auto" else statim_lockdown_role }}
 
     - name: Show selected role
       ansible.builtin.debug:
         msg: "Applying hardening role: {{ final_role | trim }}"
 
-    - name: Install required role locally on Invicton Host
+    - name: Install required role locally on Statim Host
       ansible.builtin.command:
         cmd: "ansible-galaxy install {{ final_role | trim }} --force"
       delegate_to: localhost

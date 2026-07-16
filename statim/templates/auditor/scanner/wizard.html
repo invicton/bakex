@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block title %}Compliance Scanner — Statim{% endblock %}
+
+{% block content %}
+<div class="flex flex-col h-full">
+
+  <!-- Page header -->
+  <div class="px-8 pt-6 pb-4 border-b border-slate-800/60">
+    <h1 class="text-xl font-bold text-white">Compliance Scanner</h1>
+    <p class="text-sm text-slate-400 mt-0.5">Scan a running VM or cloud image against CIS/STIG benchmarks. Get a grade, severity breakdown, and exportable report.</p>
+  </div>
+
+  <!-- Progress bar -->
+  <div class="px-8 py-4 border-b border-slate-800/40">
+    <div class="flex items-center gap-0 max-w-lg">
+      {% set steps = [
+        (1, 'Target'),
+        (2, 'Benchmark'),
+        (3, 'Launch'),
+      ] %}
+      {% for num, label in steps %}
+      <div class="flex items-center {% if not loop.last %}flex-1{% endif %}">
+        <div id="scan-step-indicator-{{ num }}"
+             class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-all
+             {% if loop.first %}border-cyan-500 bg-cyan-950/40 text-cyan-300{% else %}border-slate-700 bg-slate-900 text-slate-600{% endif %}">
+          {{ num }}
+        </div>
+        <span id="scan-step-label-{{ num }}"
+              class="ml-1.5 text-xs font-medium transition-all
+              {% if loop.first %}text-cyan-300{% else %}text-slate-600{% endif %}">
+          {{ label }}
+        </span>
+        {% if not loop.last %}
+        <div id="scan-step-line-{{ num }}" class="flex-1 h-0.5 mx-3 rounded transition-all {% if loop.first %}bg-slate-700{% else %}bg-slate-800{% endif %}"></div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Step container -->
+  <div class="flex-1 overflow-y-auto px-8 py-6">
+    <div id="scan-wizard-step-container"
+         hx-get="/auditor/scanner/step1"
+         hx-trigger="load"
+         hx-target="#scan-wizard-step-container"
+         hx-swap="innerHTML">
+      <div class="text-center py-16 text-slate-500 text-sm animate-pulse">Loading…</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── ScanWizardState ─────────────────────────────────────────────────────────
+const ScanWizardState = {
+  _key: 'statim_scan_wizard_v1',
+  _data: {},
+  init() {
+    try { this._data = JSON.parse(localStorage.getItem(this._key) || '{}'); } catch { this._data = {}; }
+  },
+  get(step) { return this._data[step] || {}; },
+  save(step, obj) {
+    this._data[step] = { ...(this._data[step] || {}), ...obj };
+    try { localStorage.setItem(this._key, JSON.stringify(this._data)); } catch {}
+  },
+  clear() { this._data = {}; try { localStorage.removeItem(this._key); } catch {} },
+};
+ScanWizardState.init();
+
+// Expose catalog for step JS
+window.OS_CATALOG      = {{ os_catalog | tojson }};
+window.PROVIDER_CATALOG = {{ provider_catalog | tojson }};
+window.INSTANCE_TYPES   = {{ instance_types | tojson }};
+
+// ── Step management ─────────────────────────────────────────────────────────
+function setScanActiveStep(n) {
+  for (let i = 1; i <= 3; i++) {
+    const ind = document.getElementById(`scan-step-indicator-${i}`);
+    const lbl = document.getElementById(`scan-step-label-${i}`);
+    const line = document.getElementById(`scan-step-line-${i}`);
+    if (!ind) continue;
+    if (i < n) {
+      ind.className = 'w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-all border-emerald-600 bg-emerald-950/40 text-emerald-400';
+      ind.innerHTML = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>';
+      if (lbl) lbl.className = 'ml-1.5 text-xs font-medium transition-all text-emerald-500';
+      if (line) line.className = 'flex-1 h-0.5 mx-3 rounded transition-all bg-emerald-800/60';
+    } else if (i === n) {
+      ind.className = 'w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-all border-cyan-500 bg-cyan-950/40 text-cyan-300';
+      ind.textContent = i;
+      if (lbl) lbl.className = 'ml-1.5 text-xs font-medium transition-all text-cyan-300';
+      if (line) line.className = 'flex-1 h-0.5 mx-3 rounded transition-all bg-slate-700';
+    } else {
+      ind.className = 'w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-all border-slate-700 bg-slate-900 text-slate-600';
+      ind.textContent = i;
+      if (lbl) lbl.className = 'ml-1.5 text-xs font-medium transition-all text-slate-600';
+      if (line) line.className = 'flex-1 h-0.5 mx-3 rounded transition-all bg-slate-800';
+    }
+  }
+}
+
+function loadScanStep(html) {
+  const c = document.getElementById('scan-wizard-step-container');
+  c.innerHTML = html;
+  c.querySelectorAll('script').forEach(old => {
+    const fresh = document.createElement('script');
+    [...old.attributes].forEach(a => fresh.setAttribute(a.name, a.value));
+    fresh.textContent = old.textContent;
+    old.parentNode.replaceChild(fresh, old);
+  });
+}
+</script>
+{% endblock %}

@@ -3,13 +3,13 @@
 # Copyright 2026 Vamshi Krishna Santhapuri
 """DigitalOcean subprocess provider — speaks JSON-RPC over stdin/stdout.
 
-Run as a standalone script: the core Invicton engine never imports this file.
+Run as a standalone script: the core Statim engine never imports this file.
 Logs go to stderr; only JSON-RPC responses go to stdout.
 
-Requires the [digitalocean] optional extra: pip install invicton[digitalocean]
+Requires the [digitalocean] optional extra: pip install statim[digitalocean]
   pip install requests
 
-Credential fields (stored via Invicton integrations UI):
+Credential fields (stored via Statim integrations UI):
     api_token      — DigitalOcean personal access token (required)
     region         — DO region slug, e.g. "nyc3" (default: nyc3)
     ssh_key_ids    — comma-separated DO SSH key IDs to add to Droplet (optional)
@@ -59,7 +59,7 @@ class DOClient:
         try:
             import requests as _requests
         except ImportError as exc:
-            raise RuntimeError("requests is not installed. Install with: pip install invicton[digitalocean]") from exc
+            raise RuntimeError("requests is not installed. Install with: pip install statim[digitalocean]") from exc
         self._s = _requests.Session()
         self._s.headers.update(
             {
@@ -151,7 +151,7 @@ def execute_build(params: dict) -> dict:
         os               — OS identifier for ansible-lockdown role selection
         instance_type    — Maps to size_slug if provided
         root_volume_size_gb — ignored for DO (all-in-one disk; use size_slug for sizing)
-        prehard_playbook_yaml — Pre-hardening playbook YAML (from Invicton engine)
+        prehard_playbook_yaml — Pre-hardening playbook YAML (from Statim engine)
         profile_name / profile_version — for snapshot naming
         profile / datastream — SCAP profile ID and datastream path for oscap
     """
@@ -175,19 +175,19 @@ def execute_build(params: dict) -> dict:
     droplet_id: int | None = None
     temp_key_id: int | None = None
 
-    with tempfile.TemporaryDirectory(prefix="invicton-do-") as tmpdir:
+    with tempfile.TemporaryDirectory(prefix="statim-do-") as tmpdir:
         tmp = Path(tmpdir)
         try:
             # 1. Generate ephemeral SSH key pair
             key_path, pub_key = utils.generate_ssh_keypair(tmp)
-            key_name = f"invicton-build-{profile_name}-{int(time.time())}"
+            key_name = f"statim-build-{profile_name}-{int(time.time())}"
             temp_key_id = client.add_ssh_key(key_name, pub_key)
             logger.info("Uploaded ephemeral SSH key: id=%s", temp_key_id)
 
             # 2. Create Droplet
             logger.info("Creating Droplet: %s / %s / %s", base_image, size_slug, region)
             droplet_body = {
-                "name": f"invicton-build-{profile_name}",
+                "name": f"statim-build-{profile_name}",
                 "region": region,
                 "size": size_slug,
                 "image": base_image,
@@ -195,7 +195,7 @@ def execute_build(params: dict) -> dict:
                 "backups": False,
                 "ipv6": False,
                 "monitoring": False,
-                "tags": ["invicton", "hardening-build"],
+                "tags": ["statim", "hardening-build"],
             }
             resp = client.post("/droplets", droplet_body)
             droplet_id = resp["droplet"]["id"]
@@ -241,7 +241,7 @@ def execute_build(params: dict) -> dict:
             client.wait_action(action_resp["action"]["id"], timeout=120)
 
             # 9. Create snapshot
-            snap_name = f"invicton-{profile_name}-{profile_version}"
+            snap_name = f"statim-{profile_name}-{profile_version}"
             logger.info("Creating snapshot: %s", snap_name)
             snap_resp = client.post(f"/droplets/{droplet_id}/actions", {"type": "snapshot", "name": snap_name})
             action = client.wait_action(snap_resp["action"]["id"], timeout=1800)
@@ -304,7 +304,7 @@ def execute_audit(params: dict) -> dict:
     if not ssh_key_pem:
         raise ValueError("execute_audit requires 'ssh_key' (private key PEM)")
 
-    with tempfile.TemporaryDirectory(prefix="invicton-do-audit-") as tmpdir:
+    with tempfile.TemporaryDirectory(prefix="statim-do-audit-") as tmpdir:
         key_path = Path(tmpdir) / "audit_key"
         key_path.write_text(ssh_key_pem)
         key_path.chmod(0o600)
@@ -345,21 +345,21 @@ def execute_scan_image(params: dict) -> dict:
     droplet_id: int | None = None
     temp_key_id: int | None = None
 
-    with tempfile.TemporaryDirectory(prefix="invicton-do-scan-") as tmpdir:
+    with tempfile.TemporaryDirectory(prefix="statim-do-scan-") as tmpdir:
         tmp = Path(tmpdir)
         try:
             key_path, pub_key = utils.generate_ssh_keypair(tmp)
-            key_name = f"invicton-scan-{int(time.time())}"
+            key_name = f"statim-scan-{int(time.time())}"
             temp_key_id = client.add_ssh_key(key_name, pub_key)
 
             droplet_body = {
-                "name": f"invicton-scan-{int(time.time())}",
+                "name": f"statim-scan-{int(time.time())}",
                 "region": region,
                 "size": size_slug,
                 "image": image_id,
                 "ssh_keys": [temp_key_id],
                 "backups": False,
-                "tags": ["invicton", "image-scan"],
+                "tags": ["statim", "image-scan"],
             }
             resp = client.post("/droplets", droplet_body)
             droplet_id = resp["droplet"]["id"]

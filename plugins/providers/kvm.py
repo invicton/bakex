@@ -3,21 +3,21 @@
 # Copyright 2026 Vamshi Krishna Santhapuri
 """Local KVM/QEMU subprocess provider — speaks JSON-RPC over stdin/stdout.
 
-Builds hardened images on the machine running Invicton, no cloud account
+Builds hardened images on the machine running Statim, no cloud account
 required. Boots a base cloud image under ``qemu-system-x86_64`` (hardware
 accelerated via KVM when available, falling back to slower TCG software
 emulation), injects SSH access via a cloud-init NoCloud seed, then reuses
 the same Ansible-Lockdown hardening + OpenSCAP scanning flow every other
-Invicton provider uses. The output artifact is a qcow2 (optionally converted
+Statim provider uses. The output artifact is a qcow2 (optionally converted
 to raw) file rather than a cloud-native image reference.
 
-Run as a standalone script: the core Invicton engine never imports this file.
+Run as a standalone script: the core Statim engine never imports this file.
 Logs go to stderr; only JSON-RPC responses go to stdout.
 
 Requires (system packages, not pip): qemu-system-x86, qemu-img, and either
 cloud-image-utils (cloud-localds) or genisoimage.
 
-Credential fields (stored via Invicton integrations UI — all optional, this
+Credential fields (stored via Statim integrations UI — all optional, this
 provider needs no account/API key):
     memory_mb   — Guest RAM in MB (default: 2048)
     cpus        — Guest vCPU count (default: 2)
@@ -146,10 +146,10 @@ def execute_build(params: dict) -> dict:
     qemu.create_overlay(base_path, overlay_path, size_gb=disk_gb)
 
     proc = None
-    with tempfile.TemporaryDirectory(prefix="invicton-kvm-") as tmpdir:
+    with tempfile.TemporaryDirectory(prefix="statim-kvm-") as tmpdir:
         tmp = Path(tmpdir)
         key_path, pub_key = utils.generate_ssh_keypair(tmp)
-        seed_iso = qemu.build_seed_iso(tmp, pub_key, ssh_user, hostname=f"invicton-{job_id[:8]}")
+        seed_iso = qemu.build_seed_iso(tmp, pub_key, ssh_user, hostname=f"statim-{job_id[:8]}")
         ssh_port = qemu.find_free_port()
         serial_log = build_dir / "serial.log"
 

@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Vamshi Krishna Santhapuri
-"""Unit tests for invicton.core.playbook_gen — Phase 1 TDD red run."""
+"""Unit tests for statim.core.playbook_gen — Phase 1 TDD red run."""
 
 from __future__ import annotations
 
@@ -8,15 +8,15 @@ from pathlib import Path
 
 import yaml
 
-from invicton.core.blueprint import ComplianceProfile
-from invicton.core.playbook_gen import generate_prehard_playbook
+from statim.core.blueprint import ComplianceProfile
+from statim.core.playbook_gen import generate_prehard_playbook
 
 # ---------------------------------------------------------------------------
 # Minimal profile factory
 # ---------------------------------------------------------------------------
 
 _BASE = {
-    "invicton_version": "0.1.0",
+    "statim_version": "0.1.0",
     "kind": "ComplianceProfile",
     "metadata": {"name": "test-profile", "version": "1.0.0"},
     "target": {"os": "ubuntu22.04", "provider": "aws", "base_image": "ami-0"},

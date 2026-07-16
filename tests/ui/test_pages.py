@@ -1,14 +1,14 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Vamshi Krishna Santhapuri
-"""Playwright browser smoke tests for all Invicton UI pages.
+"""Playwright browser smoke tests for all Statim UI pages.
 
-These tests run against the live Invicton server at http://localhost:8001.
+These tests run against the live Statim server at http://localhost:8001.
 They require:
   1. The Docker container (or local dev server) to be running: `docker compose up -d`
   2. Playwright browsers installed: `uv run playwright install chromium`
   3. The ui marker enabled: `uv run pytest -m ui tests/ui/`
 
-All tests are skipped automatically when INVICTON_RUN_UI is not set.
+All tests are skipped automatically when STATIM_RUN_UI is not set.
 
 Test coverage:
   PAGE-01  Dashboard renders with correct title
@@ -51,8 +51,8 @@ BASE_URL = "http://localhost:8001"
 pytestmark = [
     pytest.mark.ui,
     pytest.mark.skipif(
-        not os.environ.get("INVICTON_RUN_UI"),
-        reason="Set INVICTON_RUN_UI=1 to run Playwright UI tests",
+        not os.environ.get("STATIM_RUN_UI"),
+        reason="Set STATIM_RUN_UI=1 to run Playwright UI tests",
     ),
 ]
 
@@ -75,7 +75,7 @@ def _goto(page: Page, path: str):
 @pytest.mark.ui
 def test_dashboard_title(page: Page):
     _goto(page, "/")
-    expect(page).to_have_title("Dashboard — Invicton")
+    expect(page).to_have_title("Dashboard — Statim")
 
 
 @pytest.mark.ui
@@ -94,7 +94,7 @@ def test_dashboard_has_nav(page: Page):
 @pytest.mark.ui
 def test_blueprints_page_title(page: Page):
     _goto(page, "/blueprints")
-    expect(page).to_have_title("Profile Hub — Invicton")
+    expect(page).to_have_title("Profile Hub — Statim")
 
 
 @pytest.mark.ui
@@ -114,7 +114,7 @@ def test_blueprints_page_has_profile_cards(page: Page):
 def test_blueprint_studio_loads(page: Page):
     _goto(page, "/blueprints/studio/ubuntu22-cis-l1-aws")
     # Studio page should not 404 — any 2xx with HTML content
-    assert "Invicton" in page.title() or page.locator("body").is_visible()
+    assert "Statim" in page.title() or page.locator("body").is_visible()
 
 
 @pytest.mark.ui
@@ -133,7 +133,7 @@ def test_blueprint_studio_shows_yaml(page: Page):
 @pytest.mark.ui
 def test_builder_page_title(page: Page):
     _goto(page, "/builder")
-    expect(page).to_have_title("Image Builder — Invicton")
+    expect(page).to_have_title("Image Builder — Statim")
 
 
 # ---------------------------------------------------------------------------
@@ -173,7 +173,7 @@ def test_wizard_step2_renders_provider_fields(page: Page):
 @pytest.mark.ui
 def test_auditor_page_title(page: Page):
     _goto(page, "/auditor")
-    expect(page).to_have_title("Auditor — Invicton")
+    expect(page).to_have_title("Auditor — Statim")
 
 
 # ---------------------------------------------------------------------------
@@ -184,7 +184,7 @@ def test_auditor_page_title(page: Page):
 @pytest.mark.ui
 def test_scanner_wizard_title(page: Page):
     _goto(page, "/auditor/scanner")
-    expect(page).to_have_title("Compliance Scanner — Invicton")
+    expect(page).to_have_title("Compliance Scanner — Statim")
 
 
 # ---------------------------------------------------------------------------
@@ -207,7 +207,7 @@ def test_scanner_step1_renders(page: Page):
 @pytest.mark.ui
 def test_scan_history_page_title(page: Page):
     _goto(page, "/auditor/history")
-    expect(page).to_have_title("Scan History — Invicton")
+    expect(page).to_have_title("Scan History — Statim")
 
 
 # ---------------------------------------------------------------------------
@@ -218,7 +218,7 @@ def test_scan_history_page_title(page: Page):
 @pytest.mark.ui
 def test_integrations_page_title(page: Page):
     _goto(page, "/integrations")
-    expect(page).to_have_title("Integrations — Invicton")
+    expect(page).to_have_title("Integrations — Statim")
 
 
 @pytest.mark.ui
@@ -237,7 +237,7 @@ def test_integrations_shows_provider_cards(page: Page):
 @pytest.mark.ui
 def test_agent_page_title(page: Page):
     _goto(page, "/agent")
-    expect(page).to_have_title("AI Builder — Invicton")
+    expect(page).to_have_title("AI Builder — Statim")
 
 
 # ---------------------------------------------------------------------------
@@ -248,7 +248,7 @@ def test_agent_page_title(page: Page):
 @pytest.mark.ui
 def test_api_keys_page_title(page: Page):
     _goto(page, "/settings/api-keys")
-    expect(page).to_have_title("API Keys — Invicton")
+    expect(page).to_have_title("API Keys — Statim")
 
 
 @pytest.mark.ui
@@ -267,7 +267,7 @@ def test_api_keys_page_has_generate_button(page: Page):
 @pytest.mark.ui
 def test_webhooks_page_title(page: Page):
     _goto(page, "/settings/webhooks")
-    expect(page).to_have_title("Webhooks — Invicton")
+    expect(page).to_have_title("Webhooks — Statim")
 
 
 # ---------------------------------------------------------------------------
@@ -304,7 +304,7 @@ def test_blueprint_validate_api_via_browser(page: Page):
     context to verify CORS and content-type handling.
     """
     valid_yaml = (
-        "invicton_version: '0.1.0'\n"
+        "statim_version: '0.1.0'\n"
         "kind: ComplianceProfile\n"
         "metadata:\n  name: pw-test\n  version: '1.0.0'\n"
         "target:\n  os: ubuntu22.04\n  provider: aws\n  base_image: ami-00\n"

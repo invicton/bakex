@@ -1,11 +1,11 @@
-# Invicton HardeningBlueprint — Ubuntu 22.04 LTS CIS Level 1 Server (GCP)
+# Statim HardeningBlueprint — Ubuntu 22.04 LTS CIS Level 1 Server (GCP)
 #
 # This blueprint is the GCP equivalent of ubuntu22-cis-l1-aws.yaml.
 # The compliance controls, filesystem layout, and users are identical —
 # only the target.provider and target.base_image differ.
-# This cross-provider portability is the core Invicton USP.
+# This cross-provider portability is the core Statim USP.
 
-invicton_version: "0.5.0"
+statim_version: "0.5.0"
 kind: HardeningBlueprint
 
 metadata:
@@ -62,8 +62,8 @@ users:
     lock: true
 
   accounts:
-    - name: invicton-admin
-      comment: "Invicton-managed admin account"
+    - name: statim-admin
+      comment: "Statim-managed admin account"
       groups:
         - sudo
       shell: /bin/bash

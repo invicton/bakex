@@ -1,9 +1,9 @@
-# Contributing to Invicton
+# Contributing to Statim
 
 Copyright 2026 Vamshi Krishna Santhapuri
 Licensed under the [Apache License 2.0](LICENSE)
 
-Thank you for your interest in contributing! Invicton is an Apache-2.0, multi-cloud
+Thank you for your interest in contributing! Statim is an Apache-2.0, multi-cloud
 DevSecOps platform for reproducible OS hardening. All contributions — code, blueprint
 templates, bug reports, documentation — are welcome.
 
@@ -30,15 +30,15 @@ opening a public issue.
 ## Getting Started
 
 ```bash
-git clone https://github.com/invicton/Invicton.git
-cd Invicton
+git clone https://github.com/invicton/statim.git
+cd Statim
 
 # Install with all provider extras
 pip install uv
 uv sync --extra all-providers --extra dev
 
 # Run the development server
-uv run uvicorn invicton.main:app --reload
+uv run uvicorn statim.main:app --reload
 ```
 
 System dependencies (Debian 12):
@@ -80,7 +80,7 @@ apt install qemu-system-x86 qemu-utils cloud-image-utils   # or: genisoimage ins
 ## Project Structure
 
 ```
-invicton/                  Core FastAPI application
+statim/                  Core FastAPI application
   api/                    REST endpoints + Jinja2 HTML pages
     agent.py              AI Builder SSE endpoint
     api_keys.py           API key management (create / list / revoke)
@@ -141,12 +141,12 @@ tests/                    pytest test suite
 
 ## Writing a Provider Plugin
 
-Invicton supports two provider models. Choose the one that fits your use case.
+Statim supports two provider models. Choose the one that fits your use case.
 
 ### Model A — Subprocess Provider (recommended for cloud providers)
 
 A standalone Python script that communicates via JSON-RPC over stdin/stdout. The
-Invicton engine never imports it; it runs as an isolated subprocess.
+Statim engine never imports it; it runs as an isolated subprocess.
 
 **Minimal skeleton:**
 
@@ -178,7 +178,7 @@ def execute_build(params: dict) -> dict:
     #   params["prehard_playbook_yaml"]- pre-hardening Ansible playbook YAML (auto-generated)
     #   params["profile"]              - XCCDF profile ID
     #   params["datastream"]           - SCAP datastream path on target
-    #   params["credentials"]          - dict of provider credentials from Invicton UI
+    #   params["credentials"]          - dict of provider credentials from Statim UI
     ...
 
 def execute_audit(params: dict) -> dict:
@@ -246,7 +246,7 @@ if __name__ == "__main__":
     main()
 ```
 
-Drop the file into `plugins/providers/mycloud.py` and Invicton will auto-discover it on
+Drop the file into `plugins/providers/mycloud.py` and Statim will auto-discover it on
 next start. No registration needed.
 
 **Credential fields** are declared as a `CREDENTIAL_FIELDS` list (optional but
@@ -262,7 +262,7 @@ CREDENTIAL_FIELDS = [
 
 ### Model B — Class-based Provider (for on-premises / non-subprocess use)
 
-Subclass `invicton.plugins.base_provider.BaseProvider` and implement the four abstract
+Subclass `statim.plugins.base_provider.BaseProvider` and implement the four abstract
 methods: `provision`, `run_ansible`, `snapshot`, `teardown`. See
 `plugins/providers/example_local.py` for a reference implementation.
 
@@ -270,7 +270,7 @@ methods: `provision`, `run_ansible`, `snapshot`, `teardown`. See
 
 ## Contributing a Blueprint Template
 
-Blueprint templates are the core Invicton USP — a version-controlled YAML file that
+Blueprint templates are the core Statim USP — a version-controlled YAML file that
 fully describes how to build a reproducible hardened image.
 
 **Rules for contributed templates:**
@@ -296,7 +296,7 @@ Example: `ubuntu22-cis-l1-aws.yaml`
 **Minimal required sections:**
 
 ```yaml
-invicton_version: "0.1.0"
+statim_version: "0.1.0"
 kind: HardeningBlueprint
 
 metadata:
@@ -329,7 +329,7 @@ users:
   root:
     lock: true
   accounts:
-    - name: invicton-admin
+    - name: statim-admin
       groups: [sudo]           # or [wheel] for RHEL family
       shell: /bin/bash
       ssh_authorized_keys: []
@@ -359,11 +359,11 @@ git checkout -b feat/my-provider
 uv run pytest
 
 # Run linting
-uv run ruff check invicton/ plugins/ tests/
-uv run ruff format --check invicton/ plugins/ tests/
+uv run ruff check statim/ plugins/ tests/
+uv run ruff format --check statim/ plugins/ tests/
 
 # Start the dev server and verify in browser
-uv run uvicorn invicton.main:app --reload
+uv run uvicorn statim.main:app --reload
 ```
 
 ### Installing a provider's dependencies locally
@@ -388,7 +388,7 @@ uv pip install -e ".[all-providers]"
   # SPDX-License-Identifier: Apache-2.0
   # Copyright 2026 Vamshi Krishna Santhapuri
   ```
-- Subprocess provider scripts are self-contained — no imports from `invicton.*`
+- Subprocess provider scripts are self-contained — no imports from `statim.*`
 - Use `_provider_utils` for all SSH / Ansible / oscap operations in providers
 
 ---
@@ -403,7 +403,7 @@ uv run pytest
 uv run pytest tests/test_blueprint.py -v
 
 # Run with coverage
-uv run pytest --cov=invicton --cov-report=term-missing
+uv run pytest --cov=statim --cov-report=term-missing
 ```
 
 New provider plugins should include at least:
@@ -446,7 +446,7 @@ PRs that add new provider plugins must include:
 - All four required RPC methods: `test_connection`, `execute_build`, `execute_audit`, `execute_scan_image`
 - At least one blueprint template in `profiles/templates/`
 - Updated `pyproject.toml` optional dependencies if new packages are needed
-- `aws_image_query` entries in `invicton/core/os_catalog.py` if the provider uses a public image catalog
+- `aws_image_query` entries in `statim/core/os_catalog.py` if the provider uses a public image catalog
 
 ---
 

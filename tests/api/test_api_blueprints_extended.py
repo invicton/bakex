@@ -26,7 +26,7 @@ import yaml
 # ---------------------------------------------------------------------------
 
 _PROFILE_WITH_CONTROLS = {
-    "invicton_version": "0.1.0",
+    "statim_version": "0.1.0",
     "kind": "ComplianceProfile",
     "metadata": {"name": "ctrl-test-profile", "version": "1.0.0"},
     "target": {"os": "ubuntu22.04", "provider": "aws", "base_image": "ami-00"},
@@ -49,11 +49,11 @@ _PROFILE_WITH_CONTROLS = {
 
 def test_download_blueprint_falls_back_to_community_registry(client, monkeypatch):
     """If the profile is not in local files, it should be fetched from the community registry."""
-    from invicton.core.blueprint import ComplianceProfile
+    from statim.core.blueprint import ComplianceProfile
 
     mock_profile = ComplianceProfile.model_validate(
         {
-            "invicton_version": "0.1.0",
+            "statim_version": "0.1.0",
             "kind": "ComplianceProfile",
             "metadata": {"name": "community-bp", "version": "1.0.0"},
             "target": {"os": "ubuntu22.04", "provider": "aws", "base_image": "ami-community"},
@@ -68,7 +68,7 @@ def test_download_blueprint_falls_back_to_community_registry(client, monkeypatch
     mock_registry = MagicMock()
     mock_registry.get.return_value = mock_profile
 
-    with patch("invicton.core.registry.get_registry", return_value=mock_registry):
+    with patch("statim.core.registry.get_registry", return_value=mock_registry):
         resp = client.get("/api/blueprints/community-bp/download")
 
     assert resp.status_code == 200
@@ -81,7 +81,7 @@ def test_download_blueprint_not_found_in_registry_returns_404(client, monkeypatc
     mock_registry = MagicMock()
     mock_registry.get.return_value = None
 
-    with patch("invicton.core.registry.get_registry", return_value=mock_registry):
+    with patch("statim.core.registry.get_registry", return_value=mock_registry):
         resp = client.get("/api/blueprints/totally-unknown-xyz/download")
 
     assert resp.status_code == 404
@@ -126,7 +126,7 @@ def test_delete_user_blueprint_succeeds(client, user_profiles_tmp):
     # Upload first
     profile_yaml = yaml.dump(
         {
-            "invicton_version": "0.1.0",
+            "statim_version": "0.1.0",
             "kind": "ComplianceProfile",
             "metadata": {"name": "deletable-profile", "version": "1.0.0"},
             "target": {"os": "ubuntu22.04", "provider": "aws", "base_image": "ami-del"},
@@ -237,12 +237,12 @@ def test_preview_blueprint_submitted_rule_not_in_profile(client, profiles_tmp):
 
 def test_find_profile_falls_back_to_community_registry():
     """_find_profile returns a profile from the community registry when not in local files."""
-    from invicton.api.blueprints import _find_profile
-    from invicton.core.blueprint import ComplianceProfile
+    from statim.api.blueprints import _find_profile
+    from statim.core.blueprint import ComplianceProfile
 
     mock_profile = ComplianceProfile.model_validate(
         {
-            "invicton_version": "0.1.0",
+            "statim_version": "0.1.0",
             "kind": "ComplianceProfile",
             "metadata": {"name": "reg-fallback-direct", "version": "1.0.0"},
             "target": {"os": "ubuntu22.04", "provider": "aws", "base_image": "ami-00"},
@@ -257,7 +257,7 @@ def test_find_profile_falls_back_to_community_registry():
     mock_registry = MagicMock()
     mock_registry.get.return_value = mock_profile
 
-    with patch("invicton.core.registry.get_registry", return_value=mock_registry):
+    with patch("statim.core.registry.get_registry", return_value=mock_registry):
         profile = _find_profile("reg-fallback-direct")
 
     assert profile is not None
@@ -266,9 +266,9 @@ def test_find_profile_falls_back_to_community_registry():
 
 def test_find_profile_registry_runtime_error_returns_none():
     """When get_registry() raises RuntimeError, _find_profile returns None."""
-    from invicton.api.blueprints import _find_profile
+    from statim.api.blueprints import _find_profile
 
-    with patch("invicton.core.registry.get_registry", side_effect=RuntimeError("registry not ready")):
+    with patch("statim.core.registry.get_registry", side_effect=RuntimeError("registry not ready")):
         result = _find_profile("any-profile")
 
     assert result is None
