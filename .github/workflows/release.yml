@@ -4,15 +4,27 @@ name: Release
 # Requires a "pending publisher" (first release) or publisher configured on
 # pypi.org for project `bakex`: owner invicton, repo BakeX,
 # workflow release.yml, environment pypi.
+#
+# Every release is signed and ships an SBOM:
+# - dist artifacts (wheel + sdist): GitHub build-provenance attestation
+# - container image: cosign keyless signature + build-provenance attestation
+# - SPDX SBOMs (source + image, via syft) attached to the GitHub release
 
 on:
   push:
     tags: ["v*"]
 
+permissions:
+  contents: read
+
 jobs:
   build:
     name: Build distributions
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write      # provenance attestation (keyless OIDC)
+      attestations: write
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7
       - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86  # v5
@@ -31,10 +43,25 @@ jobs:
         run: |
           uv venv /tmp/smoke && VIRTUAL_ENV=/tmp/smoke uv pip install dist/*.whl
           cd /tmp && /tmp/smoke/bin/python -c "from bakex.main import app; import bakex; print('import OK', bakex.__version__)"
+      - name: Attest dist build provenance
+        uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373  # v4.1.1
+        with:
+          subject-path: dist/*
+      - name: Generate source SBOM (syft, SPDX)
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610  # v0
+        with:
+          path: .
+          format: spdx-json
+          output-file: bakex-source.sbom.spdx.json
+          upload-artifact: false
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7
         with:
           name: dist
           path: dist/
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7
+        with:
+          name: sbom-source
+          path: bakex-source.sbom.spdx.json
 
   publish:
     name: Publish to PyPI
@@ -59,9 +86,12 @@ jobs:
     permissions:
       contents: read
       packages: write
+      id-token: write      # cosign keyless signing + provenance attestation
+      attestations: write
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7
       - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f  # v3
+      - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6  # v4.1.2
       - uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0  # v4
         with:
           registry: ghcr.io
@@ -75,15 +105,38 @@ jobs:
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
       - uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8  # v6
+        id: build
         with:
           context: .
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+      - name: Sign image (cosign keyless)
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          cosign sign --yes "ghcr.io/invicton/bakex@${DIGEST}"
+      - name: Attest image build provenance
+        uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373  # v4.1.1
+        with:
+          subject-name: ghcr.io/invicton/bakex
+          subject-digest: ${{ steps.build.outputs.digest }}
+          push-to-registry: true
+      - name: Generate image SBOM (syft, SPDX)
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610  # v0
+        with:
+          image: ghcr.io/invicton/bakex@${{ steps.build.outputs.digest }}
+          format: spdx-json
+          output-file: bakex-image.sbom.spdx.json
+          upload-artifact: false
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7
+        with:
+          name: sbom-image
+          path: bakex-image.sbom.spdx.json
 
   github-release:
     name: Create GitHub release
-    needs: publish
+    needs: [publish, publish-image]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -93,10 +146,36 @@ jobs:
         with:
           name: dist
           path: dist/
-      - name: Create release with dist artifacts
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8
+        with:
+          pattern: sbom-*
+          merge-multiple: true
+      - name: Write release notes
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          {
+            echo "See [CHANGELOG.md](https://github.com/invicton/bakex/blob/main/CHANGELOG.md) for details."
+            echo ""
+            echo "## Verify this release"
+            echo ""
+            echo "Container image (cosign keyless):"
+            echo '```'
+            echo "cosign verify ghcr.io/invicton/bakex:$VERSION \\"
+            echo "  --certificate-identity-regexp 'https://github.com/invicton/bakex/' \\"
+            echo "  --certificate-oidc-issuer https://token.actions.githubusercontent.com"
+            echo '```'
+            echo ""
+            echo "Wheel/sdist provenance:"
+            echo '```'
+            echo "gh attestation verify dist/bakex-$VERSION-py3-none-any.whl --repo invicton/bakex"
+            echo '```'
+            echo ""
+            echo "SBOMs (SPDX JSON) for the source tree and container image are attached."
+          } > release-notes.md
+      - name: Create release with dist artifacts and SBOMs
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "$GITHUB_REF_NAME" dist/* \
+          gh release create "$GITHUB_REF_NAME" dist/* bakex-source.sbom.spdx.json bakex-image.sbom.spdx.json \
             --title "$GITHUB_REF_NAME" \
-            --notes "See [CHANGELOG.md](https://github.com/invicton/bakex/blob/main/CHANGELOG.md) for details."
+            --notes-file release-notes.md
