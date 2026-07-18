@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Question or discussion
+    url: https://github.com/invicton/bakex/discussions
+    about: Ask a question, share a build result, or propose an idea before opening an issue.
+  - name: Report a security vulnerability
+    url: https://github.com/invicton/bakex/security/advisories/new
+    about: Please report vulnerabilities privately — never in a public issue.

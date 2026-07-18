@@ -1,0 +1,35 @@
+name: Feature request
+description: Propose a capability that isn't a new blueprint (for blueprints, use "Blueprint request")
+title: "[feature] "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What are you trying to do that BakeX doesn't support today?
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: >-
+        What you'd like to see. If it touches the build pipeline, note where it
+        fits (provision → harden → scan → snapshot → teardown) and what evidence
+        it should produce.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Other approaches, and why this one.
+  - type: textarea
+    id: philosophy
+    attributes:
+      label: Does it fit the philosophy?
+      description: >-
+        BakeX is about declarative, reproducible hardening with compliance
+        evidence — the blueprint is the source of truth. A sentence on how this
+        serves that helps us prioritize.

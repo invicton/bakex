@@ -1,0 +1,72 @@
+name: Blueprint request
+description: Request or offer a hardening blueprint (a distro + benchmark + provider combination)
+title: "[blueprint] "
+labels: ["blueprint", "help wanted"]
+body:
+  - type: markdown
+    attributes:
+      value: >-
+        Blueprints are the heart of BakeX — one YAML file that anyone can
+        contribute. If you want to build this one yourself,
+        [blueprints/CONTRIBUTING.md](https://github.com/invicton/bakex/blob/main/blueprints/CONTRIBUTING.md)
+        is the step-by-step guide.
+  - type: input
+    id: distro
+    attributes:
+      label: Operating system + version
+      placeholder: e.g. Rocky Linux 9, Ubuntu 24.04 LTS, Debian 12
+    validations:
+      required: true
+  - type: dropdown
+    id: benchmark
+    attributes:
+      label: Benchmark + level
+      options:
+        - CIS Level 1 (Server)
+        - CIS Level 2 (Server)
+        - STIG
+        - Other (describe below)
+    validations:
+      required: true
+  - type: checkboxes
+    id: providers
+    attributes:
+      label: Target provider(s)
+      options:
+        - label: AWS (AMI)
+        - label: GCP (Custom Image)
+        - label: Azure (Managed Image)
+        - label: DigitalOcean (Snapshot)
+        - label: Linode (Private Image)
+        - label: Proxmox (VM Template)
+        - label: KVM local (qcow2/raw)
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Use case
+      description: >-
+        What environment needs this image? Anything that shapes the blueprint —
+        compliance regime, audit requirements, workload type.
+    validations:
+      required: true
+  - type: textarea
+    id: overrides
+    attributes:
+      label: Expected rule overrides / deviations
+      description: >-
+        Controls you already know must be disabled or tuned (each needs a
+        justification in the blueprint), e.g. cloud-init needs X, agent needs Y.
+      render: yaml
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Edit to fit — this is the definition of done for the blueprint PR.
+      value: |
+        - [ ] Blueprint validates against the BakeX schema (see blueprints/CONTRIBUTING.md)
+        - [ ] File lives at `blueprints/<os>/<version>/<benchmark>-<provider>.yaml` and `index.json` is updated
+        - [ ] Every control override has a non-empty justification
+        - [ ] `target.base_image` has a source comment
+        - [ ] A build from this blueprint completes and the scan grade is reported in the PR
+    validations:
+      required: true
