@@ -21,7 +21,7 @@ Before you start, confirm the following:
 
 ```bash
 git clone https://github.com/invicton/bakex.git
-cd BakeX
+cd bakex
 ```
 
 Edit `docker-compose.yml` and set your secret key:

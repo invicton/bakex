@@ -1,0 +1,19 @@
+# BakeX
+
+> Bake your hardened, CIS/STIG-benchmarked golden image from a YAML blueprint on any cloud (or locally via KVM) and export compliance evidence as PDF or SARIF.
+
+## Quickstart
+
+```bash
+git clone https://github.com/invicton/bakex.git
+cd bakex
+docker compose up -d
+```
+
+## Key files
+
+- [README](README.md) — Main landing page and setup guide.
+- [docs/getting-started.md](docs/getting-started.md) — Walkthrough tutorial for first-run AL2023 image building.
+- [docs/blueprint-guide.md](docs/blueprint-guide.md) — Reference for YAML blueprint schema and rules.
+- [docs/configuration.md](docs/configuration.md) — Guide to environment variables, system dependencies, and LLM backends.
+- [docs/api.md](docs/api.md) — REST API endpoint reference and CLI exit codes.

@@ -13,7 +13,7 @@ against real infrastructure, and every feature lands tests-first.
 
 ## v0.6 — Launch release
 
-The "a stranger succeeds in 10 minutes" release.
+The "anyone arriving cold succeeds in 10 minutes" release.
 
 - [ ] README restructured as a landing page (≤300 lines); full reference
       material moved to `docs/` with an index

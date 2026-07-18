@@ -11,7 +11,7 @@ Pick one:
 
 ```bash
 # Docker Compose (recommended — all system tools preinstalled)
-git clone https://github.com/invicton/bakex.git && cd BakeX
+git clone https://github.com/invicton/bakex.git && cd bakex
 docker compose up
 # → http://localhost:8001
 

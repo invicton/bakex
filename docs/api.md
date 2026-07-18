@@ -69,6 +69,15 @@ API keys are created in **Settings -> API Keys** or through the API key endpoint
 
 Prefer Application Default Credentials or impersonation for GCP. Use `service_account_json` only when user-managed keys are allowed by policy.
 
+## CLI Exit Status Codes
+
+The `bakex` command-line interface uses the following exit codes:
+
+| Exit Code | Meaning / Reason |
+|---|---|
+| `0` | Success (e.g., `bakex version`, or `bakex serve` on graceful termination) |
+| `2` | Usage error or invalid arguments |
+
 ## More Pipeline Examples
 
 See [`docs/pipeline.md`](pipeline.md) for GitHub Actions, GitLab CI, Jenkins, SARIF upload, and Blueprint-as-Code examples.

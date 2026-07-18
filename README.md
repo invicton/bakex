@@ -7,7 +7,7 @@
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue)](https://www.python.org/)
 [![CI](https://github.com/invicton/bakex/actions/workflows/ci.yml/badge.svg)](https://github.com/invicton/bakex/actions/workflows/ci.yml)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/invicton/bakex/badge)](https://scorecard.dev/viewer/?uri=github.com/invicton/bakex)
-[![Release](https://img.shields.io/github/v/release/bakex/BakeX)](https://github.com/invicton/bakex/releases)
+[![Release](https://img.shields.io/github/v/release/invicton/bakex)](https://github.com/invicton/bakex/releases)
 
 <p align="center">
   <img src="docs/assets/bakex-dashboard.svg" alt="BakeX dashboard preview" width="900">
@@ -59,7 +59,7 @@ HardeningBlueprint (YAML)  ──or──  5-Step Guided Wizard
 
 ```bash
 git clone https://github.com/invicton/bakex.git
-cd BakeX
+cd bakex
 docker compose up
 ```
 
@@ -94,7 +94,7 @@ builds — see [Configuration](docs/configuration.md).
 ### From source (contributors)
 
 ```bash
-git clone https://github.com/invicton/bakex.git && cd BakeX
+git clone https://github.com/invicton/bakex.git && cd bakex
 uv sync --extra all-providers --group dev
 cp .env.example .env
 uv run uvicorn bakex.main:app --reload --port 8000
