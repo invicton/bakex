@@ -1,0 +1,5 @@
+version: 1
+
+project:
+  name: bakex # badge + report display name (default would be the checkout dir)
+  language: python
