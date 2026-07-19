@@ -27,8 +27,8 @@ blueprint that can't actually remediate anything yet.
 ## Step 1 — Fork and clone
 
 ```bash
-git clone https://github.com/<your-handle>/BakeX.git
-cd BakeX
+git clone https://github.com/<your-handle>/bakex.git
+cd bakex
 ```
 
 ## Step 2 — Install dependencies

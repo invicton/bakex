@@ -7,6 +7,13 @@ Thank you for your interest in contributing! BakeX is an Apache-2.0, multi-cloud
 DevSecOps platform for reproducible OS hardening. All contributions — code, blueprint
 templates, bug reports, documentation — are welcome.
 
+> **Fastest first contribution: a community blueprint.** Blueprints are pure YAML —
+> no Python required — and each open
+> [`blueprint` issue](https://github.com/invicton/bakex/issues?q=is%3Aissue+is%3Aopen+label%3Ablueprint)
+> ships with acceptance criteria and a local verify command. The
+> [Blueprint Library Guide](blueprints/CONTRIBUTING.md) walks through every field,
+> from fork to merged PR.
+
 Please follow the [Code of Conduct](CODE_OF_CONDUCT.md) in all project spaces.
 Found a security vulnerability? See [SECURITY.md](SECURITY.md) instead of
 opening a public issue.
@@ -31,7 +38,7 @@ opening a public issue.
 
 ```bash
 git clone https://github.com/invicton/bakex.git
-cd BakeX
+cd bakex
 
 # Install with all provider extras
 pip install uv

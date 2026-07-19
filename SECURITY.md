@@ -6,7 +6,9 @@ report them responsibly rather than opening a public issue.
 
 ## Reporting a Vulnerability
 
-Email **security@linuxcent.com** with:
+Report privately through
+[GitHub Security Advisories](https://github.com/invicton/bakex/security/advisories/new)
+(preferred), or email **security@linuxcent.com**, with:
 
 - A description of the vulnerability and its potential impact
 - Steps to reproduce (a minimal blueprint YAML or `curl` request is ideal)
@@ -25,8 +27,8 @@ Only the latest released version of BakeX receives security fixes.
 
 | Version | Supported |
 | ------- | --------- |
-| 0.5.x   | ✅        |
-| < 0.5   | ❌        |
+| 0.6.x   | ✅        |
+| < 0.6   | ❌        |
 
 ## Deployment Notes
 
