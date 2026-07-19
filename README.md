@@ -7,6 +7,7 @@
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue)](https://www.python.org/)
 [![CI](https://github.com/invicton/bakex/actions/workflows/ci.yml/badge.svg)](https://github.com/invicton/bakex/actions/workflows/ci.yml)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/invicton/bakex/badge)](https://scorecard.dev/viewer/?uri=github.com/invicton/bakex)
+[![Invigil doctrine grade](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/invigil/invigil/main/badges/bakex.json)](https://github.com/invigil/invigil)
 [![Release](https://img.shields.io/github/v/release/invicton/bakex)](https://github.com/invicton/bakex/releases)
 
 <p align="center">
