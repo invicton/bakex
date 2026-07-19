@@ -157,7 +157,7 @@ jobs:
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7
       - name: Invigil scorecard (report-only)
-        uses: invigil/invigil@31a39b1acc83d8a1c9c9530179acf772a6ce9438  # v1.5.1
+        uses: invigil/invigil@bf10187dc041d1afb15d5d4cd7a270ef2182b47e  # v1.7.0
         with:
           enforce: "false"
           # Fork PRs have a read-only token — skip the comment there.
