@@ -107,24 +107,18 @@ def test_catalogued_os_provider_pair_accepted():
 def test_incompatible_catalogued_pair_rejected():
     """Amazon Linux 2023 is AWS-only — pairing it with GCP must fail."""
     with pytest.raises(ValueError, match="not supported for os 'amazon-linux-2023'"):
-        ComplianceProfile.model_validate(
-            _with_target(os="amazon-linux-2023", provider="gcp", base_image="whatever")
-        )
+        ComplianceProfile.model_validate(_with_target(os="amazon-linux-2023", provider="gcp", base_image="whatever"))
 
 
 def test_rejection_message_lists_supported_providers():
     with pytest.raises(ValueError, match="Supported providers: aws"):
-        ComplianceProfile.model_validate(
-            _with_target(os="amazon-linux-2023", provider="azure", base_image="whatever")
-        )
+        ComplianceProfile.model_validate(_with_target(os="amazon-linux-2023", provider="azure", base_image="whatever"))
 
 
 def test_uncatalogued_provider_allowed():
     """Providers are pluggable via the `bakex.providers` entry-point group, so an
     unknown provider name is not ours to reject — only the registry can say."""
-    profile = ComplianceProfile.model_validate(
-        _with_target(os="ubuntu22.04", provider="mycloud", base_image="img-1")
-    )
+    profile = ComplianceProfile.model_validate(_with_target(os="ubuntu22.04", provider="mycloud", base_image="img-1"))
     assert profile.target.provider == "mycloud"
 
 
