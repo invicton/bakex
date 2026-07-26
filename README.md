@@ -2,6 +2,11 @@
 
 **Describe your hardened OS in a YAML blueprint; BakeX builds the CIS/STIG-benchmarked golden image on any cloud — or locally on KVM — and hands you the compliance evidence.**
 
+> **Formerly Stratum.** This project was released as **Stratum** (`pip install stratumoss`)
+> through v0.5.2 and renamed to **BakeX** at v0.6.0 — same project, same team, same
+> license. If you came here looking for `stratumoss`, you're in the right place:
+> `pip install bakex`. See [Project history](#project-history).
+
 [![PyPI](https://img.shields.io/pypi/v/bakex?color=brightgreen)](https://pypi.org/project/bakex/)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue)](https://www.python.org/)
@@ -196,6 +201,29 @@ for curated starting points (most are pure-YAML blueprint work with acceptance
 criteria and a local verify command included). Please follow the
 [Code of Conduct](CODE_OF_CONDUCT.md). Found a security issue? See
 [SECURITY.md](SECURITY.md) instead of opening a public issue.
+
+## Project history
+
+BakeX was released as **Stratum** — PyPI distribution `stratumoss`, GitHub org
+`StratumOSS` — through v0.5.2, and renamed to **BakeX** at v0.6.0. "Stratum" is a common
+word and collided with existing projects, including an unrelated `stratum` package on
+PyPI; the current name is the DevOps metaphor for what the tool actually does, which is
+*bake* a declarative blueprint into a rigid, ready-to-deploy golden image. It is published
+under the **Invicton** org. The rename happened pre-launch.
+
+Same project, same maintainers, same Apache-2.0 license — the work continues here.
+
+| Was | Now |
+|---|---|
+| `pip install stratumoss` | `pip install bakex` |
+| `import stratum` | `import bakex` |
+| `STRATUM_*` environment variables | `BAKEX_*` |
+| `stratum_version:` in a blueprint | `bakex_version:` |
+| `github.com/StratumOSS/Stratum` | `github.com/invicton/bakex` (old URLs redirect) |
+
+The [`stratumoss`](https://pypi.org/project/stratumoss/) package on PyPI is a tombstone
+that installs `bakex` for you; depend on `bakex` directly. Full rationale is in the
+[changelog](CHANGELOG.md).
 
 ## License
 
