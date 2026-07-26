@@ -216,9 +216,15 @@ controls:
 | `os-version` | `2023`, `22.04`, `24.04`, `9`, `12` |
 | `framework` | `cis`, `stig` |
 | `level` | `l1`, `l2` — omit for STIG |
-| `provider` | `aws`, `gcp`, `azure`, `digitalocean`, `linode`, `proxmox` |
+| `provider` | `aws`, `gcp`, `azure`, `digitalocean`, `linode`, `proxmox`, `kvm` |
 
 **File path:** `blueprints/<os-slug>/<os-version>/<framework>[-<level>]-<provider>.yaml`
+
+> **Not every OS runs on every provider.** `bakex validate` rejects a `target.provider`
+> that the chosen `target.os` does not support, and names the ones that are valid — for
+> example Amazon Linux 2023 is AWS-only. The per-OS provider lists live in
+> `bakex/core/os_catalog.py`. If your OS genuinely runs somewhere the catalog does not
+> list yet, add it there in the same PR with a verified base-image locator.
 
 ---
 
