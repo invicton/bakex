@@ -25,8 +25,8 @@ metadata:
 target:
   os: ubuntu22.04
   arch: x86_64
-  provider: local             # Change to "aws", "proxmox", etc.
-  base_image: ubuntu/jammy64  # Vagrant box, AMI ID, Proxmox template name, etc.
+  provider: kvm               # Change to "aws", "proxmox", etc. — must be one the OS supports
+  base_image: ubuntu22.04     # KVM: downloadable image slug. Elsewhere: AMI ID, Proxmox VMID, etc.
 
 # Which OpenSCAP benchmark + datastream to apply
 compliance:

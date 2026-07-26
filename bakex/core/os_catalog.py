@@ -35,7 +35,7 @@ OS_CATALOG: dict[str, dict] = {
     "ubuntu22.04": {
         "display": "Ubuntu 22.04 LTS",
         "icon": "🟣",
-        "providers": ["aws", "gcp", "azure", "digitalocean", "linode", "kvm"],
+        "providers": ["aws", "gcp", "azure", "digitalocean", "linode", "kvm", "proxmox"],
         "min_root_gb": 20,
         "default_base_image": {
             "aws": "ami-00de3875b03809ec5",  # fallback us-east-1; resolved at build time
@@ -44,6 +44,7 @@ OS_CATALOG: dict[str, dict] = {
             "kvm": "ubuntu22.04",  # downloadable OS slug — auto-fetched + checksum-verified
             "digitalocean": "ubuntu-22-04-x64",
             "linode": "linode/ubuntu22.04",
+            "proxmox": "",  # VE template VMID is site-specific — set it in the blueprint
         },
         "aws_image_query": {
             "owner": "099720109477",  # Canonical
@@ -63,7 +64,7 @@ OS_CATALOG: dict[str, dict] = {
     "ubuntu24.04": {
         "display": "Ubuntu 24.04 LTS",
         "icon": "🟣",
-        "providers": ["aws", "gcp", "azure", "digitalocean", "linode", "kvm"],
+        "providers": ["aws", "gcp", "azure", "digitalocean", "linode", "kvm", "proxmox"],
         "min_root_gb": 20,
         "default_base_image": {
             "aws": "ami-04eaa218f1349d88b",  # fallback us-east-1; resolved at build time
@@ -72,6 +73,7 @@ OS_CATALOG: dict[str, dict] = {
             "digitalocean": "ubuntu-24-04-x64",
             "linode": "linode/ubuntu24.04",
             "kvm": "ubuntu24.04",  # downloadable OS slug — auto-fetched + checksum-verified
+            "proxmox": "",  # VE template VMID is site-specific — set it in the blueprint
         },
         "aws_image_query": {
             "owner": "099720109477",  # Canonical
@@ -146,11 +148,15 @@ OS_CATALOG: dict[str, dict] = {
     "alma9": {
         "display": "AlmaLinux 9",
         "icon": "🅰️",
-        "providers": ["aws", "azure"],
+        "providers": ["aws", "gcp", "azure", "digitalocean", "linode", "proxmox"],
         "min_root_gb": 20,
         "default_base_image": {
             "aws": "ami-0f673487d7e5f89ca",  # fallback us-east-1; resolved at build time
+            "gcp": "projects/almalinux-cloud/global/images/family/almalinux-9",
             "azure": "alma9",
+            "digitalocean": "almalinux-9-x64",
+            "linode": "linode/almalinux9",
+            "proxmox": "",  # VE template VMID is site-specific — set it in the blueprint
         },
         "aws_image_query": {
             "owner": "764336703387",  # AlmaLinux OS Foundation
@@ -170,7 +176,7 @@ OS_CATALOG: dict[str, dict] = {
     "debian12": {
         "display": "Debian 12 (Bookworm)",
         "icon": "🌀",
-        "providers": ["aws", "gcp", "azure", "digitalocean", "linode", "kvm"],
+        "providers": ["aws", "gcp", "azure", "digitalocean", "linode", "kvm", "proxmox"],
         "min_root_gb": 15,
         "default_base_image": {
             "aws": "ami-09f28a87e74de5c5a",  # fallback us-east-1; resolved at build time
@@ -179,6 +185,7 @@ OS_CATALOG: dict[str, dict] = {
             "digitalocean": "debian-12-x64",
             "linode": "linode/debian12",
             "kvm": "debian12",  # downloadable OS slug — auto-fetched + checksum-verified
+            "proxmox": "",  # VE template VMID is site-specific — set it in the blueprint
         },
         "aws_image_query": {
             "owner": "136693071363",  # Debian
@@ -238,6 +245,14 @@ PROVIDER_CATALOG: dict[str, dict] = {
         "icon": "🖥️",
         "color": "orange",
     },
+    # Local libvirt/KVM. Distinct from Proxmox VE: a KVM target names a downloadable
+    # cloud image (auto-fetched + checksum-verified), where Proxmox names a VE template VMID.
+    "kvm": {
+        "display": "KVM",
+        "label": "KVM / libvirt",
+        "icon": "🐧",
+        "color": "slate",
+    },
 }
 
 # ---------------------------------------------------------------------------
@@ -277,6 +292,8 @@ INSTANCE_TYPES: dict[str, list[dict]] = {
         {"value": "g6-standard-6", "label": "g6-standard-6 — 4 vCPU / 8 GB RAM"},
     ],
     "proxmox": [],
+    # Sizing is defined by the libvirt domain, not a provider catalogue.
+    "kvm": [],
 }
 
 # ---------------------------------------------------------------------------

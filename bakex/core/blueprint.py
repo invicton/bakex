@@ -10,7 +10,9 @@ from pathlib import Path
 from typing import Literal
 
 import yaml
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
+
+from bakex.core.os_catalog import OS_CATALOG, PROVIDER_CATALOG
 
 # Blueprint names become filenames (`user_profiles_dir / f"{name}.yaml"`), so this
 # must reject path separators and traversal sequences, not just null bytes.
@@ -55,6 +57,28 @@ class TargetSpec(BaseModel):
     instance_type: str = ""  # Provider-specific VM size: "t3.medium", "e2-medium", "Standard_B2s"
     root_volume_size_gb: int = 20  # Root disk size in GB
     extra_volumes: list[ExtraVolume] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def _validate_os_provider(self) -> TargetSpec:
+        """Reject OS/provider pairs the catalog knows to be incompatible.
+
+        Deliberately narrow: this answers "can this OS run on that provider?",
+        not "does this provider exist?". Provider existence is the plugin
+        registry's job at build time, and providers are pluggable via the
+        ``bakex.providers`` entry-point group — so an uncatalogued provider may
+        be a perfectly good third-party plugin. We therefore only object when
+        *both* sides are catalogued and the catalog says the pair is invalid.
+        """
+        entry = OS_CATALOG.get(self.os)
+        if entry is None or self.provider not in PROVIDER_CATALOG:
+            return self
+        supported = entry.get("providers", [])
+        if self.provider not in supported:
+            raise ValueError(
+                f"provider '{self.provider}' is not supported for os '{self.os}'. "
+                f"Supported providers: {', '.join(supported)}"
+            )
+        return self
 
 
 class ComplianceSpec(BaseModel):
