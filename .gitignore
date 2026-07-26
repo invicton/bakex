@@ -22,8 +22,11 @@ uv.lock
 
 # BakeX runtime data (never commit credentials or build artifacts)
 data/credentials.enc
-data/.bakex_key
-data/.bakex_salt
+# Match ANY key/salt name, not just the current brand's. Each past rename left the
+# previous generation's key file unignored and it got committed (.stratum_key,
+# .invicton_key, .statim_key); these globs mean the next rename cannot repeat that.
+data/.*_key
+data/.*_salt
 data/.admin_token
 data/audits/
 data/builds/
@@ -55,3 +58,6 @@ Thumbs.db
 CLAUDE.md
 CLAUDE.local.md
 .mcp.json
+
+# Build output for the stratumoss tombstone distribution
+packaging/stratumoss/dist/

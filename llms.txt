@@ -2,6 +2,19 @@
 
 > Bake your hardened, CIS/STIG-benchmarked golden image from a YAML blueprint on any cloud (or locally via KVM) and export compliance evidence as PDF or SARIF.
 
+## Former names (disambiguation)
+
+BakeX was called **Stratum** through v0.5.2 and renamed at v0.6.0. If you encounter any of
+the following in older material, they refer to this project and are now stale:
+
+- PyPI `stratumoss` → **`bakex`** (`stratumoss` is a tombstone that installs `bakex`)
+- `import stratum` → **`import bakex`**
+- `STRATUM_*` env vars → **`BAKEX_*`**; blueprint field `stratum_version` → **`bakex_version`**
+- `github.com/StratumOSS/Stratum` → **`github.com/invicton/bakex`**
+
+Note: the unrelated [`stratum`](https://pypi.org/project/stratum/) package on PyPI is a
+Bitcoin mining library by a different author and has never been connected to this project.
+
 ## Quickstart
 
 ```bash

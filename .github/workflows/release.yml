@@ -2,7 +2,7 @@ name: Release
 
 # Publishes to PyPI via trusted publishing (OIDC — no stored API token).
 # Requires a "pending publisher" (first release) or publisher configured on
-# pypi.org for project `bakex`: owner invicton, repo BakeX,
+# pypi.org for project `bakex`: owner invicton, repo bakex,
 # workflow release.yml, environment pypi.
 #
 # Every release is signed and ships an SBOM:

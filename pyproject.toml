@@ -103,6 +103,12 @@ ignore = ["E501", "B008", "B904", "UP042"]
 "bakex/**/*.py" = ["PLC0415"]
 "tests/**/*.py" = ["B017", "PLC0415"]
 
+[tool.hatch.build.targets.sdist]
+# Runtime state is never source. `data/` previously leaked stale credential-store keys
+# into the published sdist (.stratum_key/.invicton_key/.statim_key); `packaging/` holds the
+# separate `stratumoss` tombstone distribution, which builds and publishes on its own.
+exclude = ["data", "packaging"]
+
 [tool.hatch.build.targets.wheel]
 packages = ["bakex"]
 
