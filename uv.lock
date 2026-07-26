@@ -155,6 +155,146 @@ wheels = [
 ]
 
 [[package]]
+name = "bakex"
+version = "0.6.0"
+source = { editable = "." }
+dependencies = [
+    { name = "anthropic" },
+    { name = "anyio" },
+    { name = "cryptography" },
+    { name = "fastapi" },
+    { name = "httpx" },
+    { name = "jinja2" },
+    { name = "pydantic" },
+    { name = "pydantic-settings" },
+    { name = "python-multipart" },
+    { name = "pyyaml" },
+    { name = "uvicorn", extra = ["standard"] },
+]
+
+[package.optional-dependencies]
+all-providers = [
+    { name = "azure-identity" },
+    { name = "azure-mgmt-compute" },
+    { name = "azure-mgmt-network" },
+    { name = "azure-mgmt-resource" },
+    { name = "boto3" },
+    { name = "google-auth" },
+    { name = "google-cloud-compute" },
+    { name = "linode-api4" },
+    { name = "proxmoxer" },
+    { name = "requests" },
+]
+aws = [
+    { name = "boto3" },
+]
+azure = [
+    { name = "azure-identity" },
+    { name = "azure-mgmt-compute" },
+    { name = "azure-mgmt-network" },
+    { name = "azure-mgmt-resource" },
+]
+dev = [
+    { name = "anyio", extra = ["trio"] },
+    { name = "httpx" },
+    { name = "playwright" },
+    { name = "pytest" },
+    { name = "pytest-anyio" },
+    { name = "pytest-asyncio" },
+    { name = "pytest-cov" },
+    { name = "pytest-playwright" },
+    { name = "ruff" },
+]
+digitalocean = [
+    { name = "requests" },
+]
+gcp = [
+    { name = "google-auth" },
+    { name = "google-cloud-compute" },
+]
+linode = [
+    { name = "linode-api4" },
+]
+llm-all = [
+    { name = "boto3" },
+    { name = "openai" },
+]
+llm-bedrock = [
+    { name = "boto3" },
+]
+llm-openai = [
+    { name = "openai" },
+]
+proxmox = [
+    { name = "proxmoxer" },
+    { name = "requests" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "anyio", extra = ["trio"] },
+    { name = "httpx" },
+    { name = "playwright" },
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
+    { name = "pytest-cov" },
+    { name = "pytest-playwright" },
+    { name = "ruff" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "anthropic", specifier = ">=0.40.0" },
+    { name = "anyio", specifier = ">=4.3.0" },
+    { name = "anyio", extras = ["trio"], marker = "extra == 'dev'", specifier = ">=4.3.0" },
+    { name = "azure-identity", marker = "extra == 'azure'", specifier = ">=1.17.0" },
+    { name = "azure-mgmt-compute", marker = "extra == 'azure'", specifier = ">=30.0.0" },
+    { name = "azure-mgmt-network", marker = "extra == 'azure'", specifier = ">=25.0.0" },
+    { name = "azure-mgmt-resource", marker = "extra == 'azure'", specifier = ">=23.0.0" },
+    { name = "bakex", extras = ["aws", "gcp", "azure", "linode", "digitalocean", "proxmox"], marker = "extra == 'all-providers'" },
+    { name = "bakex", extras = ["llm-openai", "llm-bedrock"], marker = "extra == 'llm-all'" },
+    { name = "boto3", marker = "extra == 'aws'", specifier = ">=1.34" },
+    { name = "boto3", marker = "extra == 'llm-bedrock'", specifier = ">=1.34" },
+    { name = "cryptography", specifier = ">=42.0" },
+    { name = "fastapi", specifier = ">=0.111.0" },
+    { name = "google-auth", marker = "extra == 'gcp'", specifier = ">=2.29.0" },
+    { name = "google-cloud-compute", marker = "extra == 'gcp'", specifier = ">=1.14.0" },
+    { name = "httpx", specifier = ">=0.27.0" },
+    { name = "httpx", marker = "extra == 'dev'", specifier = ">=0.27.0" },
+    { name = "jinja2", specifier = ">=3.1.4" },
+    { name = "linode-api4", marker = "extra == 'linode'", specifier = ">=5.0.0" },
+    { name = "openai", marker = "extra == 'llm-openai'", specifier = ">=1.30.0" },
+    { name = "playwright", marker = "extra == 'dev'", specifier = ">=1.44.0" },
+    { name = "proxmoxer", marker = "extra == 'proxmox'", specifier = ">=2.0.0" },
+    { name = "pydantic", specifier = ">=2.7.0" },
+    { name = "pydantic-settings", specifier = ">=2.2.1" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.2.0" },
+    { name = "pytest-anyio", marker = "extra == 'dev'", specifier = ">=0.0.0" },
+    { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.24.0" },
+    { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=5.0" },
+    { name = "pytest-playwright", marker = "extra == 'dev'", specifier = ">=0.5.0" },
+    { name = "python-multipart", specifier = ">=0.0.9" },
+    { name = "pyyaml", specifier = ">=6.0.1" },
+    { name = "requests", marker = "extra == 'digitalocean'", specifier = ">=2.31.0" },
+    { name = "requests", marker = "extra == 'proxmox'", specifier = ">=2.31.0" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.4.0" },
+    { name = "uvicorn", extras = ["standard"], specifier = ">=0.29.0" },
+]
+provides-extras = ["aws", "gcp", "azure", "linode", "digitalocean", "proxmox", "all-providers", "llm-openai", "llm-bedrock", "llm-all", "dev"]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "anyio", extras = ["trio"], specifier = ">=4.3.0" },
+    { name = "httpx", specifier = ">=0.27.0" },
+    { name = "playwright", specifier = ">=1.44.0" },
+    { name = "pytest", specifier = ">=8.2.0" },
+    { name = "pytest-asyncio", specifier = ">=0.24.0" },
+    { name = "pytest-cov", specifier = ">=5.0" },
+    { name = "pytest-playwright", specifier = ">=0.5.0" },
+    { name = "ruff", specifier = ">=0.4.0" },
+]
+
+[[package]]
 name = "boto3"
 version = "1.42.70"
 source = { registry = "https://pypi.org/simple" }
@@ -842,146 +982,6 @@ wheels = [
 ]
 
 [[package]]
-name = "bakex"
-version = "0.6.0"
-source = { editable = "." }
-dependencies = [
-    { name = "anthropic" },
-    { name = "anyio" },
-    { name = "cryptography" },
-    { name = "fastapi" },
-    { name = "httpx" },
-    { name = "jinja2" },
-    { name = "pydantic" },
-    { name = "pydantic-settings" },
-    { name = "python-multipart" },
-    { name = "pyyaml" },
-    { name = "uvicorn", extra = ["standard"] },
-]
-
-[package.optional-dependencies]
-all-providers = [
-    { name = "azure-identity" },
-    { name = "azure-mgmt-compute" },
-    { name = "azure-mgmt-network" },
-    { name = "azure-mgmt-resource" },
-    { name = "boto3" },
-    { name = "google-auth" },
-    { name = "google-cloud-compute" },
-    { name = "linode-api4" },
-    { name = "proxmoxer" },
-    { name = "requests" },
-]
-aws = [
-    { name = "boto3" },
-]
-azure = [
-    { name = "azure-identity" },
-    { name = "azure-mgmt-compute" },
-    { name = "azure-mgmt-network" },
-    { name = "azure-mgmt-resource" },
-]
-dev = [
-    { name = "anyio", extra = ["trio"] },
-    { name = "httpx" },
-    { name = "playwright" },
-    { name = "pytest" },
-    { name = "pytest-anyio" },
-    { name = "pytest-asyncio" },
-    { name = "pytest-cov" },
-    { name = "pytest-playwright" },
-    { name = "ruff" },
-]
-digitalocean = [
-    { name = "requests" },
-]
-gcp = [
-    { name = "google-auth" },
-    { name = "google-cloud-compute" },
-]
-linode = [
-    { name = "linode-api4" },
-]
-llm-all = [
-    { name = "boto3" },
-    { name = "openai" },
-]
-llm-bedrock = [
-    { name = "boto3" },
-]
-llm-openai = [
-    { name = "openai" },
-]
-proxmox = [
-    { name = "proxmoxer" },
-    { name = "requests" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "anyio", extra = ["trio"] },
-    { name = "httpx" },
-    { name = "playwright" },
-    { name = "pytest" },
-    { name = "pytest-asyncio" },
-    { name = "pytest-cov" },
-    { name = "pytest-playwright" },
-    { name = "ruff" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "anthropic", specifier = ">=0.40.0" },
-    { name = "anyio", specifier = ">=4.3.0" },
-    { name = "anyio", extras = ["trio"], marker = "extra == 'dev'", specifier = ">=4.3.0" },
-    { name = "azure-identity", marker = "extra == 'azure'", specifier = ">=1.17.0" },
-    { name = "azure-mgmt-compute", marker = "extra == 'azure'", specifier = ">=30.0.0" },
-    { name = "azure-mgmt-network", marker = "extra == 'azure'", specifier = ">=25.0.0" },
-    { name = "azure-mgmt-resource", marker = "extra == 'azure'", specifier = ">=23.0.0" },
-    { name = "boto3", marker = "extra == 'aws'", specifier = ">=1.34" },
-    { name = "boto3", marker = "extra == 'llm-bedrock'", specifier = ">=1.34" },
-    { name = "cryptography", specifier = ">=42.0" },
-    { name = "fastapi", specifier = ">=0.111.0" },
-    { name = "google-auth", marker = "extra == 'gcp'", specifier = ">=2.29.0" },
-    { name = "google-cloud-compute", marker = "extra == 'gcp'", specifier = ">=1.14.0" },
-    { name = "httpx", specifier = ">=0.27.0" },
-    { name = "httpx", marker = "extra == 'dev'", specifier = ">=0.27.0" },
-    { name = "bakex", extras = ["aws", "gcp", "azure", "linode", "digitalocean", "proxmox"], marker = "extra == 'all-providers'" },
-    { name = "bakex", extras = ["llm-openai", "llm-bedrock"], marker = "extra == 'llm-all'" },
-    { name = "jinja2", specifier = ">=3.1.4" },
-    { name = "linode-api4", marker = "extra == 'linode'", specifier = ">=5.0.0" },
-    { name = "openai", marker = "extra == 'llm-openai'", specifier = ">=1.30.0" },
-    { name = "playwright", marker = "extra == 'dev'", specifier = ">=1.44.0" },
-    { name = "proxmoxer", marker = "extra == 'proxmox'", specifier = ">=2.0.0" },
-    { name = "pydantic", specifier = ">=2.7.0" },
-    { name = "pydantic-settings", specifier = ">=2.2.1" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.2.0" },
-    { name = "pytest-anyio", marker = "extra == 'dev'", specifier = ">=0.0.0" },
-    { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.24.0" },
-    { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=5.0" },
-    { name = "pytest-playwright", marker = "extra == 'dev'", specifier = ">=0.5.0" },
-    { name = "python-multipart", specifier = ">=0.0.9" },
-    { name = "pyyaml", specifier = ">=6.0.1" },
-    { name = "requests", marker = "extra == 'digitalocean'", specifier = ">=2.31.0" },
-    { name = "requests", marker = "extra == 'proxmox'", specifier = ">=2.31.0" },
-    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.4.0" },
-    { name = "uvicorn", extras = ["standard"], specifier = ">=0.29.0" },
-]
-provides-extras = ["aws", "gcp", "azure", "linode", "digitalocean", "proxmox", "all-providers", "llm-openai", "llm-bedrock", "llm-all", "dev"]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "anyio", extras = ["trio"], specifier = ">=4.3.0" },
-    { name = "httpx", specifier = ">=0.27.0" },
-    { name = "playwright", specifier = ">=1.44.0" },
-    { name = "pytest", specifier = ">=8.2.0" },
-    { name = "pytest-asyncio", specifier = ">=0.24.0" },
-    { name = "pytest-cov", specifier = ">=5.0" },
-    { name = "pytest-playwright", specifier = ">=0.5.0" },
-    { name = "ruff", specifier = ">=0.4.0" },
-]
-
-[[package]]
 name = "isodate"
 version = "0.7.2"
 source = { registry = "https://pypi.org/simple" }
@@ -1322,11 +1322,11 @@ wheels = [
 
 [[package]]
 name = "pyasn1"
-version = "0.6.3"
+version = "0.6.4"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/5c/5f/6583902b6f79b399c9c40674ac384fd9cd77805f9e6205075f828ef11fb2/pyasn1-0.6.3.tar.gz", hash = "sha256:697a8ecd6d98891189184ca1fa05d1bb00e2f84b5977c481452050549c8a72cf", size = 148685, upload-time = "2026-03-17T01:06:53.382Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/a4/9a/23310166d960def5897e91fe20e5b724601b02a22e84ba1f94232c0b7f67/pyasn1-0.6.4.tar.gz", hash = "sha256:9c447d8431c947fe4c8febc4ed9e760bc29011a5b01e5c74b67025bd9fb8ce81", size = 151262, upload-time = "2026-07-09T01:12:33.988Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/5d/a0/7d793dce3fa811fe047d6ae2431c672364b462850c6235ae306c0efd025f/pyasn1-0.6.3-py3-none-any.whl", hash = "sha256:a80184d120f0864a52a073acc6fc642847d0be408e7c7252f31390c0f4eadcde", size = 83997, upload-time = "2026-03-17T01:06:52.036Z" },
+    { url = "https://files.pythonhosted.org/packages/9a/3b/6163796d69c3977d1e4287bea4a6979161cbbdd170ebb430511e8e1999ce/pyasn1-0.6.4-py3-none-any.whl", hash = "sha256:deda9277cfd454080ec40b207fb6df82206a3a2688735233cdcd8d3d565f088b", size = 84410, upload-time = "2026-07-09T01:12:32.92Z" },
 ]
 
 [[package]]
