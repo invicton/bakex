@@ -1,0 +1,40 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+# Tombstone distribution. `stratumoss` was the PyPI name for this project when it was
+# called Stratum (through v0.5.2). PyPI has no rename or redirect mechanism, so the only
+# way to point people at the new name is to publish a release whose metadata says so.
+#
+# This is built and published on its own, by .github/workflows/release-stratumoss.yml —
+# never by the root `bakex` build, which only packages `packages = ["bakex"]`.
+[project]
+name = "stratumoss"
+version = "0.6.0"                       # matches the BakeX release that performed the rename
+description = "Renamed — this project is now BakeX (pip install bakex)"
+readme = "README.md"
+license = { text = "Apache-2.0" }
+requires-python = ">=3.11"
+authors = [{ name = "Vamshi Krishna Santhapuri" }]
+keywords = ["bakex", "stratum", "renamed", "deprecated", "os-hardening", "cis", "stig"]
+classifiers = [
+    "Development Status :: 7 - Inactive",
+    "Intended Audience :: System Administrators",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Topic :: Security",
+]
+
+# Pull in the real package so `pip install stratumoss` still leaves the user with a
+# working tool rather than a dead end.
+dependencies = ["bakex>=0.6.0"]
+
+[project.urls]
+Homepage = "https://github.com/invicton/bakex"
+Repository = "https://github.com/invicton/bakex"
+"Bug Tracker" = "https://github.com/invicton/bakex/issues"
+Changelog = "https://github.com/invicton/bakex/blob/main/CHANGELOG.md"
+"Successor package" = "https://pypi.org/project/bakex/"
+
+[tool.hatch.build.targets.wheel]
+packages = ["stratum"]

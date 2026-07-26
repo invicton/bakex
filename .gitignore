@@ -58,3 +58,6 @@ Thumbs.db
 CLAUDE.md
 CLAUDE.local.md
 .mcp.json
+
+# Build output for the stratumoss tombstone distribution
+packaging/stratumoss/dist/
