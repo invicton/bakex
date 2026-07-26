@@ -90,36 +90,10 @@ jobs:
         with:
           python-version: "3.11"
       - run: uv sync --locked
+      # This is the exact command contributors are told to run locally, so keep
+      # the two in step — see blueprints/CONTRIBUTING.md and the blueprint issues.
       - name: Validate blueprint schemas
-        run: |
-          uv run python - <<'EOF'
-          import sys
-          from pathlib import Path
-          from bakex.core.blueprint import ComplianceProfile
-          import yaml
-
-          errors = []
-          yaml_files = sorted(Path("blueprints").rglob("*.yaml"))
-
-          for p in yaml_files:
-              try:
-                  raw = yaml.safe_load(p.read_text())
-                  if not isinstance(raw, dict):
-                      errors.append(f"  ERROR {p}: top-level is not a mapping")
-                      continue
-                  ComplianceProfile.model_validate(raw)
-                  print(f"  OK    {p}")
-              except Exception as exc:
-                  errors.append(f"  ERROR {p}: {exc}")
-
-          if errors:
-              print("\nBlueprint schema validation failed:")
-              for e in errors:
-                  print(e)
-              sys.exit(1)
-          else:
-              print(f"\nAll {len(yaml_files)} blueprints validated successfully.")
-          EOF
+        run: uv run bakex validate $(find blueprints -name '*.yaml' | sort)
       - name: Check index.json consistency
         run: |
           uv run python - <<'EOF'
