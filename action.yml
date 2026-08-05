@@ -1,0 +1,159 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Vamshi Krishna Santhapuri
+name: BakeX Blueprint Validate
+description: >-
+  Validate OS hardening blueprints against the HardeningBlueprint schema.
+  Runs fully offline — no cloud credentials, no build instance, no network calls.
+author: Vamshi Krishna Santhapuri
+
+branding:
+  icon: shield
+  color: green
+
+inputs:
+  blueprints:
+    description: >-
+      Space-separated paths or globs to validate. Globs are expanded by the action
+      (globstar enabled), so `blueprints/**/*.yaml` works.
+    required: false
+    default: "blueprints/**/*.yaml"
+  version:
+    description: >-
+      BakeX version to install, as a pip specifier suffix — e.g. `==0.6.0` or `>=0.6`.
+      Defaults to the latest release. Pin this for reproducible CI.
+    required: false
+    default: ""
+  python-version:
+    description: Python version used to run the validator (BakeX requires 3.11+).
+    required: false
+    default: "3.12"
+  working-directory:
+    description: Directory to resolve `blueprints` against.
+    required: false
+    default: "."
+  fail-on-invalid:
+    description: >-
+      Fail the step when any blueprint is invalid. Set to "false" to report without
+      failing — useful when adopting BakeX on an existing repo.
+    required: false
+    default: "true"
+
+outputs:
+  valid:
+    description: '"true" when every blueprint validated, otherwise "false".'
+    value: ${{ steps.validate.outputs.valid }}
+  total:
+    description: Number of blueprints checked.
+    value: ${{ steps.validate.outputs.total }}
+  passed:
+    description: Number that validated.
+    value: ${{ steps.validate.outputs.passed }}
+  failed:
+    description: Number that failed.
+    value: ${{ steps.validate.outputs.failed }}
+  report:
+    description: Full `bakex validate --json` result, as a JSON string.
+    value: ${{ steps.validate.outputs.report }}
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v6
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: Install BakeX
+      shell: bash
+      run: python -m pip install --disable-pip-version-check "bakex${{ inputs.version }}"
+
+    - name: Validate blueprints
+      id: validate
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      env:
+        BAKEX_ACTION_BLUEPRINTS: ${{ inputs.blueprints }}
+        BAKEX_ACTION_FAIL: ${{ inputs.fail-on-invalid }}
+      run: |
+        set -uo pipefail
+        shopt -s globstar nullglob
+
+        # Word-split the input, then let the shell expand each pattern. nullglob makes a
+        # non-matching pattern vanish rather than survive as a literal path that bakex
+        # would then report as a missing file.
+        read -r -a patterns <<< "$BAKEX_ACTION_BLUEPRINTS"
+        files=()
+        for pattern in "${patterns[@]}"; do
+          for match in $pattern; do
+            [ -f "$match" ] && files+=("$match")
+          done
+        done
+
+        if [ ${#files[@]} -eq 0 ]; then
+          echo "::error title=BakeX::No blueprints matched '$BAKEX_ACTION_BLUEPRINTS' in $(pwd)"
+          {
+            echo "valid=false"; echo "total=0"; echo "passed=0"; echo "failed=0"; echo "report=[]"
+          } >> "$GITHUB_OUTPUT"
+          exit 1
+        fi
+
+        echo "Validating ${#files[@]} blueprint(s) with $(bakex version)"
+
+        # Capture JSON for outputs and human text for the log. Two runs is wasteful but
+        # trivially cheap — validation is offline and takes milliseconds per file.
+        # `|| true` because exit 1 means "a blueprint is invalid", which is a result we
+        # report, not a crash. A real crash is caught by the JSON check below.
+        report=$(bakex validate "${files[@]}" --json) || true
+        bakex validate "${files[@]}" || true
+
+        counts=$(BAKEX_REPORT="$report" python <<'PY'
+        import json, os, sys
+        raw = os.environ["BAKEX_REPORT"]
+        try:
+            entries = json.loads(raw)
+        except json.JSONDecodeError:
+            sys.exit("bakex validate produced no parseable JSON — treating as a hard failure")
+        print(len(entries), sum(1 for e in entries if e["valid"]))
+        PY
+        ) || {
+          echo "::error title=BakeX::validator failed to produce a report; see the log above"
+          exit 1
+        }
+        total=${counts% *}
+        passed=${counts#* }
+        failed=$(( total - passed ))
+
+        {
+          echo "valid=$([ "$failed" -eq 0 ] && echo true || echo false)"
+          echo "total=$total"
+          echo "passed=$passed"
+          echo "failed=$failed"
+          echo "report<<BAKEX_EOF"
+          printf '%s\n' "$report"
+          echo "BAKEX_EOF"
+        } >> "$GITHUB_OUTPUT"
+
+        # Annotate each failure on the file itself so it surfaces in the PR diff.
+        # The report arrives via the environment, not a pipe: a heredoc *is* stdin, so
+        # `printf … | python - <<'PY'` would feed the script to python and drop the JSON.
+        BAKEX_REPORT="$report" python <<'PY'
+        import json, os
+        for entry in json.loads(os.environ["BAKEX_REPORT"]):
+            if not entry["valid"]:
+                first = (entry["error"] or "").strip().splitlines()[0]
+                print(f"::error file={entry['file']},title=Invalid blueprint::{first}")
+        PY
+
+        {
+          echo "### BakeX blueprint validation"
+          echo
+          if [ "$failed" -eq 0 ]; then
+            echo ":white_check_mark: **$passed/$total** blueprint(s) valid."
+          else
+            echo ":x: **$failed of $total** blueprint(s) invalid."
+          fi
+        } >> "$GITHUB_STEP_SUMMARY"
+
+        if [ "$failed" -gt 0 ] && [ "$BAKEX_ACTION_FAIL" != "false" ]; then
+          exit 1
+        fi

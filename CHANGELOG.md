@@ -67,6 +67,27 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   documented; the default is expected to flip in a future minor, with a changelog
   entry. Reading `.passed` is correct under both and remains the portable form.
   See `docs/api.md` → "The pipeline gate". ([#58](https://github.com/invicton/bakex/issues/58))
+- **GitHub Action for blueprint validation** (`action.yml` at the repo root, so
+  `uses: invicton/bakex@main` — a tagged ref becomes available with the next release).
+  Composite action: sets up Python, installs BakeX, and runs `bakex validate` over a glob.
+  Fully offline — no cloud credentials, no build instance.
+
+  Invalid blueprints are emitted as `::error file=…` annotations so they land on the
+  offending file in the PR diff instead of only in the log, and a run summary is written to
+  `$GITHUB_STEP_SUMMARY`. Outputs: `valid`, `total`, `passed`, `failed`, and the full
+  `report` JSON. Inputs: `blueprints`, `version`, `python-version`, `working-directory`,
+  and `fail-on-invalid` (set `false` to report without failing while adopting BakeX on an
+  existing repo).
+
+  A glob that matches nothing **fails** rather than silently passing — a green check that
+  validated zero files is worse than no check. Dogfooded by
+  `.github/workflows/test-action.yml`, which exercises all four paths (valid library,
+  invalid blueprint, report-only mode, no matches) against this repo's own blueprints.
+
+  Note: `bakex validate` imports none of the server dependencies (fastapi, uvicorn,
+  anthropic, cryptography) — only pyyaml, pydantic and pydantic-settings — but
+  `pip install bakex` still fetches them all. A validate-only extra would make this action
+  meaningfully faster; tracked as a follow-up.
 - **`bakex` CLI** — a first-class command: `bakex serve [--host --port --reload]`
   runs the app, `bakex version` prints the build. `pip install bakex` → `bakex`.
 - **Container image scanning** — `POST /api/auditor/scan-container` runs an
