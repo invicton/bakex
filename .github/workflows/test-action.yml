@@ -27,7 +27,7 @@ jobs:
     name: Passes on the shipped library
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
       - name: Install the checked-out BakeX
         # The action must be exercised against this commit, not the published
         # release — that is the whole point of dogfooding it here.
@@ -58,7 +58,7 @@ jobs:
     name: Fails on an invalid blueprint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
       - name: Install the checked-out BakeX
         # The action must be exercised against this commit, not the published
         # release — that is the whole point of dogfooding it here.
@@ -92,7 +92,7 @@ jobs:
     name: fail-on-invalid=false reports without failing
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
       - name: Install the checked-out BakeX
         # The action must be exercised against this commit, not the published
         # release — that is the whole point of dogfooding it here.
@@ -122,7 +122,7 @@ jobs:
     name: Fails when nothing matches
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
       - name: Install the checked-out BakeX
         # The action must be exercised against this commit, not the published
         # release — that is the whole point of dogfooding it here.
