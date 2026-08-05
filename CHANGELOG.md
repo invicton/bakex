@@ -31,6 +31,25 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **Blueprint `controls` overrides now reach the scanner.** The `controls` block is
+  compiled into an XCCDF 1.2 tailoring file (`bakex/openscap/tailoring.py`) and passed to
+  `oscap` via `--tailoring-file`, so a rule the blueprint waives is genuinely not
+  evaluated.
+
+  **Why it matters:** the block was previously inert — read by the UI, never sent to the
+  scanner. A waived rule was still evaluated, still failed, and still counted against the
+  grade, which meant *documenting* a non-applicable rule cost you score while staying
+  silent did not. That is the opposite of the incentive an auditable-exceptions feature
+  should create.
+
+  Justifications ride along as XML comments beside each `select` and are summarised in
+  the tailored profile's `<description>`, so the reason a rule was waived lives in the
+  artifact an auditor reads. Blueprints with no `controls` are unaffected — no tailoring
+  file is generated and the scan command is byte-identical to before.
+
+  Note that `--profile` must name the *tailored* profile when a tailoring file is used;
+  passing the original ID is accepted by `oscap` and silently ignores every override.
+  ([#60](https://github.com/invicton/bakex/issues/60))
 - **`bakex` CLI** — a first-class command: `bakex serve [--host --port --reload]`
   runs the app, `bakex version` prints the build. `pip install bakex` → `bakex`.
 - **Container image scanning** — `POST /api/auditor/scan-container` runs an
