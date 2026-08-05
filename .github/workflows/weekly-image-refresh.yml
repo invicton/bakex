@@ -5,6 +5,10 @@ on:
     - cron: "0 3 * * 1"   # Monday 03:00 UTC
   workflow_dispatch:
 
+# Triggers builds over the API and posts to Slack; touches nothing in the repo.
+permissions:
+  contents: read
+
 jobs:
   refresh:
     name: Trigger official blueprint builds
