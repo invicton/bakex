@@ -561,10 +561,17 @@ class TestAnthropicBackendAgentTurn:
                 )
 
     @pytest.mark.anyio
-    async def test_thinking_disabled_does_not_pass_thinking_kwarg(self):
+    async def test_thinking_disabled_sends_explicit_disabled(self):
+        """Opting out must be explicit.
+
+        This previously asserted the `thinking` kwarg was *omitted*, which was correct
+        when omission meant "off". On Claude Opus 5 thinking is on by default, so an
+        implicit opt-out silently stopped opting out — BAKEX_LLM_THINKING=0 would have
+        kept paying for thinking tokens. The backend now always states its intent.
+        """
         from bakex.core.llm.anthropic_backend import AnthropicBackend
 
-        backend = AnthropicBackend(model="claude-3-5-sonnet-20241022")
+        backend = AnthropicBackend(model="claude-opus-5")
         backend.use_thinking = False
 
         final_msg = MagicMock()
@@ -606,7 +613,16 @@ class TestAnthropicBackendAgentTurn:
                 on_token=on_token,
             )
 
-        assert "thinking" not in captured_kwargs
+        assert captured_kwargs.get("thinking") == {"type": "disabled"}
+
+    @pytest.mark.anyio
+    async def test_default_model_is_current_and_thinking_is_adaptive(self):
+        """Default path: current model ID, thinking explicitly adaptive."""
+        from bakex.core.llm.anthropic_backend import AnthropicBackend
+
+        backend = AnthropicBackend()
+        assert backend.model == "claude-opus-5"
+        assert backend.use_thinking is True
 
 
 # ===========================================================================

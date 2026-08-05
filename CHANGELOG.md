@@ -51,6 +51,11 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **`BAKEX_LLM_THINKING=0` silently stopped disabling thinking.** The Anthropic backend
+  opted out by *omitting* the `thinking` parameter, which meant "off" on Claude Opus
+  4.6/4.7/4.8 — but on Claude Opus 5 thinking is on by default, so omission became a
+  no-op and the setting kept paying for thinking tokens. The backend now always states
+  its intent explicitly: `{"type": "adaptive"}` or `{"type": "disabled"}`.
 - Missing host tools now fail fast with actionable messages instead of
   mid-build subprocess noise: kvm builds preflight their binaries at
   start (previously only "Test Connection" checked), and a missing
@@ -64,6 +69,15 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- **Default LLM model is now `claude-opus-5`** (was `claude-opus-4-6`) for the
+  `anthropic` backend and the factory. Override with `BAKEX_LLM_MODEL`.
+
+  The `bedrock` backend default is **unchanged**
+  (`us.anthropic.claude-opus-4-5-20251101-v1:0`) and still valid. Its IDs are not
+  interchangeable with the first-party ones: that backend calls
+  `bedrock-runtime.converse_stream`, whose model IDs are ARN-versioned and carry a
+  cross-region inference-profile prefix. Upgrading it needs the correct Converse-API
+  ID from the AWS Bedrock model catalogue — not a bare `claude-opus-5`.
 - README restructured as a ≤200-line landing page; reference content moved
   into `docs/` (new: getting-started, blueprint-guide, plugin-guide,
   configuration, architecture, and a docs index). Version badge is now the
