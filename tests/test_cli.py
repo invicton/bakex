@@ -162,13 +162,13 @@ def test_build_unknown_blueprint_exits_one_without_building(capsys):
 
 @pytest.mark.parametrize(
     ("alias", "canonical"),
-    [("bake", "build"), ("proof", "validate"), ("pantry", "profiles")],
+    [("bake", "build"), ("proof", "validate"), ("pantry", "blueprints")],
 )
 def test_alias_maps_to_canonical(alias, canonical):
     assert cli._ALIASES[alias] == canonical
 
 
-@pytest.mark.parametrize(("alias", "canonical"), [("proof", "validate"), ("pantry", "profiles")])
+@pytest.mark.parametrize(("alias", "canonical"), [("proof", "validate"), ("pantry", "blueprints")])
 def test_alias_dispatches_instead_of_falling_through_to_help(alias, canonical, capsys):
     """The regression the normalisation step exists to prevent.
 
@@ -214,7 +214,7 @@ def test_help_advertises_the_aliases(capsys):
     with pytest.raises(SystemExit):
         cli.main(["--help"])
     out = capsys.readouterr().out
-    for rendered in ("build (bake)", "validate (proof)", "profiles (pantry)"):
+    for rendered in ("build (bake)", "validate (proof)", "blueprints (pantry)"):
         assert rendered in out
 
 
@@ -224,7 +224,7 @@ def test_help_advertises_the_aliases(capsys):
 
 
 def test_profiles_lists_bundled_blueprints(capsys):
-    rc = cli.main(["profiles"])
+    rc = cli.main(["blueprints"])
     assert rc == 0
     assert "bundled blueprint(s)" in capsys.readouterr().out
 
@@ -232,7 +232,7 @@ def test_profiles_lists_bundled_blueprints(capsys):
 def test_profiles_json_is_machine_readable(capsys):
     import json
 
-    rc = cli.main(["profiles", "--json"])
+    rc = cli.main(["blueprints", "--json"])
     assert rc == 0
     entries = json.loads(capsys.readouterr().out)
     assert entries and all({"name", "os", "provider", "path"} <= e.keys() for e in entries)
@@ -242,9 +242,9 @@ def test_every_listed_name_is_buildable(capsys):
     """profiles and build must not drift — each printed name must resolve."""
     import json
 
-    cli.main(["profiles", "--json"])
+    cli.main(["blueprints", "--json"])
     entries = json.loads(capsys.readouterr().out)
     for entry in entries:
         assert cli._resolve_blueprint(entry["name"]) is not None, (
-            f"`bakex profiles` lists {entry['name']!r} but `bakex build` cannot resolve it"
+            f"`bakex blueprints` lists {entry['name']!r} but `bakex build` cannot resolve it"
         )

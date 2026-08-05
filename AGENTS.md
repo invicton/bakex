@@ -19,9 +19,9 @@ ruff check .
 - Ensure new blueprints follow the schema defined in `profiles/templates/`.
 - Do not use `# ` (hash followed by space) comment headers inside `llms.txt` quickstart code blocks, as it breaks the Invigil H1 count parser.
 - Ensure exit codes for any new CLI commands are documented in `docs/api.md`.
-- The CLI has memorable aliases: `bake`=`build`, `proof`=`validate`, `pantry`=`profiles`
+- The CLI has memorable aliases: `bake`=`build`, `proof`=`validate`, `pantry`=`blueprints`
   (baking vocabulary — pre-configuring an image at build time is *baking*). **Write the
-  canonical names** (`build`, `validate`, `profiles`) in generated code and docs; accept
+  canonical names** (`build`, `validate`, `blueprints`) in generated code and docs; accept
   either when parsing user input. Aliases are declared in `_ALIASES` in `bakex/cli.py` and
   resolved once in `main()` — if you add a subcommand alias, add it there too, or argparse
   will report the typed spelling and the command will fall through to the help text.

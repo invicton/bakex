@@ -9,7 +9,7 @@ agents driving BakeX over a shell — have a first-class command:
     bakex version               Print the build
     bakex validate <file...>    Validate blueprint YAML against the schema
     bakex build <file|name>     Build a hardened image from a blueprint
-    bakex profiles              List the bundled blueprints `build` accepts by name
+    bakex blueprints            List the bundled blueprints `build` accepts by name
 
 `validate` is deliberately cheap (pydantic + YAML only, no server deps) so it is
 safe to run in CI and fast for agents to poll. `build` defers its heavier imports
@@ -20,7 +20,7 @@ Baking vocabulary
 Pre-configuring an image at build time is *baking*; configuring it at boot is
 *frying*. That is the industry's own term for what BakeX does, so the CLI answers
 to it — `bake`, `proof`, and `pantry` are aliases for `build`, `validate`, and
-`profiles`. Nothing is renamed: the plain verbs stay canonical and are what the
+`blueprints`. Nothing is renamed: the plain verbs stay canonical and are what the
 docs use, because a name in someone's CI log should not require knowing the
 metaphor. The aliases appear in `--help` as `build (bake)`, so they are found by
 reading, not by memorising a glossary.
@@ -37,7 +37,7 @@ from bakex import __version__
 #: Memorable alias -> canonical command. argparse reports the string the user
 #: actually typed, so dispatch must resolve through this or an aliased invocation
 #: falls through to the help text and exits 2.
-_ALIASES = {"bake": "build", "proof": "validate", "pantry": "profiles"}
+_ALIASES = {"bake": "build", "proof": "validate", "pantry": "blueprints"}
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -54,12 +54,12 @@ def _build_parser() -> argparse.ArgumentParser:
 
     sub.add_parser("version", help="Print the BakeX version")
 
-    p_profiles = sub.add_parser(
-        "profiles",
+    p_blueprints = sub.add_parser(
+        "blueprints",
         aliases=["pantry"],
         help="List the bundled blueprints that `build` accepts by name",
     )
-    p_profiles.add_argument(
+    p_blueprints.add_argument(
         "--json",
         action="store_true",
         dest="as_json",
@@ -82,12 +82,12 @@ def _build_parser() -> argparse.ArgumentParser:
     p_build = sub.add_parser(
         "build",
         aliases=["bake"],
-        help="Build a hardened image from a blueprint file or a bundled profile name",
+        help="Build a hardened image from a blueprint file or a bundled blueprint name",
     )
     p_build.add_argument(
         "blueprint",
         metavar="FILE|NAME",
-        help="Path to a blueprint YAML file, or the name of a bundled profile",
+        help="Path to a blueprint YAML file, or the name of a bundled blueprint",
     )
     p_build.add_argument(
         "--output-dir",
@@ -172,10 +172,10 @@ def _resolve_blueprint(blueprint: str):
     return None
 
 
-def _cmd_profiles(as_json: bool) -> int:
+def _cmd_blueprints(as_json: bool) -> int:
     """List the bundled blueprints that ``build`` accepts by name.
 
-    ``bakex build`` has always taken a bundled profile name as well as a path, but
+    ``bakex build`` has always taken a bundled blueprint name as well as a path, but
     there was no way to discover those names — you had to already know one. This
     walks the same directory ``_resolve_blueprint`` searches, so the two cannot
     drift: every name printed here is a name ``build`` will accept.
@@ -229,7 +229,7 @@ def _cmd_build(blueprint: str, output_dir: Path, as_json: bool) -> int:
     profile = _resolve_blueprint(blueprint)
     if profile is None:
         print(
-            f"bakex: blueprint '{blueprint}' not found (not a file, and no bundled profile has that name)",
+            f"bakex: blueprint '{blueprint}' not found (not a file, and no bundled blueprint has that name)",
             file=sys.stderr,
         )
         return 1
@@ -289,8 +289,8 @@ def main(argv: list[str] | None = None) -> int:
         uvicorn.run("bakex.main:app", host=args.host, port=args.port, reload=args.reload)
         return 0
 
-    if command == "profiles":
-        return _cmd_profiles(args.as_json)
+    if command == "blueprints":
+        return _cmd_blueprints(args.as_json)
 
     if command == "validate":
         return _cmd_validate(args.files, args.as_json)
