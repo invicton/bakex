@@ -119,6 +119,57 @@ uv run uvicorn bakex.main:app --reload --port 8000
 entirely on your machine (QEMU/KVM + `cloud-image-utils` required). Full
 first-run walkthrough: [Getting Started](docs/getting-started.md).
 
+## Validate blueprints in CI
+
+Blueprint validation is offline — no cloud credentials, no build instance, no network
+calls — so it belongs on every pull request that touches a blueprint:
+
+```yaml
+- uses: actions/checkout@v7
+- uses: invicton/bakex@main          # pin to a tag or SHA once v0.7.0 ships (see below)
+  with:
+    blueprints: "blueprints/**/*.yaml"
+```
+
+Invalid blueprints are annotated on the offending file, so they surface in the PR diff
+rather than only in the log. Outputs — `valid`, `total`, `passed`, `failed`, and the full
+`report` JSON — let you gate a later job or post a comment:
+
+```yaml
+- id: bakex
+  uses: invicton/bakex@main
+- run: echo "${{ steps.bakex.outputs.passed }}/${{ steps.bakex.outputs.total }} valid"
+```
+
+| Input | Default | Purpose |
+|---|---|---|
+| `blueprints` | `blueprints/**/*.yaml` | Paths or globs to check |
+| `version` | latest | Pip specifier suffix, e.g. `==0.6.0` — pin for reproducible CI |
+| `python-version` | `3.12` | Runner Python (BakeX needs 3.11+) |
+| `working-directory` | `.` | Directory to resolve `blueprints` against |
+| `fail-on-invalid` | `true` | Set `false` to report without failing while adopting BakeX |
+| `install` | `true` | Set `false` when the workflow already put a suitable `bakex` on PATH |
+
+> **Requires a release that ships `bakex validate`.** The currently published PyPI package
+> (0.6.0) predates the `validate` command, so `pip install bakex` alone is not yet enough for
+> this action to run. Until the next release, either set `install: false` and install BakeX
+> yourself, or wait for v0.7.0. The action fails fast with an explicit message rather than an
+> argparse dump if it finds a build without `validate`.
+
+**For supply-chain-conscious repos, pin the SHA rather than a branch or tag** — a branch
+moves with every push and a tag can be repointed, a SHA cannot:
+
+```yaml
+- uses: invicton/bakex@<commit-sha>
+```
+
+Note that `version` pins the *BakeX package* installed by the action, while the `uses:` ref
+pins the *action definition*. Pin both for reproducible CI.
+
+This is the same validation `bakex validate` runs locally, including the cross-field checks
+that a plain JSON Schema cannot express — an OS/provider pair the catalog rejects fails here,
+before a build instance is ever launched.
+
 ## Features
 
 - **Declarative blueprints** — one YAML file captures OS, provider, compliance

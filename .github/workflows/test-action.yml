@@ -1,0 +1,141 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Vamshi Krishna Santhapuri
+#
+# Dogfoods the published composite action against this repo's own blueprint library.
+# If the action breaks, BakeX's own CI goes red before anyone else's does.
+name: Test Action
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - action.yml
+      - "blueprints/**"
+      - .github/workflows/test-action.yml
+  pull_request:
+    paths:
+      - action.yml
+      - "blueprints/**"
+      - .github/workflows/test-action.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  valid-blueprints:
+    name: Passes on the shipped library
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install the checked-out BakeX
+        # The action must be exercised against this commit, not the published
+        # release — that is the whole point of dogfooding it here.
+        shell: bash
+        run: python -m pip install --disable-pip-version-check .
+      - id: bakex
+        uses: ./
+        with:
+          install: "false"
+          blueprints: "blueprints/**/*.yaml"
+      - name: Assert outputs
+        shell: bash
+        env:
+          VALID: ${{ steps.bakex.outputs.valid }}
+          TOTAL: ${{ steps.bakex.outputs.total }}
+          FAILED: ${{ steps.bakex.outputs.failed }}
+          REPORT: ${{ steps.bakex.outputs.report }}
+        run: |
+          set -euo pipefail
+          echo "valid=$VALID total=$TOTAL failed=$FAILED"
+          [ "$VALID" = "true" ] || { echo "expected valid=true"; exit 1; }
+          [ "$FAILED" = "0" ]   || { echo "expected failed=0"; exit 1; }
+          [ "$TOTAL" -ge 18 ]   || { echo "expected >=18 blueprints, got $TOTAL"; exit 1; }
+          # The report must be parseable JSON with one entry per blueprint.
+          echo "$REPORT" | python -c 'import json,sys; d=json.load(sys.stdin); assert all(e["valid"] for e in d), d'
+
+  invalid-blueprint:
+    name: Fails on an invalid blueprint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install the checked-out BakeX
+        # The action must be exercised against this commit, not the published
+        # release — that is the whole point of dogfooding it here.
+        shell: bash
+        run: python -m pip install --disable-pip-version-check .
+      - name: Plant an invalid blueprint
+        shell: bash
+        run: |
+          mkdir -p .bakex-action-test
+          printf 'kind: NotABlueprint\n' > .bakex-action-test/broken.yaml
+      - id: bakex
+        continue-on-error: true
+        uses: ./
+        with:
+          install: "false"
+          blueprints: ".bakex-action-test/*.yaml"
+      - name: Assert it failed loudly
+        shell: bash
+        env:
+          OUTCOME: ${{ steps.bakex.outcome }}
+          VALID: ${{ steps.bakex.outputs.valid }}
+          FAILED: ${{ steps.bakex.outputs.failed }}
+        run: |
+          set -euo pipefail
+          echo "outcome=$OUTCOME valid=$VALID failed=$FAILED"
+          [ "$OUTCOME" = "failure" ] || { echo "action should have failed"; exit 1; }
+          [ "$VALID" = "false" ]     || { echo "expected valid=false"; exit 1; }
+          [ "$FAILED" = "1" ]        || { echo "expected failed=1"; exit 1; }
+
+  report-only-mode:
+    name: fail-on-invalid=false reports without failing
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install the checked-out BakeX
+        # The action must be exercised against this commit, not the published
+        # release — that is the whole point of dogfooding it here.
+        shell: bash
+        run: python -m pip install --disable-pip-version-check .
+      - shell: bash
+        run: |
+          mkdir -p .bakex-action-test
+          printf 'kind: NotABlueprint\n' > .bakex-action-test/broken.yaml
+      - id: bakex
+        uses: ./
+        with:
+          install: "false"
+          blueprints: ".bakex-action-test/*.yaml"
+          fail-on-invalid: "false"
+      - name: Assert it reported but passed
+        shell: bash
+        env:
+          VALID: ${{ steps.bakex.outputs.valid }}
+          FAILED: ${{ steps.bakex.outputs.failed }}
+        run: |
+          set -euo pipefail
+          [ "$VALID" = "false" ] || { echo "expected valid=false"; exit 1; }
+          [ "$FAILED" = "1" ]    || { echo "expected failed=1"; exit 1; }
+
+  no-matches:
+    name: Fails when nothing matches
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install the checked-out BakeX
+        # The action must be exercised against this commit, not the published
+        # release — that is the whole point of dogfooding it here.
+        shell: bash
+        run: python -m pip install --disable-pip-version-check .
+      - id: bakex
+        continue-on-error: true
+        uses: ./
+        with:
+          install: "false"
+          blueprints: "no/such/path/**/*.yaml"
+      - shell: bash
+        run: |
+          set -euo pipefail
+          [ "${{ steps.bakex.outcome }}" = "failure" ] || {
+            echo "a glob matching nothing must fail, not silently pass"; exit 1; }
