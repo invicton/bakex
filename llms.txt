@@ -39,6 +39,9 @@ profile. To generate one, follow the published JSON Schema and validate before b
 - [blueprints/index.json](blueprints/index.json) — machine-readable list of every community blueprint.
 - [blueprints/CONTRIBUTING.md](blueprints/CONTRIBUTING.md) — field-by-field authoring guide + the acceptance criteria for a merged blueprint.
 - Validate any blueprint with `bakex validate FILE --json` (exit 0 = valid, 1 = invalid).
+- `bakex profiles --json` lists the bundled blueprint names `bakex build` accepts.
+- Aliases resolve to the same commands: `bake`=`build`, `proof`=`validate`, `pantry`=`profiles`.
+  Prefer the canonical names in generated code; accept either when reading user input.
 
 ## Key files
 

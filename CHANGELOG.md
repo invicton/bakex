@@ -93,6 +93,18 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   anthropic, cryptography) — only pyyaml, pydantic and pydantic-settings — but
   `pip install bakex` still fetches them all. A validate-only extra would make this action
   meaningfully faster; tracked as a follow-up.
+- **`bakex profiles`** — lists the bundled blueprint names that `bakex build` accepts.
+  `build` has always taken a profile name as well as a path, but there was no way to
+  discover those names; you had to already know one. Walks the same directory the build
+  resolver searches, so the two cannot drift. `--json` for CI and agents.
+- **Baking vocabulary — command aliases.** `bake`, `proof`, and `pantry` now resolve to
+  `build`, `validate`, and `profiles`. Pre-configuring an image at build time is *baking*
+  (configuring at boot is *frying*), which is the industry's own term for what BakeX does.
+
+  **Nothing is renamed.** The plain verbs remain canonical and are what the docs, the
+  blueprint headers, and the published content use — a command in someone's CI log should
+  not require knowing the metaphor. Aliases are exactly equivalent and appear in `--help`
+  as `build (bake)`, so they are discovered by reading rather than memorised.
 - **`bakex` CLI** — a first-class command: `bakex serve [--host --port --reload]`
   runs the app, `bakex version` prints the build. `pip install bakex` → `bakex`.
 - **Container image scanning** — `POST /api/auditor/scan-container` runs an

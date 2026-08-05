@@ -99,7 +99,12 @@ bakex validate blueprints/ubuntu/22.04/cis-l1-aws.yaml   # schema-check (exit 0/
 bakex build    blueprints/ubuntu/22.04/cis-l1-aws.yaml   # build the golden image from the blueprint
 ```
 
-`bakex build` also accepts a bundled profile name (e.g. `bakex build ubuntu22-cis-l1-aws`).
+`bakex build` also accepts a bundled profile name (e.g. `bakex build ubuntu22-cis-l1-aws`);
+`bakex profiles` lists the names it knows.
+
+Pre-configuring an image at build time is *baking* (configuring at boot is *frying*), so the
+CLI answers to that vocabulary too — **`bake`**, **`proof`**, and **`pantry`** are aliases for
+`build`, `validate`, and `profiles`. Nothing is renamed; the plain verbs stay canonical.
 
 Built-in blueprint templates and the provider catalog ship inside the package,
 so this works from any directory; runtime state (`data/`, `profiles/user/`) is
