@@ -6,12 +6,16 @@ on:
   workflow_dispatch:        # allow manual trigger
 
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
 
 jobs:
   refresh:
     runs-on: ubuntu-latest
+    # Opens a PR with the refreshed catalog, so it needs write; scoped to this job
+    # rather than the whole workflow.
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
 
