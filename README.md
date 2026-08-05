@@ -148,6 +148,13 @@ rather than only in the log. Outputs — `valid`, `total`, `passed`, `failed`, a
 | `python-version` | `3.12` | Runner Python (BakeX needs 3.11+) |
 | `working-directory` | `.` | Directory to resolve `blueprints` against |
 | `fail-on-invalid` | `true` | Set `false` to report without failing while adopting BakeX |
+| `install` | `true` | Set `false` when the workflow already put a suitable `bakex` on PATH |
+
+> **Requires a release that ships `bakex validate`.** The currently published PyPI package
+> (0.6.0) predates the `validate` command, so `pip install bakex` alone is not yet enough for
+> this action to run. Until the next release, either set `install: false` and install BakeX
+> yourself, or wait for v0.7.0. The action fails fast with an explicit message rather than an
+> argparse dump if it finds a build without `validate`.
 
 **For supply-chain-conscious repos, pin the SHA rather than a branch or tag** — a branch
 moves with every push and a tag can be repointed, a SHA cannot:

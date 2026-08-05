@@ -28,9 +28,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+      - name: Install the checked-out BakeX
+        # The action must be exercised against this commit, not the published
+        # release — that is the whole point of dogfooding it here.
+        shell: bash
+        run: python -m pip install --disable-pip-version-check .
       - id: bakex
         uses: ./
         with:
+          install: "false"
           blueprints: "blueprints/**/*.yaml"
       - name: Assert outputs
         shell: bash
@@ -53,6 +59,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+      - name: Install the checked-out BakeX
+        # The action must be exercised against this commit, not the published
+        # release — that is the whole point of dogfooding it here.
+        shell: bash
+        run: python -m pip install --disable-pip-version-check .
       - name: Plant an invalid blueprint
         shell: bash
         run: |
@@ -62,6 +73,7 @@ jobs:
         continue-on-error: true
         uses: ./
         with:
+          install: "false"
           blueprints: ".bakex-action-test/*.yaml"
       - name: Assert it failed loudly
         shell: bash
@@ -81,6 +93,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+      - name: Install the checked-out BakeX
+        # The action must be exercised against this commit, not the published
+        # release — that is the whole point of dogfooding it here.
+        shell: bash
+        run: python -m pip install --disable-pip-version-check .
       - shell: bash
         run: |
           mkdir -p .bakex-action-test
@@ -88,6 +105,7 @@ jobs:
       - id: bakex
         uses: ./
         with:
+          install: "false"
           blueprints: ".bakex-action-test/*.yaml"
           fail-on-invalid: "false"
       - name: Assert it reported but passed
@@ -105,10 +123,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+      - name: Install the checked-out BakeX
+        # The action must be exercised against this commit, not the published
+        # release — that is the whole point of dogfooding it here.
+        shell: bash
+        run: python -m pip install --disable-pip-version-check .
       - id: bakex
         continue-on-error: true
         uses: ./
         with:
+          install: "false"
           blueprints: "no/such/path/**/*.yaml"
       - shell: bash
         run: |

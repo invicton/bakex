@@ -84,6 +84,11 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `.github/workflows/test-action.yml`, which exercises all four paths (valid library,
   invalid blueprint, report-only mode, no matches) against this repo's own blueprints.
 
+  **Requires a release that ships `bakex validate`.** PyPI 0.6.0 predates that command, so
+  `pip install bakex` is not yet sufficient — the action's own dogfood workflow therefore
+  installs the checked-out code and passes `install: false`. The action fails fast with an
+  explicit message if it finds a build without `validate`, instead of an argparse usage dump.
+
   Note: `bakex validate` imports none of the server dependencies (fastapi, uvicorn,
   anthropic, cryptography) — only pyyaml, pydantic and pydantic-settings — but
   `pip install bakex` still fetches them all. A validate-only extra would make this action
