@@ -153,3 +153,98 @@ def test_build_unknown_blueprint_exits_one_without_building(capsys):
     assert rc == 1
     m.assert_not_called()
     assert "not found" in capsys.readouterr().err
+
+
+# ---------------------------------------------------------------------------
+# Baking vocabulary — memorable aliases, nothing renamed
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("alias", "canonical"),
+    [("bake", "build"), ("proof", "validate"), ("pantry", "blueprints")],
+)
+def test_alias_maps_to_canonical(alias, canonical):
+    assert cli._ALIASES[alias] == canonical
+
+
+@pytest.mark.parametrize(("alias", "canonical"), [("proof", "validate"), ("pantry", "blueprints")])
+def test_alias_dispatches_instead_of_falling_through_to_help(alias, canonical, capsys):
+    """The regression the normalisation step exists to prevent.
+
+    argparse reports the spelling the user typed, so dispatching on `args.command`
+    directly sends an aliased invocation to the help text and exit code 2 — a
+    silent no-op that looks like a usage error.
+    """
+    args = [alias] if alias == "pantry" else [alias, str(_VALID_BLUEPRINT)]
+    rc = cli.main(args)
+    assert rc == 0, f"`bakex {alias}` fell through instead of running {canonical}"
+    assert capsys.readouterr().out.strip(), f"`bakex {alias}` produced no output"
+
+
+def test_proof_and_validate_are_equivalent(capsys):
+    rc_canonical = cli.main(["validate", str(_VALID_BLUEPRINT)])
+    out_canonical = capsys.readouterr().out
+    rc_alias = cli.main(["proof", str(_VALID_BLUEPRINT)])
+    out_alias = capsys.readouterr().out
+    assert rc_canonical == rc_alias == 0
+    assert out_canonical == out_alias
+
+
+def test_proof_reports_failure_like_validate(tmp_path, capsys):
+    bad = tmp_path / "bad.yaml"
+    bad.write_text("kind: NotABlueprint\n")
+    assert cli.main(["validate", str(bad)]) == 1
+    capsys.readouterr()
+    assert cli.main(["proof", str(bad)]) == 1
+
+
+def test_bake_reaches_the_build_path():
+    """`bake` must invoke the builder, not the help text."""
+    from bakex.core import builder as build_service
+
+    with patch.object(build_service, "run_build") as m:
+        rc = cli.main(["bake", "definitely-not-a-real-profile-name"])
+    assert rc == 1  # unknown blueprint, but it got as far as resolution
+    m.assert_not_called()
+
+
+def test_help_advertises_the_aliases(capsys):
+    """Aliases must be discoverable by reading --help, not by memorising a glossary."""
+    with pytest.raises(SystemExit):
+        cli.main(["--help"])
+    out = capsys.readouterr().out
+    for rendered in ("build (bake)", "validate (proof)", "blueprints (pantry)"):
+        assert rendered in out
+
+
+# ---------------------------------------------------------------------------
+# profiles / pantry
+# ---------------------------------------------------------------------------
+
+
+def test_profiles_lists_bundled_blueprints(capsys):
+    rc = cli.main(["blueprints"])
+    assert rc == 0
+    assert "bundled blueprint(s)" in capsys.readouterr().out
+
+
+def test_profiles_json_is_machine_readable(capsys):
+    import json
+
+    rc = cli.main(["blueprints", "--json"])
+    assert rc == 0
+    entries = json.loads(capsys.readouterr().out)
+    assert entries and all({"name", "os", "provider", "path"} <= e.keys() for e in entries)
+
+
+def test_every_listed_name_is_buildable(capsys):
+    """profiles and build must not drift — each printed name must resolve."""
+    import json
+
+    cli.main(["blueprints", "--json"])
+    entries = json.loads(capsys.readouterr().out)
+    for entry in entries:
+        assert cli._resolve_blueprint(entry["name"]) is not None, (
+            f"`bakex blueprints` lists {entry['name']!r} but `bakex build` cannot resolve it"
+        )

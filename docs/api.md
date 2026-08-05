@@ -117,16 +117,32 @@ Prefer Application Default Credentials or impersonation for GCP. Use `service_ac
 |---|---|
 | `bakex serve` | Run the web app + API |
 | `bakex version` | Print the build version |
-| `bakex validate FILE...` | Validate blueprint YAML against the `HardeningBlueprint` schema. `--json` for machine-readable results. |
-| `bakex build FILE\|NAME` | Build a hardened image from a blueprint file, or a bundled profile name. `--output-dir DIR`, `--json`. |
+| `bakex validate FILE...` | Validate blueprint YAML against the `HardeningBlueprint` schema. `--json` for machine-readable results. Alias: `proof`. |
+| `bakex build FILE\|NAME` | Build a hardened image from a blueprint file, or a bundled profile name. `--output-dir DIR`, `--json`. Alias: `bake`. |
+| `bakex blueprints` | List the bundled blueprint names `build` accepts. `--json`. Alias: `pantry`. |
+
+### Command aliases
+
+Pre-configuring an image at build time is *baking* (configuring at boot is *frying*), so the
+CLI answers to that vocabulary as well as the plain verbs:
+
+| Canonical | Alias |
+|---|---|
+| `build` | `bake` |
+| `validate` | `proof` |
+| `blueprints` | `pantry` |
+
+Nothing is renamed — the canonical names are what the docs use and what generated code
+should emit. An alias is exactly equivalent: same arguments, same output, same exit code.
 
 ## CLI Exit Status Codes
 
-The `bakex` command-line interface uses the following exit codes:
+The `bakex` command-line interface uses the following exit codes. Aliases share the exit
+codes of the command they resolve to.
 
 | Exit Code | Meaning / Reason |
 |---|---|
-| `0` | Success — `bakex version`; `bakex serve` graceful termination; `bakex validate` all files valid; `bakex build` job completed |
+| `0` | Success — `bakex version`; `bakex serve` graceful termination; `bakex validate` all files valid; `bakex build` job completed; `bakex blueprints` listing produced |
 | `1` | Runtime failure — `bakex validate` one or more files invalid; `bakex build` blueprint not found or job failed |
 | `2` | Usage error or invalid arguments |
 
