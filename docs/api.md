@@ -29,6 +29,48 @@ API keys are created in **Settings -> API Keys** or through the API key endpoint
 | `GET` | `/api/api-keys` | List API keys |
 | `DELETE` | `/api/api-keys/{id}` | Revoke an API key |
 
+## The pipeline gate — read this before wiring CI
+
+The three verdict endpoints (`POST /api/pipeline/scan`, `GET /api/pipeline/scan/{id}`,
+`POST /api/pipeline/verify/{id}`) return **HTTP 200 by default even when the gate fails**.
+The verdict lives in the `passed` field, not the status code. That means the wiring most
+people reach for first silently does nothing:
+
+```bash
+# WRONG — never fails. `-f` only reacts to HTTP >= 400, and a failed gate returns 200.
+curl -sf -X POST "$BAKEX_URL/api/pipeline/scan" -d '...' || exit 1
+```
+
+Two correct options. **Parse `.passed`** — works under every version:
+
+```bash
+RESULT=$(curl -s -X POST "$BAKEX_URL/api/pipeline/scan" \
+  -H "X-API-Key: $BAKEX_TOKEN" -H "Content-Type: application/json" \
+  -d "{\"image_id\": \"$AMI\", \"pass_threshold\": 75.0, \"severity_threshold\": \"high\"}")
+
+if [ "$(echo "$RESULT" | jq -r '.passed')" != "true" ]; then
+  echo "gate failed: $(echo "$RESULT" | jq -c '.threshold_violations')"
+  exit 1
+fi
+```
+
+**Or set `strict`**, which makes the endpoint answer `422` when the gate fails, so `-f` and
+`set -e` behave as written. The 422 body is the same verdict object, so `jq` still works:
+
+```bash
+curl -sf -X POST "$BAKEX_URL/api/pipeline/scan" \
+  -H "X-API-Key: $BAKEX_TOKEN" -H "Content-Type: application/json" \
+  -d "{\"image_id\": \"$AMI\", \"strict\": true}" || exit 1
+```
+
+`strict` is a body field on `POST /scan` and a query parameter on the two others
+(`?strict=true`). It is **opt-in** because the always-200 contract is what v0.6 shipped and
+documented; the default is expected to flip in a future minor with a changelog entry. Code
+that reads `.passed` is correct either way — prefer it if you want to write this once.
+
+A gate that reports failure and exits 0 is worse than no gate: it produces a green pipeline
+and the belief that something was checked.
+
 ## Integration Payloads
 
 ### AWS

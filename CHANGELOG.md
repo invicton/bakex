@@ -50,6 +50,23 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   Note that `--profile` must name the *tailored* profile when a tailoring file is used;
   passing the original ID is accepted by `oscap` and silently ignores every override.
   ([#60](https://github.com/invicton/bakex/issues/60))
+- **Pipeline gate can now fail closed** (`strict`) — the three verdict endpoints
+  (`POST /api/pipeline/scan`, `GET /api/pipeline/scan/{id}`,
+  `POST /api/pipeline/verify/{id}`) accept `strict`, which returns **422** when the
+  gate fails instead of 200. The 422 body is the same verdict object, so `jq` still
+  works. `strict` is a body field on `POST /scan` and a query parameter on the other
+  two.
+
+  **Why:** the endpoints have always answered 200 with the verdict in `passed`, which
+  means the wiring everyone reaches for first — `curl -sf … || exit 1` — never fires,
+  because `-f` only reacts to HTTP >= 400. A compliance gate that reports failure and
+  exits 0 is worse than no gate: it yields a green pipeline and the belief that
+  something was checked.
+
+  **Default unchanged** (always 200) because that is the contract v0.6 shipped and
+  documented; the default is expected to flip in a future minor, with a changelog
+  entry. Reading `.passed` is correct under both and remains the portable form.
+  See `docs/api.md` → "The pipeline gate". ([#58](https://github.com/invicton/bakex/issues/58))
 - **`bakex` CLI** — a first-class command: `bakex serve [--host --port --reload]`
   runs the app, `bakex version` prints the build. `pip install bakex` → `bakex`.
 - **Container image scanning** — `POST /api/auditor/scan-container` runs an
