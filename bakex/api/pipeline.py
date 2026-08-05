@@ -45,6 +45,9 @@ class PipelineScanRequest(BaseModel):
     severity_threshold: str = "high"  # critical | high | medium | low
     wait: bool = True
     timeout_seconds: int = 900
+    # Opt in to HTTP-status gating. Default False preserves the documented v0.6 contract
+    # (always 200, verdict in `passed`); see _enforce_gate for why the default will flip.
+    strict: bool = False
 
 
 def _job_to_response(
@@ -79,6 +82,24 @@ def _job_to_response(
         "sarif_url": f"{report_base}?fmt=sarif",
         "html_report_url": report_base,
     }
+
+
+def _enforce_gate(payload: dict, strict: bool) -> dict:
+    """Return the verdict payload, or raise 422 when a strict caller failed the gate.
+
+    The endpoint has always answered 200 with the verdict in ``passed``, which means the
+    obvious CI wiring — ``curl -sf … || exit 1`` — never fires: ``-f`` only reacts to
+    HTTP >= 400. A compliance gate that reports failure and exits 0 is worse than no gate,
+    because it yields a green pipeline and the belief that something was checked.
+
+    ``strict=true`` opts into HTTP-status gating so that wiring works as written. It is
+    opt-in rather than the default because the 200-always contract is what v0.6 documented
+    and shipped; the default is expected to flip in a future minor, with a changelog entry.
+    Clients that read ``passed`` are correct under both, and should keep doing so.
+    """
+    if strict and not payload.get("passed"):
+        raise HTTPException(status_code=422, detail=payload)
+    return payload
 
 
 @router.post("/scan")
@@ -123,7 +144,7 @@ async def pipeline_scan(
             )
         )
 
-    return _job_to_response(job, req.pass_threshold, req.severity_threshold)
+    return _enforce_gate(_job_to_response(job, req.pass_threshold, req.severity_threshold), req.strict)
 
 
 @router.get("/scan/{job_id}")
@@ -131,13 +152,14 @@ async def get_pipeline_scan(
     job_id: str,
     pass_threshold: float = 75.0,
     severity_threshold: str = "high",
+    strict: bool = False,
     _key: str = Depends(_require_api_key),
 ):
-    """Poll a pipeline scan result."""
+    """Poll a pipeline scan result. ``strict=true`` returns 422 when the gate fails."""
     job = audit_service.get_audit(job_id)
     if job is None:
         raise HTTPException(status_code=404, detail="Scan job not found")
-    return _job_to_response(job, pass_threshold, severity_threshold)
+    return _enforce_gate(_job_to_response(job, pass_threshold, severity_threshold), strict)
 
 
 @router.post("/verify/{job_id}")
@@ -145,15 +167,16 @@ async def verify_scan(
     job_id: str,
     pass_threshold: float = 75.0,
     severity_threshold: str = "high",
+    strict: bool = False,
     _key: str = Depends(_require_api_key),
 ):
-    """Verify an existing completed scan against thresholds. Returns passed=true/false."""
+    """Verify a completed scan against thresholds. ``strict=true`` returns 422 on failure."""
     job = audit_service.get_audit(job_id)
     if job is None:
         raise HTTPException(status_code=404, detail="Scan job not found")
     if job.status != audit_service.AuditStatus.COMPLETE:
         raise HTTPException(status_code=400, detail=f"Scan not complete (status: {job.status.value})")
-    return _job_to_response(job, pass_threshold, severity_threshold)
+    return _enforce_gate(_job_to_response(job, pass_threshold, severity_threshold), strict)
 
 
 @router.get("/scans")
