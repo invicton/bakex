@@ -1,0 +1,49 @@
+name: Dependabot auto-merge
+
+# Patch and minor bumps merge themselves; majors are left for a human. A green test suite is
+# good evidence for a patch and weak evidence for a major -- it shows the tests don't cover
+# what changed, not that the change is safe. cryptography is load-bearing in a hardening
+# tool, so a two-major jump gets read.
+#
+# `pull_request` is deliberate: `pull_request_target` would run with repository write access
+# in the context of the base repo, which is the pattern Scorecard's Dangerous-Workflow check
+# penalises. GitHub's own documented auto-merge example uses `pull_request`, and Dependabot
+# PRs get a read-only GITHUB_TOKEN that the `permissions` blocks below raise explicitly.
+on: pull_request
+
+# Least privilege at the top level; the job elevates only what it needs.
+permissions:
+  contents: read
+
+jobs:
+  automerge:
+    name: Auto-merge patch and minor updates
+    runs-on: ubuntu-latest
+    if: github.actor == 'dependabot[bot]'
+    permissions:
+      contents: write        # merge the PR
+      pull-requests: write   # enable auto-merge on it
+    steps:
+      - name: Fetch Dependabot metadata
+        id: meta
+        uses: dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98  # v3.1.0
+
+      # --auto queues the merge behind branch protection rather than bypassing it, so all
+      # six required checks (ruff, DCO, pytest 3.11 + 3.12, both blueprint validations)
+      # still gate every merge exactly as they do for a human PR.
+      - name: Enable auto-merge
+        if: |
+          steps.meta.outputs.update-type == 'version-update:semver-patch' ||
+          steps.meta.outputs.update-type == 'version-update:semver-minor'
+        run: gh pr merge --auto --squash "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Makes the gate observable. Without this a held major is indistinguishable from a
+      # workflow that silently failed to run.
+      - name: Note that a major update was held
+        if: steps.meta.outputs.update-type == 'version-update:semver-major'
+        run: echo "::notice title=Major update held::$DEPS is a major bump and was not auto-merged. Review it by hand."
+        env:
+          DEPS: ${{ steps.meta.outputs.dependency-names }}

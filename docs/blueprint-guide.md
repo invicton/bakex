@@ -105,6 +105,27 @@ controls:
     justification: "Root SSH login is prohibited by organisational security policy."
 ```
 
+### How `controls` affects the scan
+
+BakeX compiles this block into an [XCCDF tailoring
+file](https://www.open-scap.org/security-policies/scap-security-guide/) and hands it to
+`oscap` with `--tailoring-file`. A rule you set to `enabled: false` is **deselected**, so it
+is not evaluated and does not count against your grade; a rule set to `true` is selected.
+The generated profile *extends* the one named in `compliance.profile` — it never replaces it.
+
+Two consequences worth knowing:
+
+- **A waived rule disappears from the results entirely** — it is not evaluated, so it is
+  absent from the report and the SARIF export rather than present-and-excused. The waiver
+  and its reason live in the blueprint and in the generated tailoring file (justifications
+  are written as comments beside each rule and summarised in the profile description).
+- **Keys are full XCCDF rule IDs**, not CIS section numbers. That is deliberate: the rule ID
+  is what OpenSCAP reports, so an override and a finding line up with no translation table.
+
+A blueprint with no `controls` block generates no tailoring file and is scanned exactly as
+before. Write justifications for a reader who has to defend the decision in an audit — a
+waiver with no rationale is a suppression wearing a better name.
+
 ## Pre-built templates
 
 Built-in app templates live in [`profiles/templates/`](../profiles/templates/).

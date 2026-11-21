@@ -8,7 +8,10 @@ starting a server or touching any cloud resources.
 
 from __future__ import annotations
 
-from bakex.api.pipeline import _job_to_response
+import pytest
+from fastapi import HTTPException
+
+from bakex.api.pipeline import _enforce_gate, _job_to_response
 from bakex.core.auditor import AuditJob, AuditStatus, score_to_grade
 
 # ---------------------------------------------------------------------------
@@ -216,3 +219,45 @@ def test_null_score_does_not_pass():
     job = _make_job(score_pct=None)
     result = _job_to_response(job, pass_threshold=75.0, severity_threshold="high")
     assert result["passed"] is False, "A job with no score must not pass the pipeline gate"
+
+
+# ---------------------------------------------------------------------------
+# Gate enforcement (#58) — the gate must be able to fail closed
+# ---------------------------------------------------------------------------
+
+
+def _payload(passed: bool) -> dict:
+    return {"passed": passed, "grade": "A" if passed else "C", "threshold_violations": []}
+
+
+def test_enforce_gate_returns_payload_when_passed():
+    payload = _payload(True)
+    assert _enforce_gate(payload, strict=True) is payload
+    assert _enforce_gate(payload, strict=False) is payload
+
+
+def test_enforce_gate_non_strict_returns_payload_on_failure():
+    """Default behaviour is unchanged: 200 with the verdict in `passed`."""
+    payload = _payload(False)
+    assert _enforce_gate(payload, strict=False) is payload
+
+
+def test_enforce_gate_strict_raises_422_on_failure():
+    """strict=true makes `curl -sf ... || exit 1` actually gate."""
+    with pytest.raises(HTTPException) as exc:
+        _enforce_gate(_payload(False), strict=True)
+    assert exc.value.status_code == 422
+
+
+def test_enforce_gate_strict_422_carries_the_verdict():
+    """The failure body must still be machine-readable, not an opaque error string."""
+    payload = _payload(False)
+    with pytest.raises(HTTPException) as exc:
+        _enforce_gate(payload, strict=True)
+    assert exc.value.detail == payload
+
+
+def test_enforce_gate_strict_treats_missing_passed_as_failure():
+    """A malformed payload must fail closed, never open."""
+    with pytest.raises(HTTPException):
+        _enforce_gate({"grade": "C"}, strict=True)

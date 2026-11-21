@@ -10,6 +10,7 @@ import tempfile
 from pathlib import Path
 
 from bakex.core.blueprint import ComplianceProfile
+from bakex.openscap.tailoring import TAILORED_PROFILE_ID, write_tailoring
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +51,12 @@ def run_scan(
     arf_path = output_dir / "results-arf.xml"
     report_path = output_dir / "report.html"
 
-    cmd = _build_command(profile, target_host, ssh_user, arf_path, report_path)
+    # Compile the blueprint's `controls` block into a tailoring file so rule overrides
+    # actually affect the scan. None when the blueprint declares no overrides, which
+    # keeps the common path identical to an untailored run.
+    tailoring_path = write_tailoring(profile, output_dir)
+
+    cmd = _build_command(profile, target_host, ssh_user, arf_path, report_path, tailoring_path)
     logger.info("Running oscap: %s", " ".join(cmd))
 
     result = subprocess.run(cmd, capture_output=True, text=True)
@@ -71,6 +77,7 @@ def _build_command(
     ssh_user: str,
     arf_path: Path,
     report_path: Path,
+    tailoring_path: Path | None = None,
 ) -> list[str]:
     cmd = ["oscap"]
 
@@ -78,13 +85,24 @@ def _build_command(
         cmd += ["--ssh-option=StrictHostKeyChecking=no"]
         cmd += [f"ssh://{ssh_user}@{target_host}"]
 
+    # With a tailoring file, --profile must name the *tailored* profile. Passing the
+    # original ID here is the classic mistake: oscap accepts it and silently evaluates
+    # the untailored profile, so every override is ignored with no error.
+    selected_profile = TAILORED_PROFILE_ID if tailoring_path else profile.compliance.profile
+
     cmd += [
         "xccdf",
         "eval",
         "--benchmark-id",
         profile.compliance.benchmark,
         "--profile",
-        profile.compliance.profile,
+        selected_profile,
+    ]
+
+    if tailoring_path:
+        cmd += ["--tailoring-file", str(tailoring_path)]
+
+    cmd += [
         "--results-arf",
         str(arf_path),
         "--report",

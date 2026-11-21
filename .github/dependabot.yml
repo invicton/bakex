@@ -1,4 +1,13 @@
 version: 2
+
+# Patch and minor updates merge themselves (.github/workflows/dependabot-automerge.yml);
+# majors always wait for a human. The cooldown below is what makes that safe: it delays a
+# version update until it has been public for a few days, so a compromised release is not
+# merged unreviewed within minutes of publication. Majors get the longest window because
+# nothing is lost -- they wait for review regardless.
+#
+# This applies to *version* updates only. Dependabot security updates come from advisories
+# and are not held back by it, so genuine CVE fixes still arrive fast.
 updates:
   - package-ecosystem: "pip"
     directory: "/"
@@ -7,11 +16,32 @@ updates:
     groups:
       minor-and-patch:
         update-types: ["minor", "patch"]
+    cooldown:
+      default-days: 5
+      semver-patch-days: 3
+      semver-minor-days: 5
+      semver-major-days: 7
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
+    groups:
+      minor-and-patch:
+        update-types: ["minor", "patch"]
+    cooldown:
+      default-days: 5
+      semver-patch-days: 3
+      semver-minor-days: 5
+      semver-major-days: 7
   - package-ecosystem: "docker"
     directory: "/"
     schedule:
       interval: "weekly"
+    groups:
+      minor-and-patch:
+        update-types: ["minor", "patch"]
+    cooldown:
+      default-days: 5
+      semver-patch-days: 3
+      semver-minor-days: 5
+      semver-major-days: 7

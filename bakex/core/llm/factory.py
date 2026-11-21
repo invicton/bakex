@@ -11,10 +11,16 @@ Control via env vars:
   BAKEX_LLM_THINKING  — "0" to disable Claude extended thinking (default: "1")
 
 Provider defaults:
-  anthropic  →  claude-opus-4-6           (ANTHROPIC_API_KEY)
+  anthropic  →  claude-opus-5             (ANTHROPIC_API_KEY)
   openai     →  gpt-4o                    (BAKEX_LLM_API_KEY or OPENAI_API_KEY)
   ollama     →  llama3.3:70b              (no key; needs Ollama running locally)
   bedrock    →  us.anthropic.claude-opus-4-5-20251101-v1:0  (AWS credentials)
+
+Note on the two Anthropic ID formats — they are not interchangeable. The `anthropic`
+backend calls the first-party Messages API and takes bare IDs (`claude-opus-5`). The
+`bedrock` backend calls `bedrock-runtime.converse_stream`, whose IDs are ARN-versioned
+and carry a cross-region inference-profile prefix (`us.anthropic.…-v1:0`). Do not copy
+an ID from one to the other.
 """
 
 from __future__ import annotations
@@ -61,7 +67,7 @@ def provider_status() -> dict:
 
     if provider == "anthropic":
         has_key = bool(os.environ.get("ANTHROPIC_API_KEY"))
-        effective_model = model or "claude-opus-4-6"
+        effective_model = model or "claude-opus-5"
         return {
             "available": has_key,
             "provider": "anthropic",

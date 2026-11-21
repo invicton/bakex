@@ -31,6 +31,80 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **Blueprint `controls` overrides now reach the scanner.** The `controls` block is
+  compiled into an XCCDF 1.2 tailoring file (`bakex/openscap/tailoring.py`) and passed to
+  `oscap` via `--tailoring-file`, so a rule the blueprint waives is genuinely not
+  evaluated.
+
+  **Why it matters:** the block was previously inert — read by the UI, never sent to the
+  scanner. A waived rule was still evaluated, still failed, and still counted against the
+  grade, which meant *documenting* a non-applicable rule cost you score while staying
+  silent did not. That is the opposite of the incentive an auditable-exceptions feature
+  should create.
+
+  Justifications ride along as XML comments beside each `select` and are summarised in
+  the tailored profile's `<description>`, so the reason a rule was waived lives in the
+  artifact an auditor reads. Blueprints with no `controls` are unaffected — no tailoring
+  file is generated and the scan command is byte-identical to before.
+
+  Note that `--profile` must name the *tailored* profile when a tailoring file is used;
+  passing the original ID is accepted by `oscap` and silently ignores every override.
+  ([#60](https://github.com/invicton/bakex/issues/60))
+- **Pipeline gate can now fail closed** (`strict`) — the three verdict endpoints
+  (`POST /api/pipeline/scan`, `GET /api/pipeline/scan/{id}`,
+  `POST /api/pipeline/verify/{id}`) accept `strict`, which returns **422** when the
+  gate fails instead of 200. The 422 body is the same verdict object, so `jq` still
+  works. `strict` is a body field on `POST /scan` and a query parameter on the other
+  two.
+
+  **Why:** the endpoints have always answered 200 with the verdict in `passed`, which
+  means the wiring everyone reaches for first — `curl -sf … || exit 1` — never fires,
+  because `-f` only reacts to HTTP >= 400. A compliance gate that reports failure and
+  exits 0 is worse than no gate: it yields a green pipeline and the belief that
+  something was checked.
+
+  **Default unchanged** (always 200) because that is the contract v0.6 shipped and
+  documented; the default is expected to flip in a future minor, with a changelog
+  entry. Reading `.passed` is correct under both and remains the portable form.
+  See `docs/api.md` → "The pipeline gate". ([#58](https://github.com/invicton/bakex/issues/58))
+- **GitHub Action for blueprint validation** (`action.yml` at the repo root, so
+  `uses: invicton/bakex@main` — a tagged ref becomes available with the next release).
+  Composite action: sets up Python, installs BakeX, and runs `bakex validate` over a glob.
+  Fully offline — no cloud credentials, no build instance.
+
+  Invalid blueprints are emitted as `::error file=…` annotations so they land on the
+  offending file in the PR diff instead of only in the log, and a run summary is written to
+  `$GITHUB_STEP_SUMMARY`. Outputs: `valid`, `total`, `passed`, `failed`, and the full
+  `report` JSON. Inputs: `blueprints`, `version`, `python-version`, `working-directory`,
+  and `fail-on-invalid` (set `false` to report without failing while adopting BakeX on an
+  existing repo).
+
+  A glob that matches nothing **fails** rather than silently passing — a green check that
+  validated zero files is worse than no check. Dogfooded by
+  `.github/workflows/test-action.yml`, which exercises all four paths (valid library,
+  invalid blueprint, report-only mode, no matches) against this repo's own blueprints.
+
+  **Requires a release that ships `bakex validate`.** PyPI 0.6.0 predates that command, so
+  `pip install bakex` is not yet sufficient — the action's own dogfood workflow therefore
+  installs the checked-out code and passes `install: false`. The action fails fast with an
+  explicit message if it finds a build without `validate`, instead of an argparse usage dump.
+
+  Note: `bakex validate` imports none of the server dependencies (fastapi, uvicorn,
+  anthropic, cryptography) — only pyyaml, pydantic and pydantic-settings — but
+  `pip install bakex` still fetches them all. A validate-only extra would make this action
+  meaningfully faster; tracked as a follow-up.
+- **`bakex blueprints`** — lists the bundled blueprint names that `bakex build` accepts.
+  `build` has always taken a profile name as well as a path, but there was no way to
+  discover those names; you had to already know one. Walks the same directory the build
+  resolver searches, so the two cannot drift. `--json` for CI and agents.
+- **Baking vocabulary — command aliases.** `bake`, `proof`, and `pantry` now resolve to
+  `build`, `validate`, and `blueprints`. Pre-configuring an image at build time is *baking*
+  (configuring at boot is *frying*), which is the industry's own term for what BakeX does.
+
+  **Nothing is renamed.** The plain verbs remain canonical and are what the docs, the
+  blueprint headers, and the published content use — a command in someone's CI log should
+  not require knowing the metaphor. Aliases are exactly equivalent and appear in `--help`
+  as `build (bake)`, so they are discovered by reading rather than memorised.
 - **`bakex` CLI** — a first-class command: `bakex serve [--host --port --reload]`
   runs the app, `bakex version` prints the build. `pip install bakex` → `bakex`.
 - **Container image scanning** — `POST /api/auditor/scan-container` runs an
@@ -51,6 +125,11 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **`BAKEX_LLM_THINKING=0` silently stopped disabling thinking.** The Anthropic backend
+  opted out by *omitting* the `thinking` parameter, which meant "off" on Claude Opus
+  4.6/4.7/4.8 — but on Claude Opus 5 thinking is on by default, so omission became a
+  no-op and the setting kept paying for thinking tokens. The backend now always states
+  its intent explicitly: `{"type": "adaptive"}` or `{"type": "disabled"}`.
 - Missing host tools now fail fast with actionable messages instead of
   mid-build subprocess noise: kvm builds preflight their binaries at
   start (previously only "Test Connection" checked), and a missing
@@ -64,6 +143,15 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- **Default LLM model is now `claude-opus-5`** (was `claude-opus-4-6`) for the
+  `anthropic` backend and the factory. Override with `BAKEX_LLM_MODEL`.
+
+  The `bedrock` backend default is **unchanged**
+  (`us.anthropic.claude-opus-4-5-20251101-v1:0`) and still valid. Its IDs are not
+  interchangeable with the first-party ones: that backend calls
+  `bedrock-runtime.converse_stream`, whose model IDs are ARN-versioned and carry a
+  cross-region inference-profile prefix. Upgrading it needs the correct Converse-API
+  ID from the AWS Bedrock model catalogue — not a bare `claude-opus-5`.
 - README restructured as a ≤200-line landing page; reference content moved
   into `docs/` (new: getting-started, blueprint-guide, plugin-guide,
   configuration, architecture, and a docs index). Version badge is now the
